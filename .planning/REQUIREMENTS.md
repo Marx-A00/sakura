@@ -99,49 +99,49 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | — | Pending |
-| FOUND-02 | — | Pending |
-| FOUND-03 | — | Pending |
-| FOUND-04 | — | Pending |
-| FOUND-05 | — | Pending |
-| FOUND-06 | — | Pending |
-| FOOD-01 | — | Pending |
-| FOOD-02 | — | Pending |
-| FOOD-03 | — | Pending |
-| FOOD-04 | — | Pending |
-| FOOD-05 | — | Pending |
-| FOOD-06 | — | Pending |
-| FOOD-07 | — | Pending |
-| FOOD-08 | — | Pending |
-| FOOD-09 | — | Pending |
-| WORK-01 | — | Pending |
-| WORK-02 | — | Pending |
-| WORK-03 | — | Pending |
-| WORK-04 | — | Pending |
-| WORK-05 | — | Pending |
-| WORK-06 | — | Pending |
-| WORK-07 | — | Pending |
-| WORK-08 | — | Pending |
-| WORK-09 | — | Pending |
-| WORK-10 | — | Pending |
-| SYNC-01 | — | Pending |
-| SYNC-02 | — | Pending |
-| SYNC-03 | — | Pending |
-| SYNC-04 | — | Pending |
-| SYNC-05 | — | Pending |
-| SYNC-06 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| DASH-05 | — | Pending |
-| DASH-06 | — | Pending |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Pending |
+| FOOD-01 | Phase 2 | Pending |
+| FOOD-02 | Phase 2 | Pending |
+| FOOD-03 | Phase 2 | Pending |
+| FOOD-04 | Phase 2 | Pending |
+| FOOD-05 | Phase 2 | Pending |
+| FOOD-06 | Phase 2 | Pending |
+| FOOD-07 | Phase 2 | Pending |
+| FOOD-08 | Phase 2 | Pending |
+| FOOD-09 | Phase 2 | Pending |
+| WORK-01 | Phase 3 | Pending |
+| WORK-02 | Phase 3 | Pending |
+| WORK-03 | Phase 3 | Pending |
+| WORK-04 | Phase 3 | Pending |
+| WORK-05 | Phase 3 | Pending |
+| WORK-06 | Phase 3 | Pending |
+| WORK-07 | Phase 3 | Pending |
+| WORK-08 | Phase 3 | Pending |
+| WORK-09 | Phase 3 | Pending |
+| WORK-10 | Phase 3 | Pending |
+| SYNC-01 | Phase 1 | Pending |
+| SYNC-02 | Phase 1 | Pending |
+| SYNC-03 | Phase 1 | Pending |
+| SYNC-04 | Phase 4 | Pending |
+| SYNC-05 | Phase 2 | Pending |
+| SYNC-06 | Phase 1 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Pending |
+| DASH-05 | Phase 4 | Pending |
+| DASH-06 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 37 total
-- Mapped to phases: 0
-- Unmapped: 37 ⚠️
+- Mapped to phases: 37
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after initial definition*
+*Last updated: 2026-04-09 — phase mappings added*
