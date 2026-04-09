@@ -1,8 +1,8 @@
-# Roadmap: Origami
+# Roadmap: Sakura
 
 ## Overview
 
-Origami is a personal Android app (Kotlin + Jetpack Compose) for logging food and workouts to org-mode plain text files that sync to an Emacs/org-roam setup via Syncthing. The roadmap delivers in four phases: a validated org file engine and sync foundation, full food tracking end-to-end, full workout tracking end-to-end, and a unified dashboard with analytics. Every data feature depends on the org engine being correct from day one — that is the singular risk this ordering protects against.
+Sakura is a personal Android app (Kotlin + Jetpack Compose) for logging food and workouts to org-mode plain text files that sync to an Emacs/org-roam setup via Syncthing. The roadmap delivers in four phases: a validated org file engine and sync foundation, full food tracking end-to-end, full workout tracking end-to-end, and a unified dashboard with analytics. Every data feature depends on the org engine being correct from day one — that is the singular risk this ordering protects against.
 
 ## Phases
 
@@ -29,12 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A food entry written by the app appears in food-log.org under the correct date heading and passes `M-x org-lint` in Emacs with zero errors
   4. A workout entry written by the app appears in workout-log.org under the correct date heading and passes `M-x org-lint` in Emacs with zero errors
   5. When the Syncthing folder is unavailable, the app shows a graceful error instead of crashing; .sync-conflict files are never opened as the active log
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 01-01: Device setup and Android Studio project scaffold
-- [ ] 01-02: OrgEngine — parser, writer, and org file schema (validated against Emacs org-lint)
-- [ ] 01-03: SyncBackend interface, SyncthingFileBackend, onboarding flow, and DataStore setup
+- [ ] 01-01-PLAN.md — Project scaffold (AGP 9.1.0, Compose, dependencies) + OrgModels and OrgSchema
+- [ ] 01-02-PLAN.md — OrgWriter + OrgParser TDD with Emacs org-lint validation checkpoint
+- [ ] 01-03-PLAN.md — SyncBackend, SyncthingFileBackend, DataStore, onboarding flow, and device deploy
 
 ### Phase 2: Food Logging
 **Goal**: User can log every food they eat with full macros, see today's progress against targets, browse past days, manage a food library, and have all entries appear correctly in food-log.org.
