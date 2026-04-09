@@ -1,0 +1,35 @@
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.hprof
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+
+# Editor directories and files
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS specific
+.DS_Store
