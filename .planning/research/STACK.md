@@ -1,8 +1,10 @@
 # Stack Research
 
-**Domain:** Personal iOS native app — food/macro tracking + workout logging, org-mode plain text files, iCloud Drive sync
+**Domain:** Personal Android native app — food/macro tracking + workout logging, org-mode plain text files, Syncthing file-based sync
 **Researched:** 2026-04-09
-**Confidence:** MEDIUM-HIGH (core stack HIGH; org-mode parsing and iCloud-with-free-account nuances MEDIUM)
+**Confidence:** HIGH (core Android stack is well-established; org-mode parsing and storage access nuances MEDIUM)
+
+> **Platform pivot note:** This document replaces the earlier iOS/SwiftUI STACK.md. The project moved from iOS to Android because: Galaxy S21 FE available for free, no $99/year Apple Developer account, no provisioning profiles, no re-signing every 7 days, full filesystem access via `MANAGE_EXTERNAL_STORAGE`, Syncthing works natively on Android. Several architectural challenges from the iOS version (iCloud-requires-paid-account, no forced sync, sandboxed file access) go away entirely.
 
 ---
 
@@ -10,41 +12,47 @@
 
 ### Core Technologies
 
-**Language & Platform**
+**Language**
 
-- Technology: Swift 6.2 / 6.3
-- Version: 6.3 (ships with Xcode 26.4, latest stable as of April 2026)
+- Technology: Kotlin
+- Version: 2.3.20 (latest stable, released March 2026)
 - Purpose: Primary language for all app code
-- Why Recommended: Swift 6 is the current standard. Swift 6.2 specifically introduced "single-threaded by default" concurrency — dramatically reducing boilerplate for a personal app that doesn't need parallelism. Swift 6 strict concurrency catches data races at compile time, which matters when coordinating iCloud file reads/writes with UI updates. Do not use Objective-C; it is not relevant for greenfield iOS work in 2026.
+- Why Recommended: Kotlin is the official, Google-recommended language for Android. Kotlin 2.x introduced a new K2 compiler with measurably faster build times and improved type inference. All Jetpack libraries are Kotlin-first. Do not use Java for new Android code in 2026 — Kotlin is the standard and all tooling, documentation, and community knowledge assumes it.
 
-- Technology: SwiftUI
-- Version: iOS 17+ (targets ~95% of active devices as of March 2026, per TelemetryDeck)
-- Purpose: UI framework
-- Why Recommended: The only serious choice for greenfield native iOS development in 2026. iOS 17 unlocks the `@Observable` macro (replaces `ObservableObject` + `@Published` entirely), `@Bindable`, and the full `NavigationStack` API. Targeting iOS 17 as minimum gives access to every modern API this project needs without maintaining legacy shims.
+**UI Framework**
 
-- Technology: Xcode 26.4
-- Version: 26.4 (latest stable, released March 24 2026)
-- Purpose: IDE, build toolchain, Simulator, device provisioning
-- Why Recommended: Required for Swift 6.3 and iOS 26 SDK. For sideloading to a personal device, a free Apple ID works — but see the critical iCloud constraint below.
+- Technology: Jetpack Compose
+- Version: 1.10.6 (via BOM 2026.04.00)
+- Purpose: All UI — screens, navigation, theming
+- Why Recommended: Jetpack Compose is Google's modern declarative UI toolkit and the standard for new Android apps. It replaces the XML View system entirely. Material 3 (Material You) is the current design system. Compose integrates natively with Kotlin coroutines, StateFlow, and ViewModel — no adapters needed. By 2026, Compose is production-stable, enterprise-adopted, and the only direction Google is investing in for Android UI.
+
+**Build System**
+
+- Technology: Android Studio Panda 3 (2025.3.3) + AGP 9.1.0 + Gradle 9.3.1
+- Version: Android Studio 2025.3.3 (latest stable, April 2026); AGP 9.1.0 (March 2026)
+- Purpose: IDE, build toolchain, APK generation, device deployment
+- Why Recommended: Android Studio Panda 3 is the current stable release. AGP 9.1.0 supports API 36.1, requires Gradle 9.3.1 and JDK 17 minimum, and includes built-in Kotlin support (no separate `org.jetbrains.kotlin.android` plugin needed starting with AGP 9.0). For a sideloaded APK, Android Studio handles signing with a debug keystore or a self-generated release keystore — no Play Store enrollment required.
 
 **State Management**
 
-- Technology: Swift Observation (`@Observable` macro)
-- Version: iOS 17+ (Swift 5.9+)
-- Purpose: App-wide and per-screen state management
-- Why Recommended: The 2025/2026 standard replaces `ObservableObject`. No `@Published` required — all stored properties are automatically trackable. SwiftUI only re-renders views that read a property that changed (more precise than the old system). For a small personal app, use `@Observable` models injected via `@Environment` rather than MVVM ViewModels. The community consensus in 2025 is: ViewModels add unnecessary indirection for apps of this scope. Keep logic in model objects, services, and async `task {}` blocks inside views.
+- Technology: ViewModel + StateFlow + Kotlin Coroutines
+- Version: lifecycle-viewmodel-compose 2.10.0; kotlinx-coroutines 1.10.2
+- Purpose: Screen-level state, async operations, reactive UI
+- Why Recommended: ViewModel survives configuration changes (screen rotation). StateFlow is the current standard for exposing UI state from a ViewModel — it replaces LiveData for new code. The pattern is: ViewModel holds a `MutableStateFlow<UiState>`, exposes it as `StateFlow<UiState>`, composables collect with `collectAsStateWithLifecycle()`. This is Google's officially recommended architecture for Compose apps in 2025/2026. LiveData is not deprecated but is no longer the recommended approach for new code — StateFlow integrates cleanly with coroutines and Compose without adapters.
 
-- Technology: `@State` / `@Environment` / `@Bindable`
-- Version: iOS 17+
-- Purpose: View-local and cross-view state wiring
-- Why Recommended: With `@Observable`, `@StateObject` and `@ObservedObject` are gone. Use `@State` when the view owns the object, bare property injection when passed down, and `@Environment` for shared singletons (e.g., the sync service, the org file repository).
+**Dependency Injection**
+
+- Technology: Manual DI (no framework for v1)
+- Version: N/A
+- Purpose: Wire up repositories, parsers, and services
+- Why Recommended: Hilt is the standard DI framework for larger Android apps and is appropriate when you have complex dependency graphs, multi-module projects, or team conventions to enforce. For a single-user personal app with a handful of classes, Hilt adds meaningful boilerplate: a Gradle plugin, a KSP annotation processor, an `@HiltAndroidApp` Application class, `@AndroidEntryPoint` on every Activity and composable entry point, and `@HiltViewModel` on every ViewModel. The Google documentation itself recommends manual DI for simple cases. For Origami v1: wire up the parser, repository, and sync service as singletons in a hand-rolled `AppContainer` object passed through the Application class. If the codebase grows in complexity, add Hilt later — it's a well-understood migration path.
 
 **Navigation**
 
-- Technology: `NavigationStack` + `NavigationPath`
-- Version: iOS 16+ (refine with iOS 17 APIs)
-- Purpose: Screen navigation, deep linking
-- Why Recommended: `NavigationView` is deprecated. `NavigationStack` gives programmatic path control, which enables clean routing without a heavy third-party architecture like TCA. TCA (The Composable Architecture) is overkill for a single-user personal app with no complex side-effect orchestration — it adds significant learning curve and boilerplate for zero benefit here.
+- Technology: Navigation Compose (Navigation 2)
+- Version: 2.9.7 (latest stable, January 2026)
+- Purpose: Screen navigation, back stack management
+- Why Recommended: Navigation Compose 2.9.7 is the current stable, production-proven navigation solution for Compose. Navigation 3 (Nav3) was announced at Google I/O 2025 and is philosophically cleaner (developer-owned back stack as a `SnapshotStateList`), but it remains in alpha as of April 2026 — APIs are subject to change. Use Navigation 2 for v1. It's not going away, and the migration to Nav3 when it reaches stable is straightforward. For a 3-4 screen app like Origami, Navigation 2 is entirely sufficient.
 
 ---
 
@@ -52,43 +60,69 @@
 
 **In-App Data Storage**
 
-- Technology: Custom in-memory models + org-mode file I/O (NO SwiftData, NO CoreData)
-- Version: N/A
+- Technology: No database. Custom in-memory models + org-mode file I/O
 - Purpose: Primary data store
-- Why Recommended: The project constraint is that data lives in org files. SwiftData/CoreData are relational persistence stores that generate their own internal file formats. Using them would mean maintaining two sources of truth (the database AND the org files), which defeats the entire purpose of this project. Keep it simple: parse org files into Swift structs on load, mutate in memory, serialize back to org text on write.
+- Why Recommended: The core project constraint is that data lives in org files. Room (SQLite) and DataStore store data in their own formats. Using Room would create two sources of truth (the database AND the org files), which defeats the purpose — the whole point is Emacs interoperability via a shared plain-text format. Architecture: parse org files into Kotlin data classes on load, mutate in memory, serialize back to org text on write. This is simple, testable, and produces zero abstraction complexity.
+
+**Preferences / App Config**
+
+- Technology: Jetpack DataStore (Preferences)
+- Version: 1.2.1 (latest stable, March 2026)
+- Purpose: Small app-level settings (selected sync folder path, any UI preferences)
+- Why Recommended: DataStore replaces SharedPreferences as the recommended key-value store. It's async/coroutine-native (Flow-based), avoids the ANR risk of synchronous SharedPreferences reads on the main thread, and integrates cleanly with the rest of the coroutine stack. Use only for tiny settings (the path to the Syncthing folder, theme preference) — not for tracking data, which lives in org files.
 
 **Org-Mode Parser**
 
-- Technology: Custom Swift parser using Swift Regex / `RegexBuilder`
-- Version: RegexBuilder available iOS 16+
+- Technology: Custom Kotlin parser
 - Purpose: Read and write org-mode formatted plain text files
-- Why Recommended: No viable maintained Swift org-mode library exists. Both known libraries — `swift-org` (orgapp) and `OrgMarker` (xiaoxinghu) — were last updated in 2017 and target Swift 3. They will not compile with modern Xcode without substantial rewrites. The Flutter-based `orgro` parser (`org_parser`) is Dart, not Swift.
+- Why Recommended: Two JVM-targeted org-mode libraries were found:
+  - `pmiddend/org-parser`: Written in Kotlin, targets JVM, created 2016, only 19 commits, no releases, no version tags, appears abandoned. Aspirational README but unrealized ambitions.
+  - `orgapp/swift-org` and `xiaoxinghu/OrgMarker`: Swift-only, irrelevant for Android.
+  No viable, maintained Kotlin/JVM org-mode library exists. The org-mode subset needed for Origami is narrow and well-defined: headings (`*`, `**`), property drawers (`:PROPERTIES:` … `:END:`), planning keywords (`SCHEDULED:`, date headings), timestamps (`<2026-04-09>`), plain list items (`-`), and maybe tags (`:tag:`). This is a tractable parsing problem with Kotlin's standard library `Regex` + `BufferedReader` line-by-line processing. Build a bespoke parser for the exact org constructs Origami uses — abstract it behind an interface so it's swappable and independently testable.
 
-  The org-mode subset needed for this project is narrow and well-defined: headings (`*`, `**`), properties (`:PROPERTIES:` drawers), timestamps (`<2026-04-09>`), plain lists (`-`), and tags (`:tag:`). This is a tractable parsing problem with Swift's `RegexBuilder` DSL (available iOS 16+, composable, type-safe, readable). Writing a bespoke parser for the specific org constructs Origami uses will take less time than fighting a dead library and produces a parser you fully control.
-
-  The parser is a core domain component — abstract it behind a protocol so the file format could theoretically change.
-
-**iCloud Drive Sync**
-
-- Technology: `NSFileCoordinator` + `NSMetadataQuery` + `FileManager` (iCloud Documents API)
-- Version: iOS 8+ (stable, well-documented)
-- Purpose: Two-way file sync between device and iCloud Drive
-- Why Recommended: This is Apple's first-party API for syncing plain text documents via iCloud Drive. Files appear under the app's iCloud container and are accessible from Files.app on iOS and Finder on macOS — including by Emacs on macOS.
-
-  **CRITICAL CONSTRAINT — Paid Developer Account Required:** iCloud entitlements are NOT available with a free Apple ID (Personal Team) in Xcode. Free accounts are limited to a 7-day provisioning profile and cannot add the iCloud capability. A paid Apple Developer Program membership ($99/year) is required to sideload an app with iCloud Drive access. This is confirmed by Apple documentation and community reports (2024/2025). Plan for this before starting implementation.
-
-  **CRITICAL CONSTRAINT — No Forced Sync:** There is no API to force iCloud sync. The system controls all sync timing based on network conditions, battery state, and thermal management. Apps must design around this: show file sync status via `NSMetadataQuery` notifications, implement graceful degradation when sync is delayed, and never block the UI waiting for sync.
-
-  **Abstraction Layer (Required for v1):** Wrap all sync operations behind a `SyncProvider` protocol. v1 implements `iCloudSyncProvider`. A future `LocalServerSyncProvider` (e.g., SSH/SFTP, syncthing, or a custom HTTP server) slots in without touching the rest of the app. This is the most important architectural decision for meeting the "swap sync layer later" constraint.
-
-  ```swift
-  protocol SyncProvider {
-      func availableFiles() async throws -> [OrgFile]
-      func read(_ file: OrgFile) async throws -> String
-      func write(_ content: String, to file: OrgFile) async throws
-      func observeChanges() -> AsyncStream<[OrgFile]>
+  ```kotlin
+  interface OrgFileParser {
+      fun parseFood(content: String): List<FoodEntry>
+      fun parseWorkout(content: String): List<WorkoutEntry>
+      fun serializeFood(entries: List<FoodEntry>): String
+      fun serializeWorkout(entries: List<WorkoutEntry>): String
   }
   ```
+
+**File Access / Syncthing Integration**
+
+- Technology: `java.io.File` + `MANAGE_EXTERNAL_STORAGE` permission
+- Purpose: Read and write org files in the Syncthing sync folder
+- Why Recommended: This is the key architectural simplification vs. the iOS approach. Android's `MANAGE_EXTERNAL_STORAGE` permission (introduced in Android 11 / API 30, a.k.a. "All files access") grants an app unrestricted read/write access to the entire external storage filesystem, including directories managed by Syncthing. For a sideloaded personal app — not distributed via Play Store — this is straightforward:
+
+  1. Declare `MANAGE_EXTERNAL_STORAGE` in `AndroidManifest.xml`
+  2. At runtime, check `Environment.isExternalStorageManager()` and prompt the user to grant it in Settings if needed (a one-time setup)
+  3. Once granted, use plain `java.io.File` APIs to read/write org files in the Syncthing folder (e.g., `/storage/emulated/0/Sync/health/food-log.org`)
+
+  Syncthing on Android already uses this same `MANAGE_EXTERNAL_STORAGE` permission to access its sync directories. The org files land in a Syncthing-managed folder; the app reads/writes them directly using the filesystem. No iCloud, no file coordinator, no metadata queries — just `File.readText()` and `File.writeText()`.
+
+  **Play Store caveat:** Google Play restricts `MANAGE_EXTERNAL_STORAGE` to apps with specific use cases and requires policy review. This is irrelevant for Origami — it's a sideloaded APK, never submitted to the Play Store. The restriction does not apply.
+
+  **SAF (Storage Access Framework) alternative:** SAF is the correct API when distributing an app publicly and needing to request access to user-selected directories without broad filesystem access. It works via URI permissions granted through the system file picker. It's more restrictive and more complex. For a personal sideloaded app, `MANAGE_EXTERNAL_STORAGE` is simpler and more appropriate.
+
+**Sync Abstraction Layer**
+
+- Technology: Custom `SyncRepository` interface
+- Purpose: Abstract the sync mechanism so file-based sync (Syncthing) can be replaced with a local server later
+- Why Recommended: The project explicitly requires a swappable sync backend. The abstraction lives at the repository layer, not the file I/O layer:
+
+  ```kotlin
+  interface OrgRepository {
+      suspend fun loadFoodLog(): List<FoodEntry>
+      suspend fun saveFoodEntry(entry: FoodEntry)
+      suspend fun loadWorkoutLog(): List<WorkoutEntry>
+      suspend fun saveWorkoutEntry(entry: WorkoutEntry)
+      fun observeFoodLog(): Flow<List<FoodEntry>>
+      fun observeWorkoutLog(): Flow<List<WorkoutEntry>>
+  }
+  ```
+
+  v1 implementation: `SyncthingOrgRepository` — reads/writes org files directly from the Syncthing folder using `java.io.File`. A future `LocalServerOrgRepository` (HTTP, SSH, or WebDAV) slots in without changing any ViewModel or UI code.
 
 ---
 
@@ -96,162 +130,285 @@
 
 **Charts & Data Visualization**
 
-- Library: Swift Charts (Apple first-party)
-- Version: iOS 16+ (enhanced in iOS 17)
-- Purpose: Macro trend charts, workout progress visualization
-- When to Use: Any data visualization in the app. Bar charts for macros per day, line charts for weight lifted over time. Zero third-party dependencies — this is now a first-class Apple framework.
+- Library: Compose Charts (Vico or equivalent)
+- Options: `patrykandpatrick/vico` (Compose-native, actively maintained) or `himanshoe/charty`
+- Version: Vico 2.x (verify latest on GitHub before adding)
+- Purpose: Macro trend charts, workout progress over time
+- When to Use: Phase 2+ once history view is built. Not needed for v1 logging MVP. Use a Compose-native chart library rather than wrapping a legacy View-based chart library — wrapping adds complexity and styling friction.
+- Confidence: MEDIUM (verified that Vico exists and is Compose-native; version not verified against current release)
 
-**Testing**
+**Coroutines / Flow**
 
-- Library: Swift Testing (Apple first-party)
-- Version: iOS 17+ / Swift 5.9+ (replaces XCTest for unit tests)
-- Purpose: Unit tests for the org-mode parser, data models, sync provider logic
-- When to Use: Prefer Swift Testing over XCTest for new tests. Simpler syntax (`@Test`, `@Suite`), native async/await support, better failure messages. XCTest still needed for UI tests.
+- Library: `kotlinx-coroutines-android`
+- Version: 1.10.2 (latest stable)
+- Purpose: Async file I/O (reads/writes must be off main thread), reactive state streams
+- When to Use: Always — this is the foundation of the entire async + state model.
+
+**Lifecycle / Compose Integration**
+
+- Library: `lifecycle-viewmodel-compose`
+- Version: 2.10.0 (latest stable, November 2025)
+- Purpose: `viewModel()` composable function, `collectAsStateWithLifecycle()`
+- When to Use: Always — required to wire ViewModels into composables and collect StateFlow safely with respect to Android lifecycle.
 
 ---
 
 ### Development Tools
 
-- Tool: Xcode 26.4
-- Purpose: IDE, compiler, Simulator, device deployment
-- Notes: Enable "Complete Concurrency Checking" from day one (Swift 6 mode). Do not start in Swift 5 compatibility mode and plan to migrate later.
+- Tool: Android Studio Panda 3 (2025.3.3)
+- Purpose: IDE, Compose preview, Layout Inspector, device sideloading
+- Notes: Use Compose Preview from day one — it eliminates most need to deploy to device during UI development. Enable "Compose Preview" in the IDE for hot-reload-like iteration.
 
-- Tool: Swift Package Manager (SPM)
-- Purpose: Dependency management
-- Notes: No third-party dependencies are expected for v1. SPM is built into Xcode; no setup required.
+- Tool: Gradle 9.3.1 (Kotlin DSL — `build.gradle.kts`)
+- Purpose: Build system, dependency management
+- Notes: Use Kotlin DSL (`build.gradle.kts`) rather than Groovy — it gives IDE autocomplete and type safety in build scripts. Version catalog (`gradle/libs.versions.toml`) is recommended for managing all dependency versions in one place.
 
-- Tool: Instruments (Apple first-party)
-- Purpose: Memory and performance profiling
-- Notes: Use Time Profiler to verify file I/O and parse operations don't block the main thread.
+- Tool: KSP (Kotlin Symbol Processing)
+- Purpose: Annotation processing (required if Hilt is added later; also used by some libraries)
+- Notes: KSP replaces KAPT for annotation processing and is up to 2x faster. Set it up from the start even if no libraries require it yet — it's the modern default.
+
+- Tool: ADB (Android Debug Bridge)
+- Purpose: Sideload APK, logcat, device shell
+- Notes: `adb install -r origami.apk` for reinstall without uninstall. No Play Store, no signing ceremony beyond a self-signed debug or release keystore.
+
+- Tool: Android Lint + ktlint
+- Purpose: Code quality, style
+- Notes: Android Lint is built into Android Studio. Add ktlint or detekt for formatting consistency — pick one and configure it early to avoid reformatting churn later.
 
 ---
 
 ## Alternatives Considered
 
-**SwiftData vs. Custom Org File I/O**
-- Recommended: Custom org file I/O
-- Alternative: SwiftData
-- Why Not: SwiftData stores data in its own internal SQLite format. Using it means the org files are NOT the source of truth, which breaks the Emacs interoperability requirement. SwiftData + iCloud sync via CloudKit also requires a paid developer account AND loses the plain-text file format. Not appropriate here.
+**Hilt vs. Manual DI**
+- Recommended: Manual DI for v1
+- Alternative: Hilt (com.google.dagger:hilt-android:2.57.1)
+- When to Use Alternative: When the dependency graph becomes complex (3+ layers, multiple modules), when the team needs standardized DI patterns, or when testing with `HiltRule` is valuable. For Origami v1 with ~3 classes (parser, repository, ViewModel), manual DI is proportionate. Hilt is a straightforward add if the app grows.
 
-**CoreData vs. Custom Org File I/O**
-- Recommended: Custom org file I/O
-- Alternative: CoreData
-- Why Not: Same reason as SwiftData. CoreData is a heavy ORM that owns the data format. Additionally, CoreData is being deprecated in favor of SwiftData for new projects.
+**Room vs. No Database**
+- Recommended: No database — org files are the data
+- Alternative: Room 2.7+ (with SQLite)
+- When to Use Alternative: If read performance becomes a problem with large org files (unlikely for a personal log), a Room cache could supplement the org files. But this creates a sync problem — the cache and the files must stay in sync. Don't add this complexity unless there's a measured performance issue.
 
-**TCA (The Composable Architecture) vs. @Observable + NavigationStack**
-- Recommended: @Observable + NavigationStack
-- Alternative: TCA (pointfreeco/swift-composable-architecture)
-- Why Not: TCA is a heavyweight unidirectional architecture designed for large team codebases with complex side effects and testability requirements. For a single-user personal app, it adds significant boilerplate and learning investment with no proportional benefit. The @Observable + NavigationStack combo achieves clean state management and navigation without the overhead.
+**Navigation 3 (alpha) vs. Navigation 2 (stable)**
+- Recommended: Navigation 2 (navigation-compose:2.9.7)
+- Alternative: Navigation 3 (alpha, announced I/O 2025)
+- When to Use Alternative: When Navigation 3 reaches stable (likely 2026). Nav3's developer-owned back stack is cleaner for complex adaptive layouts. For a 3-4 screen personal app, the difference is academic — use the stable library.
 
-**Existing org-mode library (swift-org / OrgMarker) vs. Custom Parser**
-- Recommended: Custom parser
-- Alternative: swift-org or OrgMarker
-- Why Not: Both last updated in 2017, target Swift 3, will not compile with Xcode 26.4 without major rewrites. The org-mode subset needed for Origami is narrow. Building a bespoke parser is lower risk and produces a more maintainable artifact than patching a dead library.
+**Storage Access Framework (SAF) vs. MANAGE_EXTERNAL_STORAGE**
+- Recommended: `MANAGE_EXTERNAL_STORAGE` for this sideloaded use case
+- Alternative: SAF (DocumentFile, URI permissions, ACTION_OPEN_DOCUMENT_TREE)
+- When to Use Alternative: If the app were ever published on Play Store. SAF is the Play-Store-compliant way to get write access to user directories. For a sideloaded personal app, SAF adds complexity (SAF URIs are not interchangeable with File paths, require persistence via `takePersistableUriPermission()`, and are harder to work with) for no benefit.
 
-**Combine vs. async/await + AsyncStream**
-- Recommended: async/await + AsyncStream
-- Alternative: Combine
-- Why Not: Combine is not deprecated but is no longer the recommended approach for new code in 2025/2026. Swift Concurrency (async/await, AsyncStream, AsyncSequence) is the standard. Mixing Combine pipelines into a Swift 6 codebase complicates sendability analysis. Use Combine only if integrating with legacy code that already uses it.
+**Kotlin Multiplatform (KMP) vs. Native Android**
+- Recommended: Native Android (Kotlin + Compose)
+- Alternative: Kotlin Multiplatform with Compose Multiplatform
+- When to Use Alternative: If iOS support is added later. KMP allows sharing business logic (parser, repository, models) between Android and iOS while writing platform-specific UI. However, KMP adds build complexity and the iOS Compose story is still maturing. For Android-only v1, native Android is the right choice. If iOS is added, consider extracting the core logic into a KMP module at that point rather than retrofitting.
 
-**CloudKit (database sync) vs. iCloud Drive (file sync)**
-- Recommended: iCloud Drive (NSFileCoordinator / file-based)
-- Alternative: CloudKit
-- Why Not: CloudKit syncs structured records in Apple's cloud database. It does NOT produce human-readable files on disk. The fundamental requirement is that data lives in org files accessible from Emacs on macOS. CloudKit does not satisfy this. iCloud Drive file sync puts actual `.org` files in the user's iCloud Drive folder, readable by Emacs directly.
+**Vico vs. MPAndroidChart**
+- Recommended: Vico (Compose-native)
+- Alternative: MPAndroidChart (View-based, wrapped in `AndroidView`)
+- When to Use Alternative: Never for new Compose code. MPAndroidChart is the dominant chart library for the View system but requires `AndroidView` interop in Compose, which adds styling friction and breaks Compose's theming. Use a Compose-native library.
 
 ---
 
 ## What NOT to Use
 
-**UIKit**
-- Why: Greenfield SwiftUI project. UIKit adds complexity, inconsistency, and goes against the grain of the SwiftUI architecture. Use UIKit only if a specific control genuinely doesn't exist in SwiftUI (rare in iOS 17+).
+**Android View System (XML layouts)**
+- Why: Compose is the standard for greenfield Android apps in 2026. XML layouts are the legacy system. Mixing Compose and Views (via `AndroidView` or `ComposeView`) adds complexity and is only justified for specific controls that don't exist in Compose (rare). Start Compose-only.
 
-**ObservableObject / @Published / @StateObject / @ObservedObject**
-- Why: Replaced by `@Observable` in iOS 17+. Using the old system means more boilerplate, less precise view updates, and mixing APIs that Apple is steering away from.
-- Use Instead: `@Observable` macro with `@State` / `@Environment`.
+**LiveData**
+- Why: LiveData is lifecycle-aware but predates Kotlin coroutines as a first-class tool. It doesn't compose cleanly with Flow operators. The recommended replacement is `StateFlow` collected with `collectAsStateWithLifecycle()`, which is lifecycle-safe AND coroutine-native.
+- Use Instead: `StateFlow` + `collectAsStateWithLifecycle()`
 
-**NavigationView**
-- Why: Deprecated in iOS 16. Replaced by `NavigationStack`.
-- Use Instead: `NavigationStack` with `NavigationPath`.
+**KAPT (Kotlin Annotation Processing)**
+- Why: KAPT is the legacy annotation processing approach. KSP (Kotlin Symbol Processing) is up to 2x faster and is the current standard. Starting a new project with KAPT means migrating to KSP later.
+- Use Instead: KSP for any annotation processing needs.
 
-**Third-party networking libraries (Alamofire, etc.)**
-- Why: Not needed. v1 has no server networking. If a future sync backend is added, URLSession with async/await is sufficient for a single-user personal app.
+**Groovy Gradle DSL (`build.gradle`)**
+- Why: The Kotlin DSL (`build.gradle.kts`) provides IDE autocomplete, type safety, and refactoring support. Groovy build scripts are stringly-typed. New projects should use Kotlin DSL from the start.
+- Use Instead: `build.gradle.kts` + `gradle/libs.versions.toml` version catalog.
 
-**Any third-party state management framework (Redux-Swift, RxSwift, Combine-heavy MVVM)**
-- Why: Overcomplicated for this scope. The native Swift Observation + async/await stack is complete for a personal app.
+**RxJava**
+- Why: RxJava was the standard reactive framework before Kotlin coroutines existed. Kotlin coroutines + Flow achieve the same patterns with less ceremony and better IDE tooling. Mixing RxJava into a coroutines codebase creates unnecessary complexity.
+- Use Instead: Kotlin Flow / StateFlow / SharedFlow.
 
-**Barcode scanning / food database libraries (Open Food Facts SDK, Nutritionix)**
-- Why: v1 constraint is manual food entry only. Barcode scanning and remote food databases are explicitly deferred. Don't bring in dependencies that aren't needed yet.
+**Retrofit / OkHttp (for v1)**
+- Why: v1 has no network calls. The sync layer is file-based (Syncthing handles the network). Don't add networking dependencies that aren't needed.
+- Use Instead: Nothing. If a future local server is added, add Retrofit at that point.
+
+**Firebase (any product)**
+- Why: Firebase is a cloud platform. This app is explicitly single-user, local-first, no-auth, no-cloud. Firebase adds Google account dependencies, privacy considerations, and complexity that directly conflict with the core value of user-controlled data.
+
+**SharedPreferences**
+- Why: SharedPreferences performs synchronous disk I/O on the main thread, which is an ANR risk. Partially deprecated in favor of DataStore.
+- Use Instead: Jetpack DataStore (Preferences) 1.2.1 for any small settings needs.
+
+---
+
+## How Android Differs from (and Is Simpler Than) the iOS Approach
+
+The iOS approach faced several non-trivial constraints that disappear entirely on Android:
+
+**Filesystem access**
+- iOS: All file access sandboxed. iCloud Drive requires `NSFileCoordinator`, `NSMetadataQuery`, and a paid Apple Developer account ($99/year) for the iCloud entitlement. Free accounts cannot enable iCloud capability — a hard blocker.
+- Android: `MANAGE_EXTERNAL_STORAGE` grants direct filesystem access. Read/write org files with `java.io.File`. No entitlements, no certificates, no account fees.
+
+**Sync mechanism**
+- iOS: iCloud Drive sync is system-controlled. No API to force sync. Apps must design around eventual consistency and throttling. `NSMetadataQuery` is needed just to observe sync status.
+- Android: Syncthing runs as a background service on the phone and syncs files directly over Wi-Fi. The app reads/writes the files; Syncthing handles the rest. The app doesn't need to think about sync at all — it just reads what's there.
+
+**Sideloading**
+- iOS: Free Apple ID gives 7-day provisioning profiles that expire. Reinstall required weekly. Paid account required for longer certificates.
+- Android: `adb install` installs the APK permanently. No expiration, no certificates, no account needed.
+
+**No forced sync / eventual consistency**
+- iOS: The app had to design for "files may not be on device yet" with graceful degradation.
+- Android: The Syncthing folder is local. Files are there or they're not. No polling, no metadata queries — just read the file.
+
+The Android stack is genuinely simpler for this use case. The iOS stack was workable but carried significant infrastructure overhead that had nothing to do with the app's actual functionality.
 
 ---
 
 ## Stack Patterns by Variant
 
-**If the free developer account limitation is acceptable:**
-- Use local-only file storage (no iCloud), manually transfer org files via AirDrop or cable sync through Finder
-- This is a valid v0 approach for development before purchasing the paid account
-- Implement the `SyncProvider` protocol from day one; plug in `LocalFileSyncProvider` (reads from app sandbox) as a placeholder
+**v1 — File-based sync (Syncthing)**
+- `MANAGE_EXTERNAL_STORAGE` permission
+- `SyncthingOrgRepository` reads/writes from `/storage/emulated/0/Sync/health/`
+- Manual DI via `AppContainer` in Application class
 
-**If the $99/year paid account is purchased:**
-- Enable iCloud Drive capability in Xcode, implement `iCloudSyncProvider`
-- Files appear at `FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents")`
-- Use `NSMetadataQuery` to watch for remote changes pushed from macOS Emacs
+**If a local server is added (v2)**
+- Add Retrofit + OkHttp at that point
+- Implement `LocalServerOrgRepository` conforming to `OrgRepository`
+- No changes to ViewModels or UI
 
-**If a future local server is added (v2+):**
-- Implement a second `SyncProvider` conforming to whatever protocol the server exposes (HTTP, SSH, WebDAV)
-- No app-side architectural changes required
+**If iOS support is added (future)**
+- Extract parser + repository interfaces into a Kotlin Multiplatform module
+- Android UI remains Compose; iOS UI is SwiftUI or Compose Multiplatform
+- The org-mode parser is pure Kotlin logic with no Android dependencies — it moves to KMP cleanly
 
 ---
 
 ## Version Compatibility
 
-- Swift 6.3 — requires Xcode 26.4+, macOS 26.2+ on development machine
-- SwiftUI iOS 17 features (@Observable, @Bindable) — iOS 17.0 minimum deployment target
-- Swift Charts — iOS 16.0+; set minimum to iOS 17.0 and you get all available chart marks
-- RegexBuilder — iOS 16.0+; included with iOS 17 minimum target
-- NSFileCoordinator / iCloud Drive — iOS 8.0+; fully stable
-- Swift Testing — Xcode 16+; available for test targets targeting iOS 17+
+| Dependency | Version | Notes |
+|---|---|---|
+| Kotlin | 2.3.20 | Compose compiler ships with Kotlin since 2.0 — always compatible |
+| AGP | 9.1.0 | Requires Gradle 9.3.1, JDK 17 minimum |
+| Compose BOM | 2026.04.00 | Maps to compose-ui 1.10.6, material3 1.4.0 |
+| Navigation Compose | 2.9.7 | Navigation 2; Nav3 is alpha, not production-ready |
+| Lifecycle ViewModel Compose | 2.10.0 | Minimum SDK bumped to API 23 in this version |
+| kotlinx-coroutines-android | 1.10.2 | Compatible with Kotlin 2.3.x |
+| DataStore Preferences | 1.2.1 | |
+| Hilt (if added) | 2.57.1 | With hilt-navigation-compose 1.3.0 |
+| Target SDK | API 35 (Android 15) | Galaxy S21 FE running One UI 7 (Android 15) |
+| Minimum SDK | API 26 (Android 8) | Covers >99% of devices in use; API 23 minimum but no reason to go lower |
+
+**Target / Minimum SDK rationale:** The Galaxy S21 FE received the One UI 7 (Android 15, API 35) update in May 2025. Target SDK 35 is appropriate. For minimum SDK, API 26 (Android 8.0) covers virtually all active devices and avoids needing compatibility shims for coroutines and modern APIs. There is no reason to support Android 7 or earlier for a personal app.
 
 ---
 
-## Installation
+## Installation / Project Setup
 
-This project uses no third-party Swift packages in v1. All dependencies are Apple first-party frameworks.
+```kotlin
+// gradle/libs.versions.toml
+[versions]
+kotlin = "2.3.20"
+agp = "9.1.0"
+compose-bom = "2026.04.00"
+navigation-compose = "2.9.7"
+lifecycle = "2.10.0"
+coroutines = "1.10.2"
+datastore = "1.2.1"
+# hilt = "2.57.1"  # add when needed
 
-```bash
-# No package dependencies for v1.
-# All frameworks are included with the iOS SDK:
-#   SwiftUI, Swift Charts, RegexBuilder, HealthKit (if added later)
-#
-# Xcode project setup:
-# 1. New project → App → SwiftUI interface, Swift language
-# 2. Minimum deployment target: iOS 17.0
-# 3. Swift Language Version: Swift 6 (in Build Settings)
-# 4. Strict Concurrency Checking: Complete (in Build Settings)
-# 5. Signing & Capabilities → iCloud → iCloud Documents
-#    (requires paid Apple Developer account)
-# 6. Add NSUbiquitousContainers to Info.plist with resolved bundle ID
+[libraries]
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-activity = { group = "androidx.activity", name = "activity-compose", version = "1.10.1" }
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose" }
+lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+```
+
+```kotlin
+// app/build.gradle.kts (relevant sections)
+android {
+    compileSdk = 35
+    defaultConfig {
+        minSdk = 26
+        targetSdk = 35
+    }
+    buildFeatures {
+        compose = true
+    }
+}
+
+dependencies {
+    val bom = platform(libs.compose.bom)
+    implementation(bom)
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.activity)
+    implementation(libs.navigation.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.coroutines.android)
+    implementation(libs.datastore.preferences)
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
+}
+```
+
+```xml
+<!-- AndroidManifest.xml — permissions needed for Syncthing folder access -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission
+    android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+    tools:ignore="ScopedStorage" />
+```
+
+```kotlin
+// Runtime permission check (one-time setup screen)
+if (!Environment.isExternalStorageManager()) {
+    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+    intent.data = Uri.fromParts("package", packageName, null)
+    startActivity(intent)
+}
 ```
 
 ---
 
 ## Sources
 
-- https://xcodereleases.com/ — Xcode 26.4 confirmed latest stable (Swift 6.3, March 24 2026) [HIGH]
-- https://www.swift.org/blog/swift-6.2-released/ — Swift 6.2 release (September 15 2025), concurrency features [HIGH]
-- https://telemetrydeck.com/survey/apple/iOS/majorSystemVersions/ — iOS 26 at 79%, iOS 18 at 16%, iOS 17 and earlier ~5% as of March 2026 [HIGH]
-- https://developer.apple.com/documentation/SwiftUI/Migrating-from-the-observable-object-protocol-to-the-observable-macro — @Observable migration guide [HIGH]
-- https://fatbobman.com/en/posts/in-depth-guide-to-icloud-documents/ — NSFileCoordinator, NSMetadataQuery, NSFilePresenter patterns [MEDIUM-HIGH]
-- https://zottmann.org/2025/09/08/ios-icloud-drive-synchronization-deep.html — iCloud Drive sync gotchas: no forced sync, throttling, background limits (September 2025) [MEDIUM-HIGH]
-- https://www.hackingwithswift.com/forums/swiftui/icloud-capability-not-available-in-xcode/4980 — Paid developer account required for iCloud capability [MEDIUM]
-- https://developer.apple.com/forums/thread/669516 — Free provisioning profile does not support iCloud capability [MEDIUM]
-- https://github.com/orgapp/swift-org — swift-org: last release 2017, Swift 3, unmaintained [HIGH — confirmed by fetch]
-- https://github.com/xiaoxinghu/OrgMarker — OrgMarker: last commit 2017, unmaintained [HIGH — confirmed by fetch]
-- https://developer.apple.com/documentation/charts — Swift Charts official docs [HIGH]
-- https://dimillian.medium.com/swiftui-in-2025-forget-mvvm-262ff2bbd2ed — Community signal: ViewModels not needed for simple SwiftUI apps (2025) [MEDIUM]
-- https://developer.apple.com/support/compare-memberships/ — Apple Developer Program membership tiers [HIGH]
-- https://github.com/horseshoe7/CloudServiceFileSync — Pattern reference for SyncProvider protocol abstraction [MEDIUM]
+- https://developer.android.com/jetpack/androidx/releases/compose — Compose BOM 2026.04.00 confirmed; compose-ui 1.10.6, material3 1.4.0 [HIGH]
+- https://developer.android.com/jetpack/androidx/releases/navigation — Navigation Compose 2.9.7 latest stable [HIGH]
+- https://developer.android.com/jetpack/androidx/releases/lifecycle — Lifecycle ViewModel Compose 2.10.0 latest stable [HIGH]
+- https://developer.android.com/jetpack/androidx/releases/datastore — DataStore Preferences 1.2.1 latest stable [HIGH]
+- https://developer.android.com/develop/ui/compose/libraries — Official Compose library recommendations, hilt-navigation-compose 1.3.0 [HIGH]
+- https://android-developers.googleblog.com/2025/05/announcing-jetpack-navigation-3-for-compose.html — Navigation 3 announced at I/O 2025, currently alpha [HIGH]
+- https://blog.jetbrains.com/kotlin/2026/03/kotlin-2-3-20-released/ — Kotlin 2.3.20 latest stable (March 2026) [HIGH]
+- https://developer.android.com/build/releases/agp-9-1-0-release-notes — AGP 9.1.0 (March 2026), requires Gradle 9.3.1, JDK 17 [HIGH]
+- https://androidstudio.googleblog.com/2026/04/android-studio-panda-3-202533-now.html — Android Studio Panda 3 (2025.3.3) latest stable [HIGH]
+- https://developer.android.com/training/dependency-injection/hilt-android — Hilt official docs; recommends manual DI for simple apps [HIGH]
+- https://developer.android.com/training/data-storage — Android storage overview; SAF vs MANAGE_EXTERNAL_STORAGE [HIGH]
+- https://github.com/pmiddend/org-parser — JVM org-mode parser: created 2016, 19 commits, no releases, appears abandoned [MEDIUM — verified by fetch]
+- https://forum.syncthing.net/t/android-11-all-files-access-for-the-syncthing-app/14651 — Syncthing uses MANAGE_EXTERNAL_STORAGE for full storage access [MEDIUM]
+- https://www.sammobile.com/news/galaxy-s21-fe-one-ui-7-update-released-europe-asia/ — Galaxy S21 FE received Android 15 (One UI 7) in May 2025 [HIGH]
+- https://github.com/Kotlin/kotlinx.coroutines — kotlinx-coroutines 1.10.2 latest stable [HIGH]
+- https://mvnrepository.com/artifact/com.google.dagger/hilt-android — Hilt 2.57.1 latest stable [MEDIUM — cross-referenced with official docs]
 
 ---
 
-*Stack research for: Origami — Personal iOS food/nutrition and workout tracking app*
+*Stack research for: Origami — Personal Android food/nutrition and workout tracking app*
 *Researched: 2026-04-09*
+*Replaces: iOS/SwiftUI STACK.md (platform pivot to Android)*

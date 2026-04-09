@@ -1,18 +1,20 @@
 # Architecture Research
 
-**Domain:** Personal iOS tracking app (food + workout, org-mode file backend)
+**Domain:** Personal Android tracking app (food + workout, org-mode file backend, Syncthing sync)
 **Researched:** 2026-04-09
-**Confidence:** MEDIUM-HIGH — SwiftUI/MVVM patterns are HIGH confidence from multiple current sources. Org parser approach is MEDIUM (no maintained Swift library; custom parser strategy verified via official org-syntax docs). iCloud Drive coordination details are HIGH from Apple internals and community deep-dives.
+**Confidence:** HIGH — Android MVVM + StateFlow patterns verified via official Android Developers docs and Hilt official docs. File access patterns verified via official Android storage documentation. Navigation verified via official Compose navigation docs. Org parser strategy is MEDIUM (no viable maintained Kotlin library; custom parser approach confirmed viable by reviewing available libraries and org-syntax spec).
 
 ---
 
 ## Recommended Architecture
 
-**Pattern: MVVM + Repository (Protocol-backed Sync Layer)**
+**Pattern: MVVM + Repository (Interface-backed Sync Layer)**
 
-MVVM is the right fit for a single-developer personal app of low-to-medium complexity. It aligns naturally with SwiftUI's reactive data flow (`@Observable`, `@State`, `@Environment`). Adding a thin Repository layer on top of MVVM specifically addresses the sync-backend swap requirement — iCloud Drive now, local server later — without introducing the full overhead of Clean Architecture.
+MVVM is the Google-recommended architecture for Jetpack Compose and fits this app's complexity exactly — single developer, personal tool, no team coordination concerns. ViewModels expose `StateFlow<UiState>` consumed by Composables via `collectAsStateWithLifecycle()`, following Android's unidirectional data flow (UDF) model.
 
-The org-mode parser and writer sit entirely in the data layer, invisible to ViewModels and Views. The sync layer wraps file I/O behind a protocol, making the backend swappable with zero changes to the rest of the app.
+A thin Repository layer sits beneath ViewModels, abstracting the org file backend from the UI. The `SyncBackend` interface wraps filesystem reads and writes, making the Syncthing-managed directory the concrete v1 and a future local server the concrete v2 — a swap requiring no changes to any screen code.
+
+Hilt is the correct DI mechanism on Android. It wires repository interfaces to concrete implementations at compile time, injects them into ViewModels via `@HiltViewModel`, and replaces the manual `AppContainer` approach that would be used in an iOS equivalent.
 
 ---
 
@@ -20,35 +22,42 @@ The org-mode parser and writer sit entirely in the data layer, invisible to View
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         View Layer (SwiftUI)                     │
+│                      UI Layer (Compose)                          │
 │                                                                  │
-│   ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│   │  TodayView   │  │  FoodLogView │  │   WorkoutLogView     │  │
-│   └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
-│          │                 │                      │              │
-├──────────┼─────────────────┼──────────────────────┼─────────────┤
-│                        ViewModel Layer                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
+│  │  TodayScreen │  │ FoodLogScreen│  │  WorkoutLogScreen    │   │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘   │
+│         │                 │                      │               │
+├─────────┼─────────────────┼──────────────────────┼──────────────┤
+│                      ViewModel Layer                             │
 │                                                                  │
-│   ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│   │  TodayVM     │  │  FoodLogVM   │  │   WorkoutLogVM       │  │
-│   └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
-│          │                 │                      │              │
-├──────────┼─────────────────┼──────────────────────┼─────────────┤
-│                       Repository Layer                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
+│  │  TodayVM     │  │  FoodLogVM   │  │  WorkoutLogVM        │   │
+│  │ StateFlow<   │  │ StateFlow<   │  │  StateFlow<          │   │
+│  │  UiState>    │  │  UiState>    │  │   UiState>           │   │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘   │
+│         │                 │                      │               │
+├─────────┼─────────────────┼──────────────────────┼──────────────┤
+│                      Repository Layer                            │
 │                                                                  │
-│   ┌──────────────────────────────────────────────────────────┐   │
-│   │  FoodRepository          WorkoutRepository               │   │
-│   │  (protocol)              (protocol)                      │   │
-│   └────────────────────────────┬─────────────────────────────┘   │
-│                                │                                 │
-├────────────────────────────────┼─────────────────────────────────┤
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │  FoodRepository (interface)  WorkoutRepository (interface)│   │
+│  │  OrgFoodRepository (impl)    OrgWorkoutRepository (impl)  │   │
+│  └────────────────────────────┬──────────────────────────────┘   │
+│                               │                                  │
+├───────────────────────────────┼──────────────────────────────────┤
 │                        Data Layer                                │
 │                                                                  │
-│   ┌─────────────────────┐    ┌──────────────────────────────┐    │
-│   │   OrgParser          │    │   SyncBackend (protocol)     │    │
-│   │   OrgWriter          │    │   ├─ iCloudDriveBackend      │    │
-│   │   (domain models)    │    │   └─ LocalServerBackend (v2) │    │
-│   └─────────────────────┘    └──────────────────────────────┘    │
+│  ┌─────────────────────┐    ┌────────────────────────────────┐   │
+│  │   OrgParser          │    │   SyncBackend (interface)      │   │
+│  │   OrgWriter          │    │   ├─ SyncthingFileBackend      │   │
+│  │   (domain models)    │    │   └─ LocalServerBackend (v2)   │   │
+│  └─────────────────────┘    └────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────────┤
+│                     DI Layer (Hilt)                              │
+│                                                                  │
+│  @HiltAndroidApp Application → @Module bindings →               │
+│  @HiltViewModel injection into all ViewModels                    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -56,152 +65,216 @@ The org-mode parser and writer sit entirely in the data layer, invisible to View
 
 ## Component Responsibilities
 
-**TodayView / TodayVM**
+**TodayScreen / TodayViewModel**
 - Responsibility: Drive the home screen — today's food entries, macro totals, today's workout session
 - Communicates with: FoodRepository, WorkoutRepository
-- Owns: Today-scoped data, macro aggregation display state
+- State: `StateFlow<TodayUiState>` (sealed class: Loading, Success, Error)
+- Owns: today-scoped aggregation, macro summary display state
 
-**FoodLogView / FoodLogVM**
-- Responsibility: Display food log history; compose and submit new food entries
+**FoodLogScreen / FoodLogViewModel**
+- Responsibility: Food log history; compose and submit new food entries
 - Communicates with: FoodRepository
-- Owns: Entry form state, food history list, inline editing state
+- State: `StateFlow<FoodLogUiState>`
+- Owns: entry form state, food history list, inline editing state
 
-**WorkoutLogView / WorkoutLogVM**
-- Responsibility: Display workout history; compose sets/reps/weight for a session
+**WorkoutLogScreen / WorkoutLogViewModel**
+- Responsibility: Workout history; compose sets/reps/weight for a session
 - Communicates with: WorkoutRepository
-- Owns: Active session state (current exercise, set builder), history list
+- State: `StateFlow<WorkoutLogUiState>`
+- Owns: active session state (current exercise, set builder), history list
 
-**FoodRepository / WorkoutRepository (protocols)**
-- Responsibility: Single interface for all reads and writes for a domain; decouples ViewModels from file format and sync mechanism
+**FoodRepository / WorkoutRepository (interfaces)**
+- Responsibility: Single interface for all reads and writes per domain; decouples ViewModels from file format and sync mechanism
 - Communicates with: OrgParser (reads), OrgWriter (writes), SyncBackend
-- Pattern: Protocol with one concrete implementation (`OrgFile[Domain]Repository`); swap implementation by injecting a different concrete at app startup
+- Pattern: Interface with one concrete implementation (`OrgFile[Domain]Repository`); Hilt binds the concrete at compile time
 
 **OrgParser**
 - Responsibility: Read an org-mode file string and return typed domain models (FoodEntry, WorkoutSession)
 - Communicates with: nothing (pure function — string in, models out)
-- Owns: All knowledge of org syntax: headline levels, date headings, property drawers, plain text entry format
+- Owns: all knowledge of the app's org subset: date headlines, meal/exercise labels, property-like inline text
 
 **OrgWriter**
 - Responsibility: Accept a domain model and produce valid org-mode text to append or update
 - Communicates with: nothing (pure function — models in, string out)
-- Owns: All formatting decisions — heading format, property block layout, spacing conventions
+- Owns: all formatting decisions. What OrgWriter produces is the exact format OrgParser must handle — they are a coupled pair
 
-**SyncBackend (protocol)**
-- Responsibility: Abstract file I/O — read file at path, write/append to file at path
-- Communicates with: FileManager / iCloud APIs (in concrete implementation)
-- Protocol surface: `func readFile(at:) async throws -> String`, `func writeFile(_ content:, to:) async throws`
-- Concrete v1: `iCloudDriveBackend` — wraps NSFileCoordinator + FileManager
-- Concrete v2: `LocalServerBackend` — HTTP or socket calls, swapped in at app entry point
+**SyncBackend (interface)**
+- Responsibility: Abstract file I/O — read a file from the Syncthing-managed directory, write back to it
+- Protocol surface: `suspend fun readFile(path: String): String`, `suspend fun writeFile(content: String, path: String)`
+- Concrete v1: `SyncthingFileBackend` — direct file path access via `java.io.File` / `java.nio.file`, running on `Dispatchers.IO`
+- Concrete v2: `LocalServerBackend` — HTTP/socket calls, swapped in via Hilt at app startup
+- Note: No Android equivalent of `NSFileCoordinator` is needed. Syncthing is a separate process that does not hold locks on files between sync events — reads and writes from the app do not need coordination primitives beyond dispatching to `Dispatchers.IO`
 
 ---
 
 ## Recommended Project Structure
 
 ```
-Origami/
-├── App/
-│   ├── OrigamiApp.swift          # @main, dependency wiring
-│   └── AppContainer.swift        # Assembles concrete implementations
+app/src/main/java/com/origami/
+├── OrigamiApplication.kt          # @HiltAndroidApp
 │
-├── Features/
-│   ├── Today/
-│   │   ├── TodayView.swift
-│   │   └── TodayViewModel.swift
-│   ├── Food/
-│   │   ├── FoodLogView.swift
-│   │   ├── FoodLogViewModel.swift
-│   │   └── FoodEntryForm.swift
-│   └── Workout/
-│       ├── WorkoutLogView.swift
-│       ├── WorkoutLogViewModel.swift
-│       └── WorkoutEntryForm.swift
+├── di/
+│   ├── RepositoryModule.kt        # @Binds FoodRepository → OrgFoodRepository
+│   └── SyncModule.kt              # @Binds SyncBackend → SyncthingFileBackend
 │
-├── Repositories/
-│   ├── FoodRepository.swift       # protocol
-│   ├── WorkoutRepository.swift    # protocol
-│   ├── OrgFoodRepository.swift    # concrete: parses food-log.org
-│   └── OrgWorkoutRepository.swift # concrete: parses workout-log.org
+├── features/
+│   ├── today/
+│   │   ├── TodayScreen.kt
+│   │   └── TodayViewModel.kt
+│   ├── food/
+│   │   ├── FoodLogScreen.kt
+│   │   ├── FoodLogViewModel.kt
+│   │   └── FoodEntryForm.kt       # extracted composable for entry form
+│   └── workout/
+│       ├── WorkoutLogScreen.kt
+│       ├── WorkoutLogViewModel.kt
+│       └── WorkoutEntryForm.kt
 │
-├── Sync/
-│   ├── SyncBackend.swift          # protocol
-│   ├── iCloudDriveBackend.swift   # NSFileCoordinator wrapper
-│   └── LocalServerBackend.swift   # placeholder for v2
+├── repositories/
+│   ├── FoodRepository.kt          # interface
+│   ├── WorkoutRepository.kt       # interface
+│   ├── OrgFoodRepository.kt       # concrete: parses food-log.org
+│   └── OrgWorkoutRepository.kt    # concrete: parses workout-log.org
 │
-├── OrgEngine/
-│   ├── OrgParser.swift            # String → [domain models]
-│   ├── OrgWriter.swift            # domain models → String
-│   └── OrgModels.swift            # OrgEntry, OrgDate, raw structs
+├── sync/
+│   ├── SyncBackend.kt             # interface
+│   ├── SyncthingFileBackend.kt    # java.io.File + Dispatchers.IO
+│   └── LocalServerBackend.kt      # placeholder for v2
 │
-└── Models/
-    ├── FoodEntry.swift            # protein/carbs/fat/calories, timestamp
-    ├── WorkoutSession.swift       # exercise, sets, reps, weight, date
-    └── MacroSummary.swift         # computed totals for today view
+├── orgengine/
+│   ├── OrgParser.kt               # String → List<domain models>
+│   ├── OrgWriter.kt               # domain models → String
+│   └── OrgModels.kt               # OrgEntry, OrgDate, internal raw structs
+│
+├── models/
+│   ├── FoodEntry.kt               # protein/carbs/fat/calories, timestamp
+│   ├── WorkoutSession.kt          # exercise, sets, reps, weight, date
+│   └── MacroSummary.kt            # computed totals for today view
+│
+└── navigation/
+    ├── AppNavHost.kt              # NavHost, route graph
+    └── AppDestinations.kt         # @Serializable route data classes
 ```
 
 ### Structure Rationale
 
-- **Features/**: Each screen gets its own folder with View + ViewModel co-located. Avoids the flat "Views/" + "ViewModels/" split that makes large apps hard to navigate.
-- **Repositories/**: Protocol + concrete in one place. When LocalServerBackend is wired in, you swap the concrete at `AppContainer.swift` — nothing in Features/ changes.
-- **Sync/**: Isolated from Repositories. Repositories don't know they're talking to iCloud; they call `SyncBackend.readFile()`.
-- **OrgEngine/**: Pure logic, no SwiftUI imports. Makes the parser unit-testable in isolation from any sync or UI concern.
-- **Models/**: Typed domain models. These are what ViewModels hold and display. Repositories translate between org text and these models.
+- **features/**: Feature-based grouping — screen + ViewModel co-located per feature. Avoids the layer-first ("all ViewModels in one folder") split that makes large apps harder to navigate. Confirmed as current best practice for Compose projects.
+- **repositories/**: Interface and concrete in one place. Hilt module (`RepositoryModule`) does the binding. When `LocalServerBackend` is wired in, only `SyncModule` changes — nothing in `features/` changes.
+- **sync/**: Isolated from repositories. Repositories do not know they are reading from a Syncthing-managed directory; they call `SyncBackend.readFile()`.
+- **orgengine/**: Pure Kotlin, zero Android imports. Can be unit-tested with plain `runTest {}` without needing an emulator or robolectric.
+- **di/**: Hilt modules kept in one package to make dependency wiring visible without hunting through feature packages.
+- **navigation/**: `NavHost` and route definitions separated from individual screens. Each screen composable receives navigation callbacks as lambdas, not `NavController` directly (per official Compose navigation guidance).
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Protocol-Backed Repository
+### Pattern 1: Interface-backed Repository with Hilt Binding
 
-**What:** Define `FoodRepository` and `WorkoutRepository` as Swift protocols. Inject concrete implementations via the app container at launch.
+**What:** Define `FoodRepository` and `WorkoutRepository` as Kotlin interfaces. Bind concrete implementations via a Hilt `@Module`. Inject into ViewModels via constructor injection.
 
-**When to use:** Any time you need to swap a backend (iCloud → local server) or test without real file I/O.
+**When to use:** Always. This is the Android standard and directly enables backend swapping (Syncthing files → local server) and testability (inject a fake repository in tests).
 
-**Trade-offs:** Small amount of protocol boilerplate upfront. Pays off immediately when writing the LocalServerBackend or any unit tests.
+**Trade-offs:** Minimal boilerplate (one `@Binds` line per repository). Pays off immediately when writing unit tests and when the `LocalServerBackend` pivot happens.
 
 **Example:**
-```swift
-protocol SyncBackend {
-    func readFile(at path: String) async throws -> String
-    func writeFile(_ content: String, to path: String) async throws
+```kotlin
+// Interface
+interface FoodRepository {
+    suspend fun fetchAll(): List<FoodEntry>
+    suspend fun fetchToday(): List<FoodEntry>
+    suspend fun append(entry: FoodEntry)
 }
 
-final class iCloudDriveBackend: SyncBackend {
-    func readFile(at path: String) async throws -> String {
-        // NSFileCoordinator-wrapped read
-    }
-    func writeFile(_ content: String, to path: String) async throws {
-        // NSFileCoordinator-wrapped write
-    }
+// Concrete implementation
+class OrgFoodRepository @Inject constructor(
+    private val syncBackend: SyncBackend,
+    private val ioDispatcher: CoroutineDispatcher
+) : FoodRepository {
+    override suspend fun fetchAll(): List<FoodEntry> =
+        withContext(ioDispatcher) {
+            val content = syncBackend.readFile("food-log.org")
+            OrgParser.parse(content).flatMap { it.entries }
+        }
+}
+
+// Hilt module
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+    @Binds
+    abstract fun bindFoodRepository(impl: OrgFoodRepository): FoodRepository
 }
 ```
 
-### Pattern 2: @Observable ViewModels
+---
 
-**What:** Use Swift's `@Observable` macro (iOS 17+) for ViewModels. Drop `ObservableObject` and `@Published`. SwiftUI updates views only for properties actually read in the body.
+### Pattern 2: StateFlow UiState in ViewModels
 
-**When to use:** All new ViewModels in this project. iOS 17 is the minimum target; `@Observable` is the current standard.
+**What:** ViewModels expose `StateFlow<UiState>` using sealed classes. Screens collect with `collectAsStateWithLifecycle()`. Unidirectional data flow: events go up to ViewModel, state flows down to UI.
 
-**Trade-offs:** Requires iOS 17+. Cleaner than ObservableObject pattern — no @Published on every property, views re-render precisely.
+**When to use:** All ViewModels in this project. This is the current Android standard, replacing the older `LiveData` + `observe` pattern.
+
+**Trade-offs:** Sealed class `UiState` adds one file per feature, but makes Loading/Success/Error states explicit and testable. `collectAsStateWithLifecycle()` stops collection when the app is backgrounded, saving resources.
 
 **Example:**
-```swift
-@Observable
-final class TodayViewModel {
-    var foodEntries: [FoodEntry] = []
-    var macros: MacroSummary = .empty
-    private let foodRepo: FoodRepository
+```kotlin
+sealed class TodayUiState {
+    object Loading : TodayUiState()
+    data class Success(
+        val foodEntries: List<FoodEntry>,
+        val macros: MacroSummary,
+        val workoutSession: WorkoutSession?
+    ) : TodayUiState()
+    data class Error(val message: String) : TodayUiState()
+}
 
-    func loadToday() async { ... }
+@HiltViewModel
+class TodayViewModel @Inject constructor(
+    private val foodRepo: FoodRepository,
+    private val workoutRepo: WorkoutRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<TodayUiState>(TodayUiState.Loading)
+    val uiState: StateFlow<TodayUiState> = _uiState.asStateFlow()
+
+    fun loadToday() {
+        viewModelScope.launch {
+            _uiState.value = TodayUiState.Loading
+            try {
+                val entries = foodRepo.fetchToday()
+                val session = workoutRepo.fetchToday()
+                _uiState.value = TodayUiState.Success(
+                    foodEntries = entries,
+                    macros = MacroSummary.from(entries),
+                    workoutSession = session
+                )
+            } catch (e: IOException) {
+                _uiState.value = TodayUiState.Error(e.message ?: "Read failed")
+            }
+        }
+    }
+}
+
+// In Composable:
+@Composable
+fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // render based on uiState
 }
 ```
+
+---
 
 ### Pattern 3: Custom Org Parser (Targeted, Not Full-Featured)
 
-**What:** Write a purpose-built org parser that handles only what this app writes. Not a general org parser.
+**What:** Write a purpose-built org parser that handles only the format this app produces. Not a general org parser.
 
-**When to use:** The only maintained Swift org library (`swift-org`) is a Swift 3 project from 2017 and is not production-viable. Writing a full org parser is unnecessary — the app only needs to handle the exact subset of org syntax it generates.
+**When to use:** This is the only viable approach. Two Kotlin org libraries were evaluated:
+- `pmiddend/org-parser` — last commit August 2016, no releases published, effectively abandoned
+- `iliayar/kotlin-org-mode` — GPL-3.0 (license conflict risk for personal apps), partial feature implementation, no evidence of Android usage
 
-**Trade-offs:** The parser is tightly coupled to the specific file format this app produces, but that is an acceptable constraint for a personal tool. The format is simple: date headlines, optional property drawers, plain text entries. Minimal parsing surface.
+Neither is appropriate for production use. The custom parser is straightforward because the format is controlled: `OrgWriter` defines what is produced, `OrgParser` handles exactly that subset.
 
 **Org format this app produces:**
 ```org
@@ -209,26 +282,57 @@ final class TodayViewModel {
 ** Breakfast
    - Protein: 30g  Carbs: 45g  Fat: 12g  Calories: 412
 ** Lunch
-   ...
+   - Protein: 22g  Carbs: 60g  Fat: 8g  Calories: 406
 
 * 2026-04-08
 ...
 ```
 
-**Parser approach:**
-1. Split file by lines
-2. Detect level-1 headlines (`* YYYY-MM-DD`) to identify date sections
-3. Detect level-2 headlines for meal/exercise labels
-4. Parse property-like inline text for macro values
-5. Return `[DatedSection]` with typed entries
+**Parser approach (Kotlin):**
+1. Split file content by `\n`
+2. Detect level-1 headlines (`^\\* \\d{4}-\\d{2}-\\d{2}`) → date section boundary
+3. Detect level-2 headlines (`^\\*\\* `) → meal or exercise label
+4. Parse property-like inline text with simple regex for macro values
+5. Return `List<DatedSection>` with typed `FoodEntry` / `WorkoutSet` entries
 
-### Pattern 4: Append-Only Writes with In-Memory Merge
+**Trade-offs:** Parser is tightly coupled to the format `OrgWriter` produces — an acceptable constraint for a personal tool. Keeps the parser trivially small and unit-testable without any external dependencies.
 
-**What:** For new entries (today's log), read the current file, find-or-create today's date heading, append the new entry, write back. Use `NSFileCoordinator` to wrap the read-write cycle as a single coordination block to prevent race conditions with iCloud.
+---
 
-**When to use:** Every write. iCloud Drive can be modified externally (from Mac/Emacs), so the file must be re-read before writing, not cached stale.
+### Pattern 4: Append-Only Writes with Read-Before-Write
 
-**Trade-offs:** Each write does a full file round-trip. Acceptable given: plain text files stay small, this is a single-user app with no concurrent writes expected beyond iCloud sync events.
+**What:** For every new entry, read the current file content, find-or-create today's date heading in the parsed model, append the new entry, serialize back to a string, write the whole file. Always re-read; never mutate a stale in-memory copy.
+
+**When to use:** Every write. Syncthing may have modified the file since the last app read (e.g., Emacs on desktop added an entry). The file must be read fresh before every write.
+
+**Trade-offs:** Each write is a full file round-trip on `Dispatchers.IO`. Acceptable — plain text org files stay small (a year of 3 meals/day ≈ 110 KB), and this is a single-writer personal app. No file locking or coordination primitives are needed because Syncthing holds no lock on files between sync events.
+
+---
+
+### Pattern 5: Injected Dispatchers for Testability
+
+**What:** Inject `CoroutineDispatcher` instances into repositories and the sync backend via Hilt rather than hardcoding `Dispatchers.IO`. In tests, swap with `UnconfinedTestDispatcher`.
+
+**When to use:** Any class that uses `withContext(...)`. Standard coroutine best practice per official Android guidance.
+
+**Example:**
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+object DispatcherModule {
+    @Provides
+    @IoDispatcher
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+}
+
+// In repository constructor:
+class SyncthingFileBackend @Inject constructor(
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+) : SyncBackend {
+    override suspend fun readFile(path: String): String =
+        withContext(ioDispatcher) { File(path).readText() }
+}
+```
 
 ---
 
@@ -239,54 +343,116 @@ final class TodayViewModel {
 ```
 User taps "Save Entry"
     ↓
-ViewModel.saveEntry(entry)
+ViewModel.saveEntry(entry)                    ← runs in viewModelScope
     ↓
-FoodRepository.append(entry)
+FoodRepository.append(entry)                  ← suspend fun, Dispatchers.IO
     ↓
-SyncBackend.readFile("food-log.org")       ← always read current state first
+SyncBackend.readFile("food-log.org")          ← always read current state first
     ↓
-OrgParser.parse(fileContent) → [DatedSection]
+OrgParser.parse(fileContent) → List<DatedSection>
     ↓
 Merge: find today section, append new OrgEntry
     ↓
-OrgWriter.serialize([DatedSection]) → String
+OrgWriter.serialize(List<DatedSection>) → String
     ↓
-SyncBackend.writeFile(content, to: "food-log.org")
+SyncBackend.writeFile(content, "food-log.org")
     ↓
-ViewModel state refreshed from updated model
+ViewModel calls loadToday() to refresh uiState
+    ↓
+StateFlow emits new TodayUiState.Success
+    ↓
+Compose recomposition
 ```
 
 ### Read Flow (History / Today Dashboard)
 
 ```
-View appears / pull-to-refresh
+Screen appears (LaunchedEffect)
     ↓
-ViewModel.load()
+ViewModel.loadToday()                         ← viewModelScope.launch
     ↓
-FoodRepository.fetchAll() or .fetchToday()
+_uiState.value = TodayUiState.Loading
+    ↓
+FoodRepository.fetchToday()                   ← Dispatchers.IO
     ↓
 SyncBackend.readFile("food-log.org")
     ↓
-OrgParser.parse(fileContent) → [DatedSection]
+OrgParser.parse(content) → List<DatedSection>
     ↓
-Repository maps [DatedSection] → [FoodEntry]
+Repository filters to today → List<FoodEntry>
     ↓
-ViewModel.foodEntries = [FoodEntry]
+_uiState.value = TodayUiState.Success(...)
     ↓
-SwiftUI re-renders (via @Observable)
+collectAsStateWithLifecycle() triggers recomposition
 ```
 
-### Sync Backend Swap Flow
+### Backend Swap Flow
 
 ```
-App startup (OrigamiApp.swift)
+App startup → OrigamiApplication (@HiltAndroidApp)
     ↓
-AppContainer.make() decides which SyncBackend to instantiate
+Hilt reads @Module bindings in SyncModule.kt
     ↓
-Injects SyncBackend into FoodRepository, WorkoutRepository
+@Binds SyncthingFileBackend as SyncBackend     ← change this one line to swap
     ↓
-All downstream code unchanged
+All repositories, ViewModels, screens: unchanged
 ```
+
+---
+
+## File Access: Syncthing Integration
+
+Syncthing runs as a separate Android app (Syncthing-Fork is the current active fork, F-Droid as of March 2026) that manages a shared directory on the device's shared storage. Origami reads and writes org files in that same directory.
+
+**Required permission:**
+```xml
+<!-- AndroidManifest.xml -->
+<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+```
+
+**Runtime permission check and request:**
+```kotlin
+// Check:
+if (!Environment.isExternalStorageManager()) {
+    // Redirect user to settings:
+    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+    startActivity(intent)
+}
+```
+
+**File path resolution:**
+Syncthing syncs to a directory the user configures (e.g., `/storage/emulated/0/Sync/origami/`). The app should expose this path as a user-configurable setting (stored in `DataStore<Preferences>`) rather than hardcoding it.
+
+**Key point:** `MANAGE_EXTERNAL_STORAGE` grants direct `java.io.File` access to this path. No Storage Access Framework URI bookmarking is needed. This is a personal sideloaded app — the Google Play policy restriction on this permission does not apply.
+
+**Syncthing-as-sync mechanism:** Origami does not integrate with Syncthing's API at runtime. Syncthing is a background service that keeps the directory in sync with the desktop. Origami simply reads and writes files in that directory. The sync "happens around" the app — no API calls, no awareness needed.
+
+---
+
+## Navigation
+
+**Use `navigation-compose` with type-safe navigation (current stable approach).**
+
+Navigation 3 (`androidx.navigation3:navigation3-*:1.0.1`) released stable in February 2026 but represents a significant API change from `navigation-compose`. For a three-screen app (Today, Food Log, Workout Log) with a bottom navigation bar, `navigation-compose` with type-safe routes is the right choice — lower risk, fully stable, sufficient for this complexity.
+
+```kotlin
+// AppDestinations.kt
+@Serializable object Today
+@Serializable object FoodLog
+@Serializable object WorkoutLog
+
+// AppNavHost.kt
+@Composable
+fun AppNavHost(navController: NavHostController) {
+    NavHost(navController, startDestination = Today) {
+        composable<Today> { TodayScreen() }
+        composable<FoodLog> { FoodLogScreen() }
+        composable<WorkoutLog> { WorkoutLogScreen() }
+    }
+}
+```
+
+Bottom nav lives in a `Scaffold(bottomBar = { NavigationBar { ... } })` at the top level, outside the `NavHost`. Each screen composable receives navigation callbacks as lambdas, not the `NavController` directly.
 
 ---
 
@@ -295,114 +461,135 @@ All downstream code unchanged
 Dependencies between components dictate this sequence:
 
 **1. OrgEngine (parser + writer)**
-No dependencies. Pure Swift. Can be built and tested first with sample org files from the existing Emacs setup. This is the riskiest unknown — validate org parsing works before building any UI.
+No dependencies. Pure Kotlin. Build and test with sample org files from the existing Emacs setup. This is the highest-risk unknown — validate that the parser round-trips correctly before building any other layer.
 
-**2. SyncBackend (iCloudDriveBackend)**
-Depends only on Foundation. Build and test independently: can the app read/write a file in the iCloud container? Resolve iCloud entitlements and file coordination here, before UI adds complexity.
+**2. SyncBackend (SyncthingFileBackend)**
+Depends only on `java.io.File` and `Dispatchers.IO`. Build and test in isolation: can the app read and write a file in the Syncthing-managed directory? Resolve `MANAGE_EXTERNAL_STORAGE` permission flow and user-configurable path setting here.
 
 **3. Models**
-Typed domain structs. No dependencies. Define these once OrgEngine shapes are understood.
+Typed domain structs. No dependencies. Define once OrgEngine internal shapes are understood.
 
 **4. Repositories**
-Depends on OrgEngine + SyncBackend + Models. Wire them together. Write integration tests or a simple harness: read a real org file → parse → write back → verify roundtrip.
+Depends on OrgEngine + SyncBackend + Models. Wire them together. Write a simple integration test: read a real org file → parse → write back → verify round-trip.
 
-**5. Today feature (ViewModel + View)**
-The highest-value screen. Depends on FoodRepository + WorkoutRepository. Build this before the log history views — it exercises reads and writes and delivers the core daily value.
+**5. Hilt DI modules**
+Wire `@Module` bindings for repositories and sync backend. Validate injection at app startup.
 
-**6. Food Log history view**
-Depends on FoodRepository (read path). Simpler than the Today view once the repository layer is solid.
+**6. Today feature (ViewModel + Screen)**
+Highest-value screen. Depends on FoodRepository + WorkoutRepository. Exercises both read and write paths. Build before log history views.
 
-**7. Workout Log history view**
-Same as Food Log — repository read path.
+**7. Food Log history screen**
+Read path from FoodRepository. Simpler once repository layer is solid.
 
-**8. LocalServerBackend (v2, future)**
-Implement this whenever the local server pivot is ready. Drop in at `AppContainer.make()`. Nothing else changes.
+**8. Workout Log history screen**
+Same as Food Log — repository read path, different domain model.
+
+**9. LocalServerBackend (v2, future)**
+Implement when the local server pivot is ready. Change one `@Binds` line in `SyncModule.kt`. Nothing else changes.
 
 ---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Caching the Org File in Memory Across App Sessions
+### Anti-Pattern 1: Caching Org File Content Across Sessions
 
-**What people do:** Load the file once on app launch, keep an in-memory model, only read again on explicit refresh.
+**What people do:** Load the file once on app start, keep an in-memory model, only re-read on explicit user pull-to-refresh.
 
-**Why it's wrong:** iCloud Drive can modify the file between app launches (Emacs on Mac writes an entry). The in-memory model goes stale. User sees app data that doesn't match what Emacs shows.
+**Why it's wrong:** Syncthing may have synced changes from the desktop (Emacs added an entry, edited a workout) while the app was backgrounded or between launches. The in-memory model goes stale. The user opens the app and sees data that does not match what Emacs shows — the core value proposition of a unified system breaks.
 
-**Do this instead:** Always re-read via `SyncBackend.readFile()` when the view needs fresh data. For the Today screen, load on `onAppear`. File reads are fast for small org text files.
-
----
-
-### Anti-Pattern 2: Parsing org features you don't write
-
-**What people do:** Pull in a full org parser (or write one) that handles all of org-syntax — LaTeX, macros, agenda, clocks, drawers, etc.
-
-**Why it's wrong:** `swift-org` is unmaintained Swift 3. Writing a full org parser is weeks of work for features you don't need.
-
-**Do this instead:** Write a parser that handles exactly the format `OrgWriter` produces. If `OrgWriter` only emits date headlines and plain text entries, `OrgParser` only needs to handle those. Lock down the format in the writer and the parser is trivial.
+**Do this instead:** Always call `SyncBackend.readFile()` when a screen needs fresh data. `LaunchedEffect(Unit)` on screen entry triggers a re-read on every navigation. For a small org file (< 500 KB), this is sub-millisecond on `Dispatchers.IO`.
 
 ---
 
-### Anti-Pattern 3: File I/O directly in ViewModels
+### Anti-Pattern 2: Parsing Org Features You Don't Write
 
-**What people do:** Call `FileManager` or `SyncBackend` directly from a ViewModel.
+**What people do:** Pull in a general org parser (or write one) that handles all of org-syntax — drawers, clocks, agenda, LaTeX, macros, footnotes.
 
-**Why it's wrong:** Bypasses the repository abstraction. Means swapping the sync backend requires touching every ViewModel. Also makes testing harder — you'd need real files to test ViewModel logic.
+**Why it's wrong:** No viable maintained Kotlin org parser exists (both evaluated libraries are effectively abandoned). Writing a full org parser is weeks of unnecessary work for features the app will never write.
 
-**Do this instead:** ViewModels call repository methods. Repositories call the sync backend. The ViewModel doesn't know how data is stored.
+**Do this instead:** Write a parser that handles exactly what `OrgWriter` produces. Lock the format in the writer; the parser becomes trivial. If `OrgWriter` emits only date headlines and plain text entries, `OrgParser` only needs to handle those.
 
 ---
 
-### Anti-Pattern 4: Skipping NSFileCoordinator for iCloud writes
+### Anti-Pattern 3: File I/O Directly in ViewModels
 
-**What people do:** Use `String.write(to:)` directly on an iCloud-synced file path without coordination.
+**What people do:** Call `File.readText()` or `SyncBackend` directly from a ViewModel.
 
-**Why it's wrong:** iCloud's daemon (`bird`) can be reading or modifying the file simultaneously. Uncoordinated writes corrupt files or silently lose data.
+**Why it's wrong:** Bypasses the repository abstraction. Swapping `SyncthingFileBackend` for `LocalServerBackend` requires touching every ViewModel. Testing ViewModel logic requires real files. This is the single most common architecture mistake on Android.
 
-**Do this instead:** Wrap every read and write in `NSFileCoordinator.coordinateReading` / `coordinateWriting` blocks. For a personal app with one writer, this is simple boilerplate but non-negotiable.
+**Do this instead:** ViewModels call repository methods (suspend functions). Repositories call `SyncBackend`. The ViewModel has no knowledge of how data is stored or where files live.
+
+---
+
+### Anti-Pattern 4: Hardcoding the Sync Directory Path
+
+**What people do:** Hardcode the Syncthing folder path (e.g., `/storage/emulated/0/Sync/origami/`).
+
+**Why it's wrong:** The Syncthing-managed folder location varies per user and per device configuration. Hardcoding breaks every device that uses a different path.
+
+**Do this instead:** Expose the sync directory as a user-configurable setting stored in `DataStore<Preferences>`. Read it at `SyncBackend` construction time. Default to a sensible suggested path but let the user change it.
+
+---
+
+### Anti-Pattern 5: Using `Dispatchers.Main` for File I/O
+
+**What people do:** Read or write files without switching dispatchers, causing ANRs (Application Not Responding) when the file operation blocks the main thread.
+
+**Why it's wrong:** `java.io.File.readText()` is a blocking call. Calling it on `Dispatchers.Main` (the UI thread) blocks the entire UI and triggers an ANR on operations longer than ~5 seconds.
+
+**Do this instead:** All file I/O runs inside `withContext(Dispatchers.IO) { ... }`. Inject the dispatcher to keep it testable. This is non-negotiable.
 
 ---
 
 ## Integration Points
 
-**iCloud Drive (v1 sync)**
-- Integration: `NSFileCoordinator` + `FileManager` in `iCloudDriveBackend`
-- Container: `iCloud.[BundleID]` — set in Xcode entitlements
-- File path: `FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents/food-log.org")`
-- Key gotcha: Must enable iCloud Documents capability in Xcode + Developer portal; app must be sideloaded with paid account ($99/yr) to maintain entitlements
+**Syncthing (sync mechanism)**
+- Integration: No runtime API. Syncthing is a background daemon managing a directory. Origami reads/writes files in that directory directly.
+- Access: `MANAGE_EXTERNAL_STORAGE` → direct `java.io.File` path access
+- User configuration: Sync directory path stored in `DataStore<Preferences>`, settable in app settings
+- File conflict note: Syncthing can generate `.sync-conflict` files if both sides write simultaneously. The app should detect and surface these gracefully (show an alert, do not silently overwrite). This is a known Syncthing behavior on Android per community reports.
 
 **Emacs / org-roam (external reader)**
-- Integration: None at runtime — Emacs reads the same iCloud Drive files on Mac
-- Key requirement: `OrgWriter` must produce valid org-mode syntax. Test output by opening it in Emacs and confirming it parses correctly. No API, no protocol — this is a file format contract.
+- Integration: None at runtime. Emacs reads the same files from the synced directory on desktop.
+- Key requirement: `OrgWriter` must produce valid org-mode syntax. Test output by opening it in Emacs and confirming it parses correctly. This is a file format contract, not a software API.
+
+**DataStore (user settings)**
+- Integration: `androidx.datastore:datastore-preferences` — stores sync directory path, any other user preferences
+- Replaces `SharedPreferences`; coroutine-native; no Android equivalent of `UserDefaults` needed
 
 **Local Server (v2 sync, future)**
-- Integration: HTTP or UNIX socket calls wrapped in `LocalServerBackend: SyncBackend`
-- Swap point: `AppContainer.make()` — replace `iCloudDriveBackend` with `LocalServerBackend`
-- Nothing in Features/, Repositories/, or OrgEngine changes
+- Integration: HTTP or socket calls wrapped in `LocalServerBackend : SyncBackend`
+- Swap point: `SyncModule.kt` `@Binds` binding — one line change
+- Nothing in `features/`, `repositories/`, or `orgengine/` changes
 
 ---
 
 ## Scaling Considerations
 
-This is a single-user personal app. Scaling is not a concern. The relevant "scale" question is file size over time.
+This is a single-user personal app on one device. Scaling is not a concern. The relevant "scale" question is org file size over time.
 
-A food-log.org with 3 meals/day × 365 days = ~1,095 entries. At roughly 100 bytes per entry, that's ~110 KB after one year. Plain text parsing of 110 KB is milliseconds. No pagination, lazy loading, or database is needed for this use case.
+A `food-log.org` with 3 meals/day × 365 days = ~1,095 entries. At roughly 100 bytes per entry, that is ~110 KB after one year. Parsing 110 KB in Kotlin on `Dispatchers.IO` is well under 10 ms. No pagination, lazy loading, caching, or database is needed for this use case.
 
-If org files grow to several MB over multiple years, consider: parsing only the last N date sections for the history view (scan from file end), and caching today's parsed section between write operations. Both are straightforward optimizations if ever needed.
+If org files grow to several MB over multiple years: parse only the last N date sections for history views (scan from file end), cache today's parsed section between writes within the same app session. Both are straightforward optimizations if ever needed — do not build them now.
 
 ---
 
 ## Sources
 
-- Architecture pattern comparison (MVVM vs Clean vs TCA): https://7span.com/blog/mvvm-vs-clean-architecture-vs-tca — MEDIUM confidence (verified against multiple sources)
-- @Observable macro (iOS 17+): https://developer.apple.com/documentation/SwiftUI/Migrating-from-the-observable-object-protocol-to-the-observable-macro — HIGH confidence (official Apple docs)
-- iCloud Drive + NSFileCoordinator: https://fatbobman.com/en/posts/in-depth-guide-to-icloud-documents/ — HIGH confidence (deep technical writeup, consistent with Apple docs)
-- iCloud file write pattern: https://dev.to/nemecek_f/ios-saving-files-into-user-s-icloud-drive-using-filemanager-4kpm — MEDIUM confidence (community, consistent with docs)
-- Repository pattern in Swift: https://avanderlee.com/swift/repository-design-pattern/ — HIGH confidence (widely cited, well-maintained SwiftLee)
+- Compose architecture (UDF, StateFlow, collectAsStateWithLifecycle): https://developer.android.com/develop/ui/compose/architecture — HIGH confidence (official Android Developers docs)
+- Coroutines best practices (dispatcher injection, viewModelScope, Dispatchers.IO): https://developer.android.com/kotlin/coroutines/coroutines-best-practices — HIGH confidence (official Android Developers docs)
+- Hilt dependency injection (@HiltAndroidApp, @HiltViewModel, @Binds): https://developer.android.com/training/dependency-injection/hilt-android — HIGH confidence (official Android Developers docs)
+- Navigation with Compose (type-safe routes, NavHost, NavController): https://developer.android.com/develop/ui/compose/navigation — HIGH confidence (official Android Developers docs)
+- MANAGE_EXTERNAL_STORAGE (what it grants, how to request, caveats): https://developer.android.com/training/data-storage/manage-all-files — HIGH confidence (official Android Developers docs)
+- Navigation 3 stable release (1.0.1, February 2026): https://developer.android.com/jetpack/androidx/releases/navigation3 — HIGH confidence (official release notes)
+- kotlin-org-mode library: https://github.com/iliayar/kotlin-org-mode — HIGH confidence (repository inspection; GPL-3.0, partial implementation)
+- org-parser library: https://github.com/pmiddend/org-parser — HIGH confidence (repository inspection; last commit August 2016, no releases)
+- Syncthing-Fork for Android (active fork, March 2026): https://f-droid.org/packages/com.github.catfriend1.syncthingfork/ — MEDIUM confidence (F-Droid listing, verified active)
+- Syncthing conflict file behavior on Android: https://forum.syncthing.net/t/file-conflict-for-every-modification-on-android/19272 — MEDIUM confidence (community forum, corroborated by multiple threads)
+- Feature-based folder structure for Compose: https://medium.com/@alborzihoseinali/feature-based-folder-structure-in-jetpack-compose-best-practices-2c3708c8b833 — MEDIUM confidence (community, consistent with official guidance)
 - Org-mode syntax specification: https://orgmode.org/worg/org-syntax.html — HIGH confidence (official org-mode project)
-- swift-org library status: https://github.com/orgapp/swift-org — HIGH confidence (last commit 2017, Swift 3, not viable)
-- SwiftUI project structure: https://dev.to/__be2942592/how-to-structure-a-swiftui-project-in-2026-41m8 — MEDIUM confidence (community, 2026, consistent with established patterns)
 
 ---
 
-*Architecture research for: Origami — personal iOS food and workout tracking app*
+*Architecture research for: Origami — personal Android food and workout tracking app*
 *Researched: 2026-04-09*
