@@ -1,0 +1,27 @@
+* <2026-04-09 Thu>
+** Breakfast
+*** Chicken and rice
+:PROPERTIES:
+:protein: 42
+:carbs: 55
+:fat: 8
+:calories: 460
+:END:
+** Lunch
+*** Salmon salad
+:PROPERTIES:
+:protein: 35
+:carbs: 20
+:fat: 18
+:calories: 374
+:END:
+
+* <2026-04-08 Wed>
+** Breakfast
+*** Oats
+:PROPERTIES:
+:protein: 12
+:carbs: 60
+:fat: 5
+:calories: 333
+:END:

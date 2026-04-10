@@ -9,6 +9,8 @@ package com.sakura.orgengine
  *   - No trailing whitespace on any line
  *   - File ends with a single newline
  *   - appendSection prepends new content (newest date first)
+ *   - NO blank line between a heading and its :PROPERTIES: drawer (org-mode
+ *     requires the drawer to appear immediately after the heading line)
  */
 object OrgWriter {
 
@@ -24,8 +26,8 @@ object OrgWriter {
 
     /**
      * Serialize a single date section to org-mode text.
-     * Food sections: date heading -> meal subheadings with entries (blank line between meals).
-     * Workout sections: date heading -> "** Workout" subheading -> exercise entries.
+     * Food sections: date heading -> meal subheadings with property-drawer entries (blank line between meals).
+     * Workout sections: date heading -> "** Workout" subheading -> exercise property-drawer entries.
      */
     fun writeSection(section: OrgDateSection): String {
         val sb = StringBuilder()

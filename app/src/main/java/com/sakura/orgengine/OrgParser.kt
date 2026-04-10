@@ -9,8 +9,16 @@ import java.time.LocalDate
  * Unrecognized lines are silently skipped (graceful degradation).
  *
  * Parse modes:
- *   FOOD    -- expects meal group headings and food entry lines
- *   WORKOUT -- expects a workout heading and exercise entry lines
+ *   FOOD    -- expects meal group headings (level 2) and food item headings (level 3)
+ *              with property drawers containing protein/carbs/fat/calories
+ *   WORKOUT -- expects a workout heading (level 2) and exercise headings (level 3)
+ *              with property drawers containing sets/reps/weight/unit
+ *
+ * Property drawer parsing:
+ *   *** Item name          <- ITEM_HEADING_REGEX captures item name
+ *   :PROPERTIES:           <- enter drawer state
+ *   :key: value            <- accumulate key/value pairs via PROPERTY_REGEX
+ *   :END:                  <- exit drawer state; build and emit entry
  */
 object OrgParser {
 
@@ -33,6 +41,11 @@ object OrgParser {
         var currentMealLabel: String? = null
         var currentMealEntries = mutableListOf<OrgFoodEntry>()
         var currentExercises = mutableListOf<OrgExerciseEntry>()
+
+        // Property drawer state
+        var inPropertyDrawer = false
+        var currentItemName: String? = null
+        var drawerProperties = mutableMapOf<String, String>()
 
         /**
          * Flush the current meal group into the meals list (if any entries accumulated).
@@ -75,7 +88,7 @@ object OrgParser {
                     currentDate = LocalDate.parse(match.groupValues[1], OrgSchema.DATE_PARSE_FORMATTER)
                 }
 
-                // Level-2 heading: ** SomeLabel
+                // Level-2 heading: ** SomeLabel (meal group or workout)
                 OrgSchema.MEAL_HEADING_REGEX.matches(line) -> {
                     when (mode) {
                         ParseMode.FOOD -> {
@@ -85,36 +98,59 @@ object OrgParser {
                             currentMealLabel = match.groupValues[1]
                         }
                         ParseMode.WORKOUT -> {
-                            // "** Workout" or similar — just a label, no meal tracking needed
-                            // We don't create meal groups in workout mode; skip
+                            // "** Workout" — just a label, no meal tracking needed
                         }
                     }
                 }
 
-                // Food entry line: - Name  |P: Xg  C: Xg  F: Xg  Cal: X|
-                OrgSchema.FOOD_ENTRY_REGEX.matches(line) && mode == ParseMode.FOOD -> {
-                    val match = OrgSchema.FOOD_ENTRY_REGEX.find(line)!!
-                    val entry = OrgFoodEntry(
-                        name = match.groupValues[1],
-                        protein = match.groupValues[2].toInt(),
-                        carbs = match.groupValues[3].toInt(),
-                        fat = match.groupValues[4].toInt(),
-                        calories = match.groupValues[5].toInt()
-                    )
-                    currentMealEntries.add(entry)
+                // Level-3 item heading: *** Item name
+                OrgSchema.ITEM_HEADING_REGEX.matches(line) -> {
+                    val match = OrgSchema.ITEM_HEADING_REGEX.find(line)!!
+                    currentItemName = match.groupValues[1]
+                    drawerProperties = mutableMapOf()
                 }
 
-                // Exercise entry line: - Name  |3x5  80kg|
-                OrgSchema.EXERCISE_ENTRY_REGEX.matches(line) && mode == ParseMode.WORKOUT -> {
-                    val match = OrgSchema.EXERCISE_ENTRY_REGEX.find(line)!!
-                    val entry = OrgExerciseEntry(
-                        name = match.groupValues[1],
-                        sets = match.groupValues[2].toInt(),
-                        reps = match.groupValues[3].toInt(),
-                        weight = match.groupValues[4].toDouble(),
-                        unit = match.groupValues[5]
-                    )
-                    currentExercises.add(entry)
+                // Property drawer open
+                line.trim() == OrgSchema.PROPERTIES_START -> {
+                    inPropertyDrawer = true
+                }
+
+                // Property drawer close — build and emit entry from accumulated state
+                line.trim() == OrgSchema.PROPERTIES_END && inPropertyDrawer -> {
+                    inPropertyDrawer = false
+                    val itemName = currentItemName
+                    if (itemName != null) {
+                        when (mode) {
+                            ParseMode.FOOD -> {
+                                val entry = OrgFoodEntry(
+                                    name = itemName,
+                                    protein = drawerProperties["protein"]?.toIntOrNull() ?: 0,
+                                    carbs = drawerProperties["carbs"]?.toIntOrNull() ?: 0,
+                                    fat = drawerProperties["fat"]?.toIntOrNull() ?: 0,
+                                    calories = drawerProperties["calories"]?.toIntOrNull() ?: 0
+                                )
+                                currentMealEntries.add(entry)
+                            }
+                            ParseMode.WORKOUT -> {
+                                val entry = OrgExerciseEntry(
+                                    name = itemName,
+                                    sets = drawerProperties["sets"]?.toIntOrNull() ?: 0,
+                                    reps = drawerProperties["reps"]?.toIntOrNull() ?: 0,
+                                    weight = drawerProperties["weight"]?.toDoubleOrNull() ?: 0.0,
+                                    unit = drawerProperties["unit"] ?: "kg"
+                                )
+                                currentExercises.add(entry)
+                            }
+                        }
+                    }
+                    currentItemName = null
+                    drawerProperties = mutableMapOf()
+                }
+
+                // Property key-value inside a drawer: :key: value
+                inPropertyDrawer && OrgSchema.PROPERTY_REGEX.matches(line) -> {
+                    val match = OrgSchema.PROPERTY_REGEX.find(line)!!
+                    drawerProperties[match.groupValues[1]] = match.groupValues[2]
                 }
 
                 // Blank line or unrecognized line — skip gracefully

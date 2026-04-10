@@ -30,7 +30,13 @@ class OrgWriterTest {
         val expected = """
             |* <2026-04-09 Thu>
             |** Breakfast
-            |- Chicken and rice  |P: 42g  C: 55g  F: 8g  Cal: 460|
+            |*** Chicken and rice
+            |:PROPERTIES:
+            |:protein: 42
+            |:carbs: 55
+            |:fat: 8
+            |:calories: 460
+            |:END:
         """.trimMargin()
 
         assertEquals(expected, OrgWriter.writeSection(section).trimEnd())
@@ -79,7 +85,15 @@ class OrgWriterTest {
             exercises = listOf(OrgExerciseEntry("Bench Press", 3, 5, 80.0))
         )
 
-        val expected = "* <2026-04-09 Thu>\n** Workout\n- Bench Press  |3x5  80kg|"
+        val expected = """* <2026-04-09 Thu>
+** Workout
+*** Bench Press
+:PROPERTIES:
+:sets: 3
+:reps: 5
+:weight: 80
+:unit: kg
+:END:"""
 
         assertEquals(expected, OrgWriter.writeSection(section).trimEnd())
     }
@@ -103,9 +117,13 @@ class OrgWriterTest {
         val result = OrgWriter.writeSection(section)
 
         assertTrue(result.contains("** Workout"))
-        assertTrue(result.contains("- Squat  |3x5  100kg|"))
-        assertTrue(result.contains("- Bench Press  |3x5  80kg|"))
-        assertTrue(result.contains("- Deadlift  |1x5  140kg|"))
+        assertTrue(result.contains("*** Squat"))
+        assertTrue(result.contains("*** Bench Press"))
+        assertTrue(result.contains("*** Deadlift"))
+        assertTrue(result.contains(":sets: 3"))
+        assertTrue(result.contains(":weight: 100"))
+        assertTrue(result.contains(":weight: 80"))
+        assertTrue(result.contains(":weight: 140"))
     }
 
     // -------------------------------------------------------------------------
@@ -151,7 +169,13 @@ class OrgWriterTest {
     fun writeFile_appendToExisting_preservesPriorContent() {
         val existingContent = """* <2026-04-09 Thu>
 ** Breakfast
-- Oats  |P: 10g  C: 40g  F: 5g  Cal: 245|"""
+*** Oats
+:PROPERTIES:
+:protein: 10
+:carbs: 40
+:fat: 5
+:calories: 245
+:END:"""
 
         val newSection = OrgDateSection(
             date = april10,
@@ -189,7 +213,7 @@ class OrgWriterTest {
 
         val result = OrgWriter.writeSection(section)
 
-        assertTrue("Weight 80.0 should render as '80kg', not '80.0kg'", result.contains("80kg"))
-        assertTrue("Should not contain '80.0kg'", !result.contains("80.0kg"))
+        assertTrue("Weight 80.0 should render as ':weight: 80', not ':weight: 80.0'", result.contains(":weight: 80"))
+        assertTrue("Should not contain ':weight: 80.0'", !result.contains(":weight: 80.0"))
     }
 }

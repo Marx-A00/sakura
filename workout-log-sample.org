@@ -1,0 +1,23 @@
+* <2026-04-09 Thu>
+** Workout
+*** Bench Press
+:PROPERTIES:
+:sets: 3
+:reps: 5
+:weight: 80
+:unit: kg
+:END:
+*** Overhead Press
+:PROPERTIES:
+:sets: 3
+:reps: 8
+:weight: 50
+:unit: kg
+:END:
+*** Tricep Pushdown
+:PROPERTIES:
+:sets: 3
+:reps: 12
+:weight: 30
+:unit: kg
+:END:

@@ -13,9 +13,21 @@ import java.util.Locale
  * Format overview:
  *   * <2026-04-09 Thu>         <- date heading (level 1)
  *   ** Breakfast               <- meal group heading (level 2, food-log.org)
- *   - Chicken and rice  |P: 42g  C: 55g  F: 8g  Cal: 460|  <- food entry
- *   ** Push Day                <- exercise group heading (level 2, workout-log.org)
- *   - Bench Press  |3x8  80kg|  <- exercise entry
+ *   *** Chicken and rice       <- food item heading (level 3)
+ *   :PROPERTIES:
+ *   :protein: 42
+ *   :carbs: 55
+ *   :fat: 8
+ *   :calories: 460
+ *   :END:
+ *   ** Workout                 <- exercise group heading (level 2, workout-log.org)
+ *   *** Bench Press            <- exercise heading (level 3)
+ *   :PROPERTIES:
+ *   :sets: 3
+ *   :reps: 5
+ *   :weight: 80
+ *   :unit: kg
+ *   :END:
  */
 object OrgSchema {
 
@@ -70,55 +82,81 @@ object OrgSchema {
 
     /**
      * Formats an exercise group label into an org level-2 heading.
-     * Example output: "** Push Day"
+     * Example output: "** Workout"
      */
     fun formatExerciseGroupHeading(label: String): String = "** $label"
+
+    // -------------------------------------------------------------------------
+    // Property drawer parsing constants
+    // -------------------------------------------------------------------------
+
+    /** Opening line of an org property drawer. */
+    const val PROPERTIES_START = ":PROPERTIES:"
+
+    /** Closing line of an org property drawer. */
+    const val PROPERTIES_END = ":END:"
+
+    /** Regex to match a single property line inside a drawer: :key: value */
+    val PROPERTY_REGEX = Regex("""^:(\w+):\s+(.+)$""")
+
+    /** Regex to match and capture a level-3 item heading (food name or exercise name). */
+    val ITEM_HEADING_REGEX = Regex("""^\*\*\* (.+)$""")
 
     // -------------------------------------------------------------------------
     // Food entries
     // -------------------------------------------------------------------------
 
     /**
-     * Serializes a food entry to org list item format.
-     * Example output: "- Chicken and rice  |P: 42g  C: 55g  F: 8g  Cal: 460|"
+     * Serializes a food entry to org property drawer format.
      *
-     * Format rationale: inline pipe notation passes org-lint (plain text in list items
-     * is valid org), is compact, human-readable in Emacs, and avoids heavier property
-     * drawers. Double-space + pipe delimiter is unambiguous for regex parsing.
+     * Example output:
+     *   *** Chicken and rice
+     *   :PROPERTIES:
+     *   :protein: 42
+     *   :carbs: 55
+     *   :fat: 8
+     *   :calories: 460
+     *   :END:
+     *
+     * Property drawers are a first-class org-mode structural element, natively
+     * parseable by any org tool (org-element, org-ql, etc.).
      */
     fun formatFoodEntry(entry: OrgFoodEntry): String =
-        "- ${entry.name}  |P: ${entry.protein}g  C: ${entry.carbs}g  F: ${entry.fat}g  Cal: ${entry.calories}|"
-
-    /**
-     * Regex to parse a food entry list item back into its component fields.
-     * Matches the exact format produced by [formatFoodEntry].
-     */
-    val FOOD_ENTRY_REGEX = Regex(
-        """^- (.+?)\s{2}\|P: (\d+)g\s{2}C: (\d+)g\s{2}F: (\d+)g\s{2}Cal: (\d+)\|$"""
-    )
+        "*** ${entry.name}\n" +
+        "$PROPERTIES_START\n" +
+        ":protein: ${entry.protein}\n" +
+        ":carbs: ${entry.carbs}\n" +
+        ":fat: ${entry.fat}\n" +
+        ":calories: ${entry.calories}\n" +
+        PROPERTIES_END
 
     // -------------------------------------------------------------------------
     // Exercise entries
     // -------------------------------------------------------------------------
 
     /**
-     * Serializes an exercise entry to org list item format.
-     * Example output: "- Bench Press  |3x8  80kg|"
+     * Serializes an exercise entry to org property drawer format.
      *
-     * Weight formatting: integer weights display without decimal (80kg not 80.0kg);
-     * fractional weights display as-is (82.5kg).
+     * Example output:
+     *   *** Bench Press
+     *   :PROPERTIES:
+     *   :sets: 3
+     *   :reps: 5
+     *   :weight: 80
+     *   :unit: kg
+     *   :END:
+     *
+     * Weight formatting: integer weights display without decimal (80 not 80.0);
+     * fractional weights display as-is (82.5).
      */
     fun formatExerciseEntry(entry: OrgExerciseEntry): String =
-        "- ${entry.name}  |${entry.sets}x${entry.reps}  ${formatWeight(entry.weight)}${entry.unit}|"
-
-    /**
-     * Regex to parse an exercise entry list item back into its component fields.
-     * Captures: name, sets, reps, weight (numeric), unit (kg or lbs).
-     * Matches the exact format produced by [formatExerciseEntry].
-     */
-    val EXERCISE_ENTRY_REGEX = Regex(
-        """^- (.+?)\s{2}\|(\d+)x(\d+)\s{2}([\d.]+)(kg|lbs)\|$"""
-    )
+        "*** ${entry.name}\n" +
+        "$PROPERTIES_START\n" +
+        ":sets: ${entry.sets}\n" +
+        ":reps: ${entry.reps}\n" +
+        ":weight: ${formatWeight(entry.weight)}\n" +
+        ":unit: ${entry.unit}\n" +
+        PROPERTIES_END
 
     // -------------------------------------------------------------------------
     // Internal helpers
@@ -128,7 +166,7 @@ object OrgSchema {
      * Formats a weight Double without a trailing ".0" for whole numbers.
      * 80.0 -> "80", 82.5 -> "82.5"
      */
-    private fun formatWeight(weight: Double): String =
+    fun formatWeight(weight: Double): String =
         if (weight == weight.toLong().toDouble()) weight.toLong().toString()
         else weight.toString()
 }

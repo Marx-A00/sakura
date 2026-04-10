@@ -19,7 +19,13 @@ class OrgParserTest {
         val content = """
             |* <2026-04-09 Thu>
             |** Breakfast
-            |- Chicken and rice  |P: 42g  C: 55g  F: 8g  Cal: 460|
+            |*** Chicken and rice
+            |:PROPERTIES:
+            |:protein: 42
+            |:carbs: 55
+            |:fat: 8
+            |:calories: 460
+            |:END:
         """.trimMargin()
 
         val orgFile = OrgParser.parse(content, OrgParser.ParseMode.FOOD)
@@ -48,13 +54,31 @@ class OrgParserTest {
         val content = """
             |* <2026-04-10 Fri>
             |** Breakfast
-            |- Oats  |P: 10g  C: 40g  F: 5g  Cal: 245|
+            |*** Oats
+            |:PROPERTIES:
+            |:protein: 10
+            |:carbs: 40
+            |:fat: 5
+            |:calories: 245
+            |:END:
             |** Lunch
-            |- Rice and chicken  |P: 45g  C: 60g  F: 6g  Cal: 470|
+            |*** Rice and chicken
+            |:PROPERTIES:
+            |:protein: 45
+            |:carbs: 60
+            |:fat: 6
+            |:calories: 470
+            |:END:
             |
             |* <2026-04-09 Thu>
             |** Breakfast
-            |- Eggs  |P: 20g  C: 2g  F: 15g  Cal: 215|
+            |*** Eggs
+            |:PROPERTIES:
+            |:protein: 20
+            |:carbs: 2
+            |:fat: 15
+            |:calories: 215
+            |:END:
         """.trimMargin()
 
         val orgFile = OrgParser.parse(content, OrgParser.ParseMode.FOOD)
@@ -85,9 +109,27 @@ class OrgParserTest {
         val content = """
             |* <2026-04-09 Thu>
             |** Workout
-            |- Squat  |3x5  100kg|
-            |- Bench Press  |3x5  80kg|
-            |- Deadlift  |1x5  140kg|
+            |*** Squat
+            |:PROPERTIES:
+            |:sets: 3
+            |:reps: 5
+            |:weight: 100
+            |:unit: kg
+            |:END:
+            |*** Bench Press
+            |:PROPERTIES:
+            |:sets: 3
+            |:reps: 5
+            |:weight: 80
+            |:unit: kg
+            |:END:
+            |*** Deadlift
+            |:PROPERTIES:
+            |:sets: 1
+            |:reps: 5
+            |:weight: 140
+            |:unit: kg
+            |:END:
         """.trimMargin()
 
         val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
@@ -126,7 +168,13 @@ class OrgParserTest {
         val content = """
             |* <2026-04-09 Thu>
             |** Workout
-            |- Overhead Press  |3x5  62.5kg|
+            |*** Overhead Press
+            |:PROPERTIES:
+            |:sets: 3
+            |:reps: 5
+            |:weight: 62.5
+            |:unit: kg
+            |:END:
         """.trimMargin()
 
         val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
@@ -249,7 +297,13 @@ class OrgParserTest {
             |* <2026-04-09 Thu>
             |** Breakfast
             |THIS IS NOT A VALID ENTRY LINE
-            |- Oats  |P: 10g  C: 40g  F: 5g  Cal: 245|
+            |*** Oats
+            |:PROPERTIES:
+            |:protein: 10
+            |:carbs: 40
+            |:fat: 5
+            |:calories: 245
+            |:END:
             |ANOTHER BAD LINE
         """.trimMargin()
 
