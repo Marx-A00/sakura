@@ -1,6 +1,8 @@
 package com.sakura.di
 
 import android.content.Context
+import com.sakura.data.food.FoodRepository
+import com.sakura.data.food.OrgFoodRepository
 import com.sakura.orgengine.OrgParser
 import com.sakura.orgengine.OrgWriter
 import com.sakura.preferences.AppPreferencesRepository
@@ -22,4 +24,7 @@ class AppContainer(context: Context) {
 
     /** OrgWriter is an object (singleton) — referenced directly. */
     val orgWriter = OrgWriter
+
+    /** Food data repository backed by org files via SyncBackend. */
+    val foodRepository: FoodRepository = OrgFoodRepository(syncBackend)
 }
