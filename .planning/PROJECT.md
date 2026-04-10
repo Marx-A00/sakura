@@ -1,4 +1,4 @@
-# Origami
+# Sakura
 
 ## What This Is
 
@@ -23,6 +23,7 @@ One cohesive system for food and workout tracking that the user fully controls, 
 - [ ] Sync org files between phone and Mac (Syncthing or similar)
 - [ ] View food and workout history in the app
 - [ ] Swappable sync backend (Syncthing/file-based now, local server later)
+- [ ] Local storage mode for non-technical users (zero-config, no Syncthing needed)
 
 ### Out of Scope
 
@@ -39,7 +40,7 @@ One cohesive system for food and workout tracking that the user fully controls, 
 - Existing workout routine is a 4-day full body split (push, pull, legs, compound) already documented in workouts.org
 - Previous attempt used Apple Shortcuts to append to org files on iPhone — worked functionally but the Shortcuts visual builder was a terrible development experience
 - Nutrition tracking has been blocked by the inability to find apps that allow easy data export
-- The name "origami" comes from sounding like "org" — no deeper meaning
+- The name "Sakura" (cherry blossom) — chosen for the aesthetic; warm pink/rose identity on dark backgrounds
 - User has a Galaxy S21 FE available for free — eliminates Apple Developer account cost and sideloading friction
 - Pivoted from iOS to Android because: no dev account fee, no provisioning profiles, no re-signing, full filesystem access, Syncthing just works, APK installs permanently
 - User may add iOS support later (cross-platform or native port) once Android v1 is validated
@@ -51,6 +52,7 @@ One cohesive system for food and workout tracking that the user fully controls, 
 - **Sync v1**: File-based sync (Syncthing between phone and Mac over Wi-Fi) — files land in a synced folder
 - **Sync architecture**: Abstracted backend — file sync is the first implementation, local server swap must be low-friction
 - **Single user**: No auth, no accounts, no multi-device beyond phone + Mac
+- **Multi-persona**: Power users get Syncthing flow; non-technical users (e.g. family) get zero-config local storage — same app, same features, different backend
 - **Org file structure**: Single log files with date headings (food-log.org, workout-log.org), entries append under date headings
 
 ## Key Decisions

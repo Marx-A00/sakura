@@ -1,4 +1,4 @@
-# Requirements: Origami
+# Requirements: Sakura
 
 **Defined:** 2026-04-09
 **Core Value:** One cohesive system for food and workout tracking that the user fully controls, with data living in org files that flow into their existing Emacs workflow.
@@ -59,6 +59,19 @@
 
 ## v2 Requirements
 
+### Local Storage Mode (Non-Technical Users)
+
+- **LOCAL-01**: LocalStorageBackend implementation using app-internal storage (no permissions, no setup)
+- **LOCAL-02**: Simplified onboarding flow for local mode (no folder path, no MANAGE_EXTERNAL_STORAGE)
+- **LOCAL-03**: Storage mode selection during onboarding — "Simple" (local) vs "Power User" (Syncthing)
+- **LOCAL-04**: Data lives entirely on-device in app-internal files, zero configuration
+
+### Cloud Sync (Future)
+
+- **CLOUD-01**: CloudBackend implementation (Firebase/Supabase or similar)
+- **CLOUD-02**: Simple sign-in onboarding (Google auth, no folder paths)
+- **CLOUD-03**: Migration path from local storage to cloud sync
+
 ### Local Server Sync
 
 - **SERV-01**: LocalServerBackend implementation (HTTP/WebDAV/SFTP)
@@ -99,12 +112,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
+| FOUND-06 | Phase 1 | Complete |
 | FOOD-01 | Phase 2 | Pending |
 | FOOD-02 | Phase 2 | Pending |
 | FOOD-03 | Phase 2 | Pending |
@@ -124,12 +137,12 @@
 | WORK-08 | Phase 3 | Pending |
 | WORK-09 | Phase 3 | Pending |
 | WORK-10 | Phase 3 | Pending |
-| SYNC-01 | Phase 1 | Pending |
-| SYNC-02 | Phase 1 | Pending |
-| SYNC-03 | Phase 1 | Pending |
+| SYNC-01 | Phase 1 | Complete |
+| SYNC-02 | Phase 1 | Complete |
+| SYNC-03 | Phase 1 | Complete |
 | SYNC-04 | Phase 4 | Pending |
 | SYNC-05 | Phase 2 | Pending |
-| SYNC-06 | Phase 1 | Pending |
+| SYNC-06 | Phase 1 | Complete |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |
 | DASH-03 | Phase 4 | Pending |
@@ -137,11 +150,17 @@
 | DASH-05 | Phase 4 | Pending |
 | DASH-06 | Phase 4 | Pending |
 
+| LOCAL-01 | Phase 5 | Pending |
+| LOCAL-02 | Phase 5 | Pending |
+| LOCAL-03 | Phase 5 | Pending |
+| LOCAL-04 | Phase 5 | Pending |
+
 **Coverage:**
 - v1 requirements: 37 total
 - Mapped to phases: 37
 - Unmapped: 0
+- v2 requirements (Phase 5 — local storage): 4 total, mapped
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 — phase mappings added*
+*Last updated: 2026-04-09 — added LOCAL requirements for Phase 5 (non-technical user support)*

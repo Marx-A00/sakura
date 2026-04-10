@@ -12,10 +12,11 @@ Sakura is a personal Android app (Kotlin + Jetpack Compose) for logging food and
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Device setup, org engine, file layer, and onboarding
+- [x] **Phase 1: Foundation** - Device setup, org engine, file layer, and onboarding
 - [ ] **Phase 2: Food Logging** - Complete food tracking end-to-end with org file output
 - [ ] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
 - [ ] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
+- [ ] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
 
 ## Phase Details
 
@@ -32,9 +33,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold (AGP 9.1.0, Compose, dependencies) + OrgModels and OrgSchema
-- [ ] 01-02-PLAN.md — OrgWriter + OrgParser TDD with Emacs org-lint validation checkpoint
-- [ ] 01-03-PLAN.md — SyncBackend, SyncthingFileBackend, DataStore, onboarding flow, and device deploy
+- [x] 01-01-PLAN.md — Project scaffold (AGP 9.1.0, Compose, dependencies) + OrgModels and OrgSchema
+- [x] 01-02-PLAN.md — OrgWriter + OrgParser TDD with Emacs org-lint validation checkpoint
+- [x] 01-03-PLAN.md — SyncBackend, SyncthingFileBackend, DataStore, onboarding flow, and device deploy
 
 ### Phase 2: Food Logging
 **Goal**: User can log every food they eat with full macros, see today's progress against targets, browse past days, manage a food library, and have all entries appear correctly in food-log.org.
@@ -87,14 +88,31 @@ Plans:
 - [ ] 04-01: TodayScreen with unified macro + workout summary, navigation polish, and sync status indicator
 - [ ] 04-02: Weekly macro averages chart, workout volume trends chart, and training split calendar
 
+### Phase 5: Local Storage Mode
+**Goal**: A non-technical user (e.g. mom on Android) can install the app and start logging food and workouts immediately — no Syncthing, no folder paths, no storage permissions. Data lives in app-internal storage with zero configuration.
+**Depends on**: Phase 4
+**Requirements**: LOCAL-01, LOCAL-02, LOCAL-03, LOCAL-04
+**Success Criteria** (what must be TRUE):
+  1. A new user selecting "Simple" mode during onboarding can start logging within 30 seconds — no permission prompts, no folder paths
+  2. LocalStorageBackend reads/writes org files to app-internal storage, passing all existing OrgParser/OrgWriter tests
+  3. Existing Syncthing "Power User" flow remains unchanged and fully functional
+  4. Storage mode selection persists across restarts; the app launches into the correct backend on every cold start
+  5. All food and workout features (Phases 2-4) work identically regardless of storage mode
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: LocalStorageBackend implementation, storage mode in AppPreferencesRepository, AppContainer conditional wiring
+- [ ] 05-02: Simplified onboarding flow with mode selection, skip permission/folder screens for local mode
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 3/3 | Complete | 2026-04-09 |
 | 2. Food Logging | 0/2 | Not started | - |
 | 3. Workout Logging | 0/2 | Not started | - |
 | 4. Dashboard and Polish | 0/2 | Not started | - |
+| 5. Local Storage Mode | 0/2 | Not started | - |
