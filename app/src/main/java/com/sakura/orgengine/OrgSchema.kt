@@ -1,5 +1,7 @@
 package com.sakura.orgengine
 
+import com.sakura.data.food.FoodLibraryItem
+import com.sakura.data.food.MealTemplate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -10,23 +12,45 @@ import java.util.Locale
  * This object IS the format specification. OrgWriter and OrgParser both reference these
  * constants and functions exclusively — no format strings are duplicated elsewhere.
  *
- * Format overview:
+ * Format overview (food-log.org):
  *   * <2026-04-09 Thu>         <- date heading (level 1)
- *   ** Breakfast               <- meal group heading (level 2, food-log.org)
+ *   ** Breakfast               <- meal group heading (level 2)
  *   *** Chicken and rice       <- food item heading (level 3)
  *   :PROPERTIES:
+ *   :id: 1712661600000
  *   :protein: 42
  *   :carbs: 55
  *   :fat: 8
  *   :calories: 460
  *   :END:
- *   ** Workout                 <- exercise group heading (level 2, workout-log.org)
- *   *** Bench Press            <- exercise heading (level 3)
+ *
+ * Format overview (food-library.org):
+ *   * Food Library
+ *   ** Chicken Breast
  *   :PROPERTIES:
- *   :sets: 3
- *   :reps: 5
- *   :weight: 80
- *   :unit: kg
+ *   :id: a1b2c3d4
+ *   :protein: 31
+ *   :carbs: 0
+ *   :fat: 3
+ *   :calories: 165
+ *   :serving_size: 100
+ *   :serving_unit: g
+ *   :END:
+ *
+ * Format overview (meal-templates.org):
+ *   * Meal Templates
+ *   ** Weekday Breakfast
+ *   :PROPERTIES:
+ *   :id: e5f6g7h8
+ *   :END:
+ *   *** Oatmeal
+ *   :PROPERTIES:
+ *   :protein: 5
+ *   :carbs: 27
+ *   :fat: 3
+ *   :calories: 150
+ *   :serving_size: 40
+ *   :serving_unit: g
  *   :END:
  */
 object OrgSchema {
@@ -103,32 +127,155 @@ object OrgSchema {
     val ITEM_HEADING_REGEX = Regex("""^\*\*\* (.+)$""")
 
     // -------------------------------------------------------------------------
-    // Food entries
+    // Property key constants
+    // -------------------------------------------------------------------------
+
+    const val PROP_PROTEIN = "protein"
+    const val PROP_CARBS = "carbs"
+    const val PROP_FAT = "fat"
+    const val PROP_CALORIES = "calories"
+    const val PROP_SETS = "sets"
+    const val PROP_REPS = "reps"
+    const val PROP_WEIGHT = "weight"
+    const val PROP_UNIT = "unit"
+    const val PROP_ID = "id"
+    const val PROP_SERVING_SIZE = "serving_size"
+    const val PROP_SERVING_UNIT = "serving_unit"
+    const val PROP_NOTES = "notes"
+
+    // -------------------------------------------------------------------------
+    // Food entries (food-log.org)
     // -------------------------------------------------------------------------
 
     /**
-     * Serializes a food entry to org property drawer format.
+     * Serializes a food log entry to org property drawer format.
+     * Always writes :id: (as epoch millis).
+     * Only writes :serving_size:, :serving_unit:, :notes: when non-null.
+     * Substitutes "Unnamed" for blank entry names.
      *
      * Example output:
      *   *** Chicken and rice
      *   :PROPERTIES:
+     *   :id: 1712661600000
      *   :protein: 42
      *   :carbs: 55
      *   :fat: 8
      *   :calories: 460
      *   :END:
-     *
-     * Property drawers are a first-class org-mode structural element, natively
-     * parseable by any org tool (org-element, org-ql, etc.).
      */
-    fun formatFoodEntry(entry: OrgFoodEntry): String =
-        "*** ${entry.name}\n" +
+    fun formatFoodEntry(entry: OrgFoodEntry): String {
+        val name = if (entry.name.isBlank()) "Unnamed" else entry.name
+        val sb = StringBuilder()
+        sb.append("*** $name\n")
+        sb.append("$PROPERTIES_START\n")
+        sb.append(":$PROP_ID: ${entry.id}\n")
+        sb.append(":$PROP_PROTEIN: ${entry.protein}\n")
+        sb.append(":$PROP_CARBS: ${entry.carbs}\n")
+        sb.append(":$PROP_FAT: ${entry.fat}\n")
+        sb.append(":$PROP_CALORIES: ${entry.calories}\n")
+        entry.servingSize?.let { sb.append(":$PROP_SERVING_SIZE: $it\n") }
+        entry.servingUnit?.let { sb.append(":$PROP_SERVING_UNIT: $it\n") }
+        entry.notes?.let { sb.append(":$PROP_NOTES: $it\n") }
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
+
+    // -------------------------------------------------------------------------
+    // Food library (food-library.org)
+    // -------------------------------------------------------------------------
+
+    /** Level-1 heading for the food library file. */
+    const val LIBRARY_HEADING = "* Food Library"
+
+    /** Regex to match a level-2 library item heading. */
+    val LIBRARY_ITEM_HEADING_REGEX = Regex("""^\*\* (.+)$""")
+
+    /**
+     * Serializes a library item to org level-2 heading + property drawer format.
+     * Uses the library UUID as the :id: value.
+     *
+     * Example output:
+     *   ** Chicken Breast
+     *   :PROPERTIES:
+     *   :id: a1b2c3d4
+     *   :protein: 31
+     *   :carbs: 0
+     *   :fat: 3
+     *   :calories: 165
+     *   :serving_size: 100
+     *   :serving_unit: g
+     *   :END:
+     */
+    fun formatLibraryEntry(item: FoodLibraryItem): String {
+        val sb = StringBuilder()
+        sb.append("** ${item.name}\n")
+        sb.append("$PROPERTIES_START\n")
+        sb.append(":$PROP_ID: ${item.id}\n")
+        sb.append(":$PROP_PROTEIN: ${item.protein}\n")
+        sb.append(":$PROP_CARBS: ${item.carbs}\n")
+        sb.append(":$PROP_FAT: ${item.fat}\n")
+        sb.append(":$PROP_CALORIES: ${item.calories}\n")
+        item.servingSize?.let { sb.append(":$PROP_SERVING_SIZE: $it\n") }
+        item.servingUnit?.let { sb.append(":$PROP_SERVING_UNIT: $it\n") }
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
+
+    // -------------------------------------------------------------------------
+    // Meal templates (meal-templates.org)
+    // -------------------------------------------------------------------------
+
+    /** Level-1 heading for the meal templates file. */
+    const val TEMPLATES_HEADING = "* Meal Templates"
+
+    /** Regex to match a level-2 template heading. */
+    val TEMPLATE_HEADING_REGEX = Regex("""^\*\* (.+)$""")
+
+    /** Regex to match a level-3 template item heading. */
+    val TEMPLATE_ITEM_HEADING_REGEX = Regex("""^\*\*\* (.+)$""")
+
+    /**
+     * Serializes a template level-2 heading with its :id: property drawer.
+     *
+     * Example output:
+     *   ** Weekday Breakfast
+     *   :PROPERTIES:
+     *   :id: e5f6g7h8
+     *   :END:
+     */
+    fun formatTemplateHeading(template: MealTemplate): String =
+        "** ${template.name}\n" +
         "$PROPERTIES_START\n" +
-        ":protein: ${entry.protein}\n" +
-        ":carbs: ${entry.carbs}\n" +
-        ":fat: ${entry.fat}\n" +
-        ":calories: ${entry.calories}\n" +
+        ":$PROP_ID: ${template.id}\n" +
         PROPERTIES_END
+
+    /**
+     * Serializes a template item (FoodLibraryItem) to level-3 heading + property drawer.
+     *
+     * Example output:
+     *   *** Oatmeal
+     *   :PROPERTIES:
+     *   :protein: 5
+     *   :carbs: 27
+     *   :fat: 3
+     *   :calories: 150
+     *   :serving_size: 40
+     *   :serving_unit: g
+     *   :END:
+     */
+    fun formatTemplateItem(item: FoodLibraryItem): String {
+        val sb = StringBuilder()
+        sb.append("*** ${item.name}\n")
+        sb.append("$PROPERTIES_START\n")
+        sb.append(":$PROP_PROTEIN: ${item.protein}\n")
+        sb.append(":$PROP_CARBS: ${item.carbs}\n")
+        sb.append(":$PROP_FAT: ${item.fat}\n")
+        sb.append(":$PROP_CALORIES: ${item.calories}\n")
+        item.servingSize?.let { sb.append(":$PROP_SERVING_SIZE: $it\n") }
+        item.servingUnit?.let { sb.append(":$PROP_SERVING_UNIT: $it\n") }
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
 
     // -------------------------------------------------------------------------
     // Exercise entries

@@ -1,5 +1,8 @@
 package com.sakura.orgengine
 
+import com.sakura.data.food.FoodLibraryItem
+import com.sakura.data.food.MealTemplate
+
 /**
  * Serializes OrgFile and OrgDateSection models into valid org-mode text.
  *
@@ -73,5 +76,67 @@ object OrgWriter {
         } else {
             newSectionText + "\n\n" + existingContent
         }
+    }
+
+    /**
+     * Serialize a complete OrgLibraryFile to org-mode text.
+     * Writes the "* Food Library" heading followed by each item as a level-2 heading.
+     * File ends with a single newline.
+     */
+    fun writeLibrary(library: OrgLibraryFile): String {
+        val sb = StringBuilder()
+        sb.append(OrgSchema.LIBRARY_HEADING)
+        library.items.forEach { item ->
+            val libItem = FoodLibraryItem(
+                id = item.id,
+                name = item.name,
+                protein = item.protein,
+                carbs = item.carbs,
+                fat = item.fat,
+                calories = item.calories,
+                servingSize = item.servingSize,
+                servingUnit = item.servingUnit
+            )
+            sb.append("\n")
+            sb.append(OrgSchema.formatLibraryEntry(libItem))
+        }
+        if (library.items.isNotEmpty()) sb.append("\n")
+        return sb.toString()
+    }
+
+    /**
+     * Serialize a complete OrgTemplateFile to org-mode text.
+     * Writes the "* Meal Templates" heading followed by each template as level-2,
+     * with template items as level-3. File ends with a single newline.
+     */
+    fun writeTemplates(templates: OrgTemplateFile): String {
+        val sb = StringBuilder()
+        sb.append(OrgSchema.TEMPLATES_HEADING)
+        templates.templates.forEach { template ->
+            val domainTemplate = MealTemplate(
+                id = template.id,
+                name = template.name,
+                entries = template.items.map { item ->
+                    FoodLibraryItem(
+                        id = item.id,
+                        name = item.name,
+                        protein = item.protein,
+                        carbs = item.carbs,
+                        fat = item.fat,
+                        calories = item.calories,
+                        servingSize = item.servingSize,
+                        servingUnit = item.servingUnit
+                    )
+                }
+            )
+            sb.append("\n")
+            sb.append(OrgSchema.formatTemplateHeading(domainTemplate))
+            domainTemplate.entries.forEach { item ->
+                sb.append("\n")
+                sb.append(OrgSchema.formatTemplateItem(item))
+            }
+        }
+        if (templates.templates.isNotEmpty()) sb.append("\n")
+        return sb.toString()
     }
 }

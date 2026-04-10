@@ -27,11 +27,13 @@ class OrgWriterTest {
             exercises = emptyList()
         )
 
+        // id defaults to 0L — :id: 0 is always written
         val expected = """
             |* <2026-04-09 Thu>
             |** Breakfast
             |*** Chicken and rice
             |:PROPERTIES:
+            |:id: 0
             |:protein: 42
             |:carbs: 55
             |:fat: 8
@@ -167,6 +169,8 @@ class OrgWriterTest {
 
     @Test
     fun writeFile_appendToExisting_preservesPriorContent() {
+        // Note: existing content written by older code without :id: — appendSection
+        // just prepends; it does not re-format the existing content.
         val existingContent = """* <2026-04-09 Thu>
 ** Breakfast
 *** Oats
@@ -215,5 +219,65 @@ class OrgWriterTest {
 
         assertTrue("Weight 80.0 should render as ':weight: 80', not ':weight: 80.0'", result.contains(":weight: 80"))
         assertTrue("Should not contain ':weight: 80.0'", !result.contains(":weight: 80.0"))
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 8: Food entry with explicit id writes correct id value
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun writeFoodEntry_withExplicitId_writesIdProperty() {
+        val entry = OrgFoodEntry("Protein shake", 30, 5, 2, 160, id = 1712661600000L)
+        val section = OrgDateSection(
+            date = april9,
+            meals = listOf(OrgMealGroup("Snacks", listOf(entry))),
+            exercises = emptyList()
+        )
+
+        val result = OrgWriter.writeSection(section)
+
+        assertTrue("Should contain explicit id", result.contains(":id: 1712661600000"))
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 9: Food entry with serving info writes optional properties
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun writeFoodEntry_withServingInfo_writesOptionalProperties() {
+        val entry = OrgFoodEntry(
+            "Oats", 10, 40, 5, 245,
+            id = 123L,
+            servingSize = "80",
+            servingUnit = "g"
+        )
+        val section = OrgDateSection(
+            date = april9,
+            meals = listOf(OrgMealGroup("Breakfast", listOf(entry))),
+            exercises = emptyList()
+        )
+
+        val result = OrgWriter.writeSection(section)
+
+        assertTrue(result.contains(":serving_size: 80"))
+        assertTrue(result.contains(":serving_unit: g"))
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 10: Blank food entry name is substituted with "Unnamed"
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun writeFoodEntry_blankName_substitutesUnnamed() {
+        val entry = OrgFoodEntry("", 20, 30, 5, 245)
+        val section = OrgDateSection(
+            date = april9,
+            meals = listOf(OrgMealGroup("Lunch", listOf(entry))),
+            exercises = emptyList()
+        )
+
+        val result = OrgWriter.writeSection(section)
+
+        assertTrue("Blank name should become 'Unnamed'", result.contains("*** Unnamed"))
     }
 }

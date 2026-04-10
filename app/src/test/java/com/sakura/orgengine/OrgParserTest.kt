@@ -1,6 +1,7 @@
 package com.sakura.orgengine
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -43,6 +44,11 @@ class OrgParserTest {
         assertEquals(55, entry.carbs)
         assertEquals(8, entry.fat)
         assertEquals(460, entry.calories)
+        // Legacy entries without :id: should default to 0L
+        assertEquals(0L, entry.id)
+        assertNull(entry.servingSize)
+        assertNull(entry.servingUnit)
+        assertNull(entry.notes)
     }
 
     // -------------------------------------------------------------------------
@@ -233,6 +239,8 @@ class OrgParserTest {
                 assertEquals(origEntry.carbs, parsedEntry.carbs)
                 assertEquals(origEntry.fat, parsedEntry.fat)
                 assertEquals(origEntry.calories, parsedEntry.calories)
+                // id defaults to 0L in original; round-trip should preserve it
+                assertEquals(origEntry.id, parsedEntry.id)
             }
         }
     }
@@ -313,5 +321,131 @@ class OrgParserTest {
         assertEquals(1, orgFile.sections.size)
         assertEquals(1, orgFile.sections[0].meals[0].entries.size)
         assertEquals("Oats", orgFile.sections[0].meals[0].entries[0].name)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 9: Parse entry with new id and serving fields
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseFoodEntry_withIdAndServingFields() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Breakfast
+            |*** Protein shake
+            |:PROPERTIES:
+            |:id: 1712661600000
+            |:protein: 30
+            |:carbs: 5
+            |:fat: 2
+            |:calories: 160
+            |:serving_size: 300
+            |:serving_unit: ml
+            |:notes: Post-workout
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.FOOD)
+
+        assertEquals(1, orgFile.sections.size)
+        val entry = orgFile.sections[0].meals[0].entries[0]
+        assertEquals("Protein shake", entry.name)
+        assertEquals(1712661600000L, entry.id)
+        assertEquals(30, entry.protein)
+        assertEquals(5, entry.carbs)
+        assertEquals(2, entry.fat)
+        assertEquals(160, entry.calories)
+        assertEquals("300", entry.servingSize)
+        assertEquals("ml", entry.servingUnit)
+        assertEquals("Post-workout", entry.notes)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 10: Parse food library file
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseLibrary_singleItem() {
+        val content = """
+            |* Food Library
+            |** Chicken Breast
+            |:PROPERTIES:
+            |:id: a1b2c3d4
+            |:protein: 31
+            |:carbs: 0
+            |:fat: 3
+            |:calories: 165
+            |:serving_size: 100
+            |:serving_unit: g
+            |:END:
+        """.trimMargin()
+
+        val library = OrgParser.parseLibrary(content)
+
+        assertEquals(1, library.items.size)
+        val item = library.items[0]
+        assertEquals("Chicken Breast", item.name)
+        assertEquals("a1b2c3d4", item.id)
+        assertEquals("100", item.servingSize)
+        assertEquals("g", item.servingUnit)
+        assertEquals(31, item.protein)
+        assertEquals(0, item.carbs)
+        assertEquals(3, item.fat)
+        assertEquals(165, item.calories)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 11: Parse meal templates file
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseTemplates_singleTemplateWithItems() {
+        val content = """
+            |* Meal Templates
+            |** Weekday Breakfast
+            |:PROPERTIES:
+            |:id: e5f6g7h8
+            |:END:
+            |*** Oatmeal
+            |:PROPERTIES:
+            |:protein: 5
+            |:carbs: 27
+            |:fat: 3
+            |:calories: 150
+            |:serving_size: 40
+            |:serving_unit: g
+            |:END:
+            |*** Banana
+            |:PROPERTIES:
+            |:protein: 1
+            |:carbs: 23
+            |:fat: 0
+            |:calories: 89
+            |:END:
+        """.trimMargin()
+
+        val templateFile = OrgParser.parseTemplates(content)
+
+        assertEquals(1, templateFile.templates.size)
+        val template = templateFile.templates[0]
+        assertEquals("Weekday Breakfast", template.name)
+        assertEquals("e5f6g7h8", template.id)
+        assertEquals(2, template.items.size)
+
+        val oatmeal = template.items[0]
+        assertEquals("Oatmeal", oatmeal.name)
+        assertEquals(5, oatmeal.protein)
+        assertEquals(27, oatmeal.carbs)
+        assertEquals(3, oatmeal.fat)
+        assertEquals(150, oatmeal.calories)
+        assertEquals("40", oatmeal.servingSize)
+        assertEquals("g", oatmeal.servingUnit)
+
+        val banana = template.items[1]
+        assertEquals("Banana", banana.name)
+        assertEquals(1, banana.protein)
+        assertEquals(23, banana.carbs)
+        assertEquals(0, banana.fat)
+        assertEquals(89, banana.calories)
     }
 }

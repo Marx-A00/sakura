@@ -124,10 +124,14 @@ object OrgParser {
                             ParseMode.FOOD -> {
                                 val entry = OrgFoodEntry(
                                     name = itemName,
-                                    protein = drawerProperties["protein"]?.toIntOrNull() ?: 0,
-                                    carbs = drawerProperties["carbs"]?.toIntOrNull() ?: 0,
-                                    fat = drawerProperties["fat"]?.toIntOrNull() ?: 0,
-                                    calories = drawerProperties["calories"]?.toIntOrNull() ?: 0
+                                    protein = drawerProperties[OrgSchema.PROP_PROTEIN]?.toIntOrNull() ?: 0,
+                                    carbs = drawerProperties[OrgSchema.PROP_CARBS]?.toIntOrNull() ?: 0,
+                                    fat = drawerProperties[OrgSchema.PROP_FAT]?.toIntOrNull() ?: 0,
+                                    calories = drawerProperties[OrgSchema.PROP_CALORIES]?.toIntOrNull() ?: 0,
+                                    id = drawerProperties[OrgSchema.PROP_ID]?.toLongOrNull() ?: 0L,
+                                    servingSize = drawerProperties[OrgSchema.PROP_SERVING_SIZE],
+                                    servingUnit = drawerProperties[OrgSchema.PROP_SERVING_UNIT],
+                                    notes = drawerProperties[OrgSchema.PROP_NOTES]
                                 )
                                 currentMealEntries.add(entry)
                             }
@@ -162,5 +166,202 @@ object OrgParser {
         flushCurrentSection()
 
         return OrgFile(sections = sections)
+    }
+
+    /**
+     * Parse food-library.org content into an OrgLibraryFile.
+     *
+     * Expected format:
+     *   * Food Library
+     *   ** Chicken Breast
+     *   :PROPERTIES:
+     *   :id: a1b2c3d4
+     *   :protein: 31
+     *   ...
+     *   :END:
+     *
+     * The level-1 "* Food Library" heading is skipped; items are level-2 headings.
+     * If the file is empty or malformed, returns an empty library.
+     */
+    fun parseLibrary(content: String): OrgLibraryFile {
+        if (content.isBlank()) return OrgLibraryFile(items = emptyList())
+
+        val items = mutableListOf<OrgLibraryEntry>()
+        var currentItemName: String? = null
+        var inPropertyDrawer = false
+        var drawerProperties = mutableMapOf<String, String>()
+
+        for (line in content.lines()) {
+            when {
+                // Level-1 heading (e.g., "* Food Library") — skip
+                line.startsWith("* ") && !line.startsWith("** ") -> { /* skip */ }
+
+                // Level-2 item heading: ** Item name
+                OrgSchema.LIBRARY_ITEM_HEADING_REGEX.matches(line) -> {
+                    val match = OrgSchema.LIBRARY_ITEM_HEADING_REGEX.find(line)!!
+                    currentItemName = match.groupValues[1]
+                    drawerProperties = mutableMapOf()
+                }
+
+                // Property drawer open
+                line.trim() == OrgSchema.PROPERTIES_START -> {
+                    inPropertyDrawer = true
+                }
+
+                // Property drawer close — emit library item
+                line.trim() == OrgSchema.PROPERTIES_END && inPropertyDrawer -> {
+                    inPropertyDrawer = false
+                    val itemName = currentItemName
+                    if (itemName != null) {
+                        val entry = OrgLibraryEntry(
+                            id = drawerProperties[OrgSchema.PROP_ID] ?: "",
+                            name = itemName,
+                            protein = drawerProperties[OrgSchema.PROP_PROTEIN]?.toIntOrNull() ?: 0,
+                            carbs = drawerProperties[OrgSchema.PROP_CARBS]?.toIntOrNull() ?: 0,
+                            fat = drawerProperties[OrgSchema.PROP_FAT]?.toIntOrNull() ?: 0,
+                            calories = drawerProperties[OrgSchema.PROP_CALORIES]?.toIntOrNull() ?: 0,
+                            servingSize = drawerProperties[OrgSchema.PROP_SERVING_SIZE],
+                            servingUnit = drawerProperties[OrgSchema.PROP_SERVING_UNIT]
+                        )
+                        items.add(entry)
+                    }
+                    currentItemName = null
+                    drawerProperties = mutableMapOf()
+                }
+
+                // Property key-value inside a drawer
+                inPropertyDrawer && OrgSchema.PROPERTY_REGEX.matches(line) -> {
+                    val match = OrgSchema.PROPERTY_REGEX.find(line)!!
+                    drawerProperties[match.groupValues[1]] = match.groupValues[2]
+                }
+
+                else -> { /* skip */ }
+            }
+        }
+
+        return OrgLibraryFile(items = items)
+    }
+
+    /**
+     * Parse meal-templates.org content into an OrgTemplateFile.
+     *
+     * Expected format:
+     *   * Meal Templates
+     *   ** Weekday Breakfast
+     *   :PROPERTIES:
+     *   :id: e5f6g7h8
+     *   :END:
+     *   *** Oatmeal
+     *   :PROPERTIES:
+     *   :protein: 5
+     *   ...
+     *   :END:
+     *
+     * Level-2 headings are templates; level-3 headings under them are template items.
+     * The template's :id: property drawer comes immediately after the level-2 heading.
+     * If the file is empty or malformed, returns an empty template file.
+     */
+    fun parseTemplates(content: String): OrgTemplateFile {
+        if (content.isBlank()) return OrgTemplateFile(templates = emptyList())
+
+        val templates = mutableListOf<OrgMealTemplate>()
+
+        // Current template accumulator
+        var currentTemplateId: String? = null
+        var currentTemplateName: String? = null
+        var currentTemplateItems = mutableListOf<OrgLibraryEntry>()
+
+        // Current item accumulator
+        var currentItemName: String? = null
+        var inPropertyDrawer = false
+        var drawerProperties = mutableMapOf<String, String>()
+
+        // Track whether the current drawer belongs to a template heading or an item
+        // true = we're inside the template-level drawer (id only), false = item drawer
+        var inTemplateDrawer = false
+
+        fun flushCurrentTemplate() {
+            val id = currentTemplateId
+            val name = currentTemplateName
+            if (id != null && name != null) {
+                templates.add(OrgMealTemplate(id = id, name = name, items = currentTemplateItems.toList()))
+            }
+            currentTemplateId = null
+            currentTemplateName = null
+            currentTemplateItems = mutableListOf()
+        }
+
+        for (line in content.lines()) {
+            when {
+                // Level-1 heading (e.g., "* Meal Templates") — skip
+                line.startsWith("* ") && !line.startsWith("** ") -> { /* skip */ }
+
+                // Level-2 template heading: ** Template name
+                OrgSchema.TEMPLATE_HEADING_REGEX.matches(line) -> {
+                    flushCurrentTemplate()
+                    val match = OrgSchema.TEMPLATE_HEADING_REGEX.find(line)!!
+                    currentTemplateName = match.groupValues[1]
+                    currentItemName = null
+                    drawerProperties = mutableMapOf()
+                    inTemplateDrawer = false
+                }
+
+                // Level-3 item heading: *** Item name
+                OrgSchema.TEMPLATE_ITEM_HEADING_REGEX.matches(line) -> {
+                    val match = OrgSchema.TEMPLATE_ITEM_HEADING_REGEX.find(line)!!
+                    currentItemName = match.groupValues[1]
+                    drawerProperties = mutableMapOf()
+                    inTemplateDrawer = false
+                }
+
+                // Property drawer open
+                line.trim() == OrgSchema.PROPERTIES_START -> {
+                    inPropertyDrawer = true
+                    // If we just set a template name and have no item yet, this is the template drawer
+                    inTemplateDrawer = (currentItemName == null && currentTemplateName != null && currentTemplateId == null)
+                }
+
+                // Property drawer close
+                line.trim() == OrgSchema.PROPERTIES_END && inPropertyDrawer -> {
+                    inPropertyDrawer = false
+                    if (inTemplateDrawer) {
+                        // Template-level drawer: extract id
+                        currentTemplateId = drawerProperties[OrgSchema.PROP_ID]
+                        inTemplateDrawer = false
+                    } else {
+                        // Item-level drawer: emit library entry
+                        val itemName = currentItemName
+                        if (itemName != null) {
+                            val entry = OrgLibraryEntry(
+                                id = "",   // template items don't have their own UUID
+                                name = itemName,
+                                protein = drawerProperties[OrgSchema.PROP_PROTEIN]?.toIntOrNull() ?: 0,
+                                carbs = drawerProperties[OrgSchema.PROP_CARBS]?.toIntOrNull() ?: 0,
+                                fat = drawerProperties[OrgSchema.PROP_FAT]?.toIntOrNull() ?: 0,
+                                calories = drawerProperties[OrgSchema.PROP_CALORIES]?.toIntOrNull() ?: 0,
+                                servingSize = drawerProperties[OrgSchema.PROP_SERVING_SIZE],
+                                servingUnit = drawerProperties[OrgSchema.PROP_SERVING_UNIT]
+                            )
+                            currentTemplateItems.add(entry)
+                        }
+                        currentItemName = null
+                    }
+                    drawerProperties = mutableMapOf()
+                }
+
+                // Property key-value inside a drawer
+                inPropertyDrawer && OrgSchema.PROPERTY_REGEX.matches(line) -> {
+                    val match = OrgSchema.PROPERTY_REGEX.find(line)!!
+                    drawerProperties[match.groupValues[1]] = match.groupValues[2]
+                }
+
+                else -> { /* skip */ }
+            }
+        }
+
+        // Flush the last template
+        flushCurrentTemplate()
+
+        return OrgTemplateFile(templates = templates)
     }
 }
