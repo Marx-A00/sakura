@@ -1,18 +1,25 @@
 package com.sakura.di
 
 import android.content.Context
+import com.sakura.orgengine.OrgParser
+import com.sakura.orgengine.OrgWriter
+import com.sakura.preferences.AppPreferencesRepository
+import com.sakura.sync.SyncBackend
+import com.sakura.sync.SyncthingFileBackend
 
 /**
  * Manual dependency injection container. Wired in SakuraApplication.onCreate().
- * Add repositories and backends here as they are implemented in subsequent plans.
+ * Single source of truth for all app-scoped dependencies.
  */
 class AppContainer(context: Context) {
 
-    // TODO: Uncomment once AppPreferencesRepository is implemented (Plan 01-02)
-    // val prefsRepo = AppPreferencesRepository(context)
+    val prefsRepo = AppPreferencesRepository(context)
 
-    // Placeholders for future plans:
-    // val syncBackend: SyncBackend
-    // val orgParser: OrgParser
-    // val orgWriter: OrgWriter
+    val syncBackend: SyncBackend = SyncthingFileBackend(prefsRepo)
+
+    /** OrgParser is an object (singleton) — referenced directly. */
+    val orgParser = OrgParser
+
+    /** OrgWriter is an object (singleton) — referenced directly. */
+    val orgWriter = OrgWriter
 }
