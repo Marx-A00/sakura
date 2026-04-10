@@ -41,11 +41,21 @@ Complete food tracking end-to-end: log food entries with macros under meal group
 - Past days display as read-only by default; an "Edit" button unlocks modifications (add, edit, delete)
 - Macro targets set in a dedicated settings screen (not inline on the today screen)
 
+### Visual design & color palette
+- Sakura-inspired palette (not generic green wellness)
+- Primary accent: cherry blossom pink (#C9758B) — buttons, active tab, save actions
+- Light accent: pale sakura (#F5DDE5) — auto-calc highlight, add-food badges
+- Dark accent: deep rose (#A25670) — text on pink backgrounds
+- Secondary: warm pastel brown (#B8A089) — secondary elements, carbs bar
+- Forest green (#3B5D44) — sparingly for protein bar / positive indicators only
+- Base: warm cream (#F5F4F1) with white cards — already established from style guide
+- Design mockups: `02-food-logging-designs.pen` (save from Pencil editor)
+
 ### Claude's Discretion
 - Editing interaction pattern for entries (tap, swipe, or long-press — pick what fits best)
 - Calories auto-calculation implementation details
 - Loading states and error handling
-- Exact spacing, typography, and color scheme
+- Exact spacing and typography (follow Outfit font from design mockups)
 - How the "save to library" action surfaces on logged entries (long-press, swipe, menu)
 - Empty state design for days with no entries
 
@@ -58,6 +68,7 @@ Complete food tracking end-to-end: log food entries with macros under meal group
 - Collapsible meal sections keep the today screen compact — you see totals at a glance, drill into details when needed
 - Recent tab in the bottom sheet means frequently eaten foods are always one tap away without needing to save everything to the library
 - Template application from both the meal section and bottom sheet means you can get to templates from whichever path you're already on
+- Sakura pink palette gives the app a distinct identity matching its name — warm, personal, not clinical
 
 </specifics>
 
