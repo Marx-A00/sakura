@@ -5,29 +5,30 @@
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** One cohesive system for food and workout tracking that the user fully controls, with data living in org files that flow into their existing Emacs workflow.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 2 - Food Logging
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation)
-Plan: 3 of 3 in current phase
-Status: Phase 1 execution complete, pending phase verification
-Last activity: 2026-04-09 — Completed 01-03-PLAN.md (SyncBackend, onboarding flow, device deploy verified on Galaxy S21 FE)
+Phase: 2 of 4 (Food Logging)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-04-10 — Completed 02-01-PLAN.md (Food data layer: FoodRepository, OrgFoodRepository, domain models, OrgEngine updates)
 
-Progress: [███░░░░░░░] 33% (3/9 plans complete)
+Progress: [████░░░░░░] 44% (4/9 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: ~13 min
-- Total execution time: ~39 min
+- Total plans completed: 4
+- Average duration: ~11 min
+- Total execution time: ~47 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
+- Phase 2: 1 of 3 plans done, ~8 min
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (12 min), 01-02 (~15 min), 01-03 (~12 min)
+- Last 5 plans: 01-01 (12 min), 01-02 (~15 min), 01-03 (~12 min), 02-01 (~8 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -47,6 +48,9 @@ Recent decisions affecting current work:
 - [01-01]: JDK 17 installed to ~/.local/jdk/jdk-17.0.18+8/; all gradlew invocations need JAVA_HOME set explicitly
 - [01-01]: Android SDK bootstrapped to ~/Library/Android/sdk/; local.properties is gitignored; must be set manually on new machines
 - [01-02]: Property drawers chosen as the canonical org format for all structured data — supersedes the inline pipe notation from 01-01. Format: :PROPERTIES: / :protein: 42 / :carbs: 55 / :fat: 8 / :calories: 460 / :END: under each list item. Property drawers are first-class org-mode elements natively queryable by org-ql, orgparse, Emacs Lisp org-entry-get, and other tooling.
+- [02-01]: OrgLibraryEntry separate from OrgFoodEntry — library items use UUID String ids; log entries use epoch millis Long ids. Cannot share one model without breaking type correctness.
+- [02-01]: applyTemplate acquires fileMutex once for the full batch and calls addEntryInternal() — avoids per-entry lock overhead, ensures atomic batch application.
+- [02-01]: OrgFoodEntry.id defaults to 0L — backward-compatible with all existing tests and legacy log files that predate this field.
 
 ### Pending Todos
 
@@ -61,7 +65,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-09 UTC
-Stopped at: Completed 01-03-PLAN.md — SyncBackend + onboarding + device deploy verified on Galaxy S21 FE
+Last session: 2026-04-10 UTC
+Stopped at: Completed 02-01-PLAN.md — Food data layer (FoodRepository, OrgFoodRepository, domain models, OrgEngine phase 2 updates)
 Resume file: None
-Next plan: Phase 1 complete. Next: Phase 2 planning or begin 02-01-PLAN.md (FoodRepository)
+Next plan: 02-02-PLAN.md (Food Logging UI)
