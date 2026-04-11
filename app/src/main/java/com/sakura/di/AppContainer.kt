@@ -3,6 +3,8 @@ package com.sakura.di
 import android.content.Context
 import com.sakura.data.food.FoodRepository
 import com.sakura.data.food.OrgFoodRepository
+import com.sakura.data.workout.OrgWorkoutRepository
+import com.sakura.data.workout.WorkoutRepository
 import com.sakura.orgengine.OrgParser
 import com.sakura.orgengine.OrgWriter
 import com.sakura.preferences.AppPreferencesRepository
@@ -27,4 +29,7 @@ class AppContainer(context: Context) {
 
     /** Food data repository backed by org files via SyncBackend. */
     val foodRepository: FoodRepository = OrgFoodRepository(syncBackend)
+
+    /** Workout data repository backed by workout-log.org via SyncBackend. */
+    val workoutRepository: WorkoutRepository = OrgWorkoutRepository(syncBackend)
 }
