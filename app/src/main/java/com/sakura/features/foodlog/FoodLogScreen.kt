@@ -37,12 +37,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -80,7 +82,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun FoodLogScreen(
     viewModel: FoodLogViewModel,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToWorkout: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -177,10 +180,27 @@ fun FoodLogScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+        ) {
+            // Food / Workout tab row for switching between features
+            PrimaryTabRow(selectedTabIndex = 0) {
+                Tab(
+                    selected = true,
+                    onClick = { /* already here */ },
+                    text = { Text("Food") }
+                )
+                Tab(
+                    selected = false,
+                    onClick = onNavigateToWorkout,
+                    text = { Text("Workout") }
+                )
+            }
+
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
             when (val state = uiState) {
                 is FoodLogUiState.Loading -> {
@@ -321,6 +341,7 @@ fun FoodLogScreen(
                 }
             }
         }
+        } // end Column (wraps tab row + main content Box)
     }
 
     // Date picker dialog
