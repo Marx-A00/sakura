@@ -54,7 +54,7 @@ object OrgWriter {
         if (section.exerciseLogs.isNotEmpty()) {
             // Phase 3 workout section: ** Workout with metadata drawer, then *** exercises with **** sets
             sb.append("\n")
-            sb.append(OrgSchema.formatWorkoutHeading(section.splitDay, section.volume, section.durationMin))
+            sb.append(OrgSchema.formatWorkoutHeading(section.splitDay, section.volume, section.durationMin, section.complete))
             section.exerciseLogs.forEach { exerciseLog ->
                 sb.append("\n")
                 sb.append(OrgSchema.formatExerciseLog(exerciseLog))

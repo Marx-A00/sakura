@@ -58,12 +58,14 @@ object OrgParser {
         var currentExerciseLogName: String? = null
         var currentExerciseLogId: Long = 0L
         var currentExerciseLogType: String = "barbell"
+        var currentExerciseLogCategory: String? = null
         var currentExerciseLogSets = mutableListOf<OrgSetEntry>()
 
         // Workout session metadata (from ** Workout property drawer)
         var currentSplitDay: String? = null
         var currentVolume: Int? = null
         var currentDurationMin: Int? = null
+        var currentComplete: Boolean = false
 
         // Set-level tracking
         var currentSetNumber: Int? = null
@@ -100,12 +102,14 @@ object OrgParser {
                 name = name,
                 id = currentExerciseLogId,
                 exerciseType = currentExerciseLogType,
-                sets = currentExerciseLogSets.toList()
+                sets = currentExerciseLogSets.toList(),
+                category = currentExerciseLogCategory
             )
             currentExerciseLogs.add(log)
             currentExerciseLogName = null
             currentExerciseLogId = 0L
             currentExerciseLogType = "barbell"
+            currentExerciseLogCategory = null
             currentExerciseLogSets = mutableListOf()
             currentSetNumber = null
         }
@@ -128,7 +132,8 @@ object OrgParser {
                     exerciseLogs = currentExerciseLogs.toList(),
                     splitDay = currentSplitDay,
                     volume = currentVolume,
-                    durationMin = currentDurationMin
+                    durationMin = currentDurationMin,
+                    complete = currentComplete
                 )
             )
             currentDate = null
@@ -138,6 +143,7 @@ object OrgParser {
             currentSplitDay = null
             currentVolume = null
             currentDurationMin = null
+            currentComplete = false
         }
 
         for (line in content.lines()) {
@@ -231,13 +237,15 @@ object OrgParser {
                                     currentSplitDay = drawerProperties[OrgSchema.PROP_SPLIT_DAY]
                                     currentVolume = drawerProperties[OrgSchema.PROP_VOLUME]?.toIntOrNull()
                                     currentDurationMin = drawerProperties[OrgSchema.PROP_DURATION_MIN]?.toIntOrNull()
+                                    currentComplete = drawerProperties[OrgSchema.PROP_COMPLETE]?.toBooleanStrictOrNull() ?: false
                                     drawerProperties = mutableMapOf()
                                 }
                                 "exercise" -> {
-                                    // Exercise-level drawer: read id and exercise_type
+                                    // Exercise-level drawer: read id, exercise_type, and category
                                     // Also check for old flat format (sets/reps/weight/unit)
                                     currentExerciseLogId = drawerProperties[OrgSchema.PROP_ID]?.toLongOrNull() ?: 0L
                                     currentExerciseLogType = drawerProperties[OrgSchema.PROP_EXERCISE_TYPE] ?: "barbell"
+                                    currentExerciseLogCategory = drawerProperties[OrgSchema.PROP_CATEGORY]
 
                                     // Backward compat: if old flat format properties found and no set headings follow,
                                     // synthesize a single OrgSetEntry. We detect this when :sets: is present.
@@ -267,7 +275,7 @@ object OrgParser {
                                     drawerProperties = mutableMapOf()
                                 }
                                 "set" -> {
-                                    // Set-level drawer: build OrgSetEntry
+                                    // Set-level drawer: build OrgSetEntry including cardio fields
                                     val setNum = currentSetNumber ?: 1
                                     val setEntry = OrgSetEntry(
                                         setNumber = setNum,
@@ -276,7 +284,9 @@ object OrgParser {
                                         unit = drawerProperties[OrgSchema.PROP_UNIT] ?: "kg",
                                         holdSecs = drawerProperties[OrgSchema.PROP_HOLD_SECS]?.toIntOrNull() ?: 0,
                                         rpe = drawerProperties[OrgSchema.PROP_RPE]?.toIntOrNull(),
-                                        isPr = drawerProperties[OrgSchema.PROP_IS_PR]?.toBooleanStrictOrNull() ?: false
+                                        isPr = drawerProperties[OrgSchema.PROP_IS_PR]?.toBooleanStrictOrNull() ?: false,
+                                        durationMin = drawerProperties[OrgSchema.PROP_DURATION_MIN]?.toIntOrNull(),
+                                        distanceKm = drawerProperties[OrgSchema.PROP_DISTANCE_KM]?.toDoubleOrNull()
                                     )
                                     currentExerciseLogSets.add(setEntry)
                                     currentSetNumber = null

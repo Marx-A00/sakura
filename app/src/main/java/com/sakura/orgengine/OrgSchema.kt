@@ -158,6 +158,11 @@ object OrgSchema {
     const val PROP_VOLUME = "volume"
     const val PROP_DURATION_MIN = "duration_min"
 
+    // Phase 3 plan 02: cardio fields (on set entry) and category/complete (on exercise/workout)
+    const val PROP_DISTANCE_KM = "distance_km"    // on set entry, for cardio distance
+    const val PROP_CATEGORY = "category"           // on exercise log heading
+    const val PROP_COMPLETE = "complete"           // on ** Workout heading (soft flag)
+
     // -------------------------------------------------------------------------
     // Food entries (food-log.org)
     // -------------------------------------------------------------------------
@@ -333,28 +338,35 @@ object OrgSchema {
      *   :split_day: monday-lift
      *   :volume: 12450
      *   :duration_min: 62
+     *   :complete: true
      *   :END:
+     *
+     * :complete: is only written when true (omitted for false to keep files clean).
      */
-    fun formatWorkoutHeading(splitDay: String?, volume: Int?, durationMin: Int?): String {
+    fun formatWorkoutHeading(splitDay: String?, volume: Int?, durationMin: Int?, complete: Boolean = false): String {
         val sb = StringBuilder()
         sb.append("** Workout\n")
         sb.append("$PROPERTIES_START\n")
         splitDay?.let { sb.append(":$PROP_SPLIT_DAY: $it\n") }
         volume?.let { sb.append(":$PROP_VOLUME: $it\n") }
         durationMin?.let { sb.append(":$PROP_DURATION_MIN: $it\n") }
+        if (complete) sb.append(":$PROP_COMPLETE: true\n")
         sb.append(PROPERTIES_END)
         return sb.toString()
     }
 
     /**
-     * Serializes an exercise log (level-3 heading) with :id: and :exercise_type: properties.
+     * Serializes an exercise log (level-3 heading) with :id:, :exercise_type:, and :category: properties.
      *
      * Example output:
      *   *** Bench Press
      *   :PROPERTIES:
      *   :id: 1712661600000
      *   :exercise_type: barbell
+     *   :category: weighted
      *   :END:
+     *
+     * :category: is only written when non-null (omitted for backward compat with existing files).
      */
     fun formatExerciseLog(exercise: OrgExerciseLog): String {
         val sb = StringBuilder()
@@ -362,6 +374,7 @@ object OrgSchema {
         sb.append("$PROPERTIES_START\n")
         sb.append(":$PROP_ID: ${exercise.id}\n")
         sb.append(":$PROP_EXERCISE_TYPE: ${exercise.exerciseType}\n")
+        exercise.category?.let { sb.append(":$PROP_CATEGORY: $it\n") }
         sb.append(PROPERTIES_END)
         return sb.toString()
     }
@@ -369,13 +382,25 @@ object OrgSchema {
     /**
      * Serializes a single set entry (level-4 heading) with all set properties.
      * Only writes :hold_secs: when > 0. Only writes :rpe: when non-null.
+     * Only writes :duration_min: and :distance_km: when non-null (cardio fields).
      *
-     * Example output:
+     * Example output (weighted):
      *   **** Set 1
      *   :PROPERTIES:
      *   :reps: 5
      *   :weight: 80
      *   :unit: kg
+     *   :is_pr: false
+     *   :END:
+     *
+     * Example output (cardio):
+     *   **** Set 1
+     *   :PROPERTIES:
+     *   :reps: 0
+     *   :weight: 0
+     *   :unit: bw
+     *   :duration_min: 45
+     *   :distance_km: 5.2
      *   :is_pr: false
      *   :END:
      */
@@ -388,6 +413,8 @@ object OrgSchema {
         sb.append(":$PROP_UNIT: ${set.unit}\n")
         if (set.holdSecs > 0) sb.append(":$PROP_HOLD_SECS: ${set.holdSecs}\n")
         set.rpe?.let { sb.append(":$PROP_RPE: $it\n") }
+        set.durationMin?.let { sb.append(":$PROP_DURATION_MIN: $it\n") }
+        set.distanceKm?.let { sb.append(":$PROP_DISTANCE_KM: ${formatWeight(it)}\n") }
         sb.append(":$PROP_IS_PR: ${set.isPr}\n")
         sb.append(PROPERTIES_END)
         return sb.toString()

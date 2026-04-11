@@ -379,6 +379,8 @@ private fun ExerciseTypeBadge(exerciseType: ExerciseType) {
         ExerciseType.MACHINE -> "MC"
         ExerciseType.CALISTHENICS -> "BW"
         ExerciseType.TIMED -> "TM"
+        ExerciseType.CARDIO -> "CD"
+        ExerciseType.STRETCH -> "ST"
     }
     Text(
         text = label,

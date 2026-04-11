@@ -16,7 +16,7 @@ data class OrgFile(
  *
  * exerciseLogs: new per-set workout format (Phase 3, level 3+4 structure).
  * exercises: old flat format — kept for backward-compat parsing only.
- * splitDay, volume, durationMin: workout session metadata from ** Workout property drawer.
+ * splitDay, volume, durationMin, complete: workout session metadata from ** Workout property drawer.
  */
 data class OrgDateSection(
     val date: LocalDate,
@@ -25,7 +25,8 @@ data class OrgDateSection(
     val exerciseLogs: List<OrgExerciseLog> = emptyList(),  // new per-set format (Phase 3)
     val splitDay: String? = null,                           // e.g., "monday-lift"
     val volume: Int? = null,                                // total session volume
-    val durationMin: Int? = null                            // session duration in minutes
+    val durationMin: Int? = null,                           // session duration in minutes
+    val complete: Boolean = false                           // soft "workout complete" flag
 )
 
 /**
@@ -73,16 +74,24 @@ data class OrgExerciseEntry(
 /**
  * A single exercise log in the new per-set workout format (Phase 3).
  * Level-3 heading in workout-log.org, with level-4 Set headings as children.
+ *
+ * category: the ExerciseCategory label string (e.g., "weighted", "cardio") — stored as
+ * :category: property in the org file alongside :exercise_type: for UI field selection.
+ * Defaults to null for backward compat with existing org files that lack this property.
  */
 data class OrgExerciseLog(
     val name: String,
     val id: Long,                          // epoch millis
-    val exerciseType: String,              // "barbell", "dumbbell", "machine", "calisthenics", "timed"
-    val sets: List<OrgSetEntry>
+    val exerciseType: String,              // "barbell", "dumbbell", "machine", "calisthenics", "timed", "cardio", "stretch"
+    val sets: List<OrgSetEntry>,
+    val category: String? = null           // ExerciseCategory label, e.g. "weighted", "cardio"
 )
 
 /**
  * A single set within an OrgExerciseLog. Level-4 heading in workout-log.org.
+ *
+ * durationMin and distanceKm are nullable cardio-only fields.
+ * They are omitted from the org file when null (backward compat).
  */
 data class OrgSetEntry(
     val setNumber: Int,                    // 1-indexed, matches heading "Set N"
@@ -91,7 +100,9 @@ data class OrgSetEntry(
     val unit: String,                      // "kg", "lbs", "bw"
     val holdSecs: Int = 0,                 // 0 for non-timed
     val rpe: Int? = null,                  // optional 6-10
-    val isPr: Boolean = false
+    val isPr: Boolean = false,
+    val durationMin: Int? = null,          // for cardio: duration in minutes
+    val distanceKm: Double? = null         // for cardio: distance in km (optional)
 )
 
 // -------------------------------------------------------------------------
