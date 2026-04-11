@@ -38,6 +38,8 @@ class FoodLogViewModel(
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
+    private val _reloadTrigger = MutableStateFlow(0)
+
     // -------------------------------------------------------------------------
     // UI state — combines selected date + macro targets into Success/Error
     // -------------------------------------------------------------------------
@@ -45,7 +47,7 @@ class FoodLogViewModel(
     private val _meals = MutableStateFlow<com.sakura.features.foodlog.FoodLogUiState>(FoodLogUiState.Loading)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<FoodLogUiState> = _selectedDate
+    val uiState: StateFlow<FoodLogUiState> = combine(_selectedDate, _reloadTrigger) { date, _ -> date }
         .flatMapLatest { date ->
             flow {
                 emit(FoodLogUiState.Loading)
@@ -216,8 +218,7 @@ class FoodLogViewModel(
     // -------------------------------------------------------------------------
 
     private fun reloadDay() {
-        // Trigger re-emission by bumping the date to itself
-        _selectedDate.value = _selectedDate.value
+        _reloadTrigger.value++
     }
 
     // -------------------------------------------------------------------------
