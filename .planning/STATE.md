@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 2 of 4 (Food Logging)
-Plan: 2 of 3 in current phase (Tasks 1+2 done — awaiting device checkpoint)
-Status: In progress — at checkpoint
-Last activity: 2026-04-10 — Completed 02-02 Tasks 1+2 (Food logging UI, library, settings, navigation)
+Plan: 2 of 3 in current phase — COMPLETE (device verified on Galaxy S21 FE)
+Status: In progress — 02-02 complete, ready for 02-03
+Last activity: 2026-04-11 — Completed 02-02 (food logging UI, device verification approved)
 
-Progress: [████░░░░░░] 44% (4/9 plans complete — 02-02 pending checkpoint)
+Progress: [█████░░░░░] 56% (5/9 plans complete)
 
 ## Performance Metrics
 
@@ -25,7 +25,7 @@ Progress: [████░░░░░░] 44% (4/9 plans complete — 02-02 pen
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
-- Phase 2: 1 of 3 plans done, ~8 min
+- Phase 2: 2 of 3 plans done (02-02 multi-session with device testing)
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (12 min), 01-02 (~15 min), 01-03 (~12 min), 02-01 (~8 min)
@@ -51,6 +51,9 @@ Recent decisions affecting current work:
 - [02-01]: OrgLibraryEntry separate from OrgFoodEntry — library items use UUID String ids; log entries use epoch millis Long ids. Cannot share one model without breaking type correctness.
 - [02-01]: applyTemplate acquires fileMutex once for the full batch and calls addEntryInternal() — avoids per-entry lock overhead, ensures atomic batch application.
 - [02-01]: OrgFoodEntry.id defaults to 0L — backward-compatible with all existing tests and legacy log files that predate this field.
+- [02-02]: combine() over same-value reassignment for reload — MutableStateFlow.equals() short-circuits; _reloadTrigger counter forces downstream re-execution without changing the primary key
+- [02-02]: ViewModel.factory() companion with CreationExtras.createSavedStateHandle() — standard pattern for manual DI without Hilt; used in FoodLogViewModel, to be followed by all future ViewModels
+- [02-02]: invokeOnCompletion dismiss pattern for ModalBottomSheet — prevents race between hide animation and onDismiss; applied to all bottom sheets in the project
 
 ### Pending Todos
 
@@ -65,7 +68,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-10 UTC
-Stopped at: 02-02 Task 3 checkpoint — awaiting device verification on Galaxy S21 FE
+Last session: 2026-04-11 UTC
+Stopped at: 02-02 complete — device verification approved on Galaxy S21 FE
 Resume file: None
-Next plan: 02-02-PLAN.md (Task 3 checkpoint: device verification)
+Next plan: 02-03-PLAN.md (food library/template management screens, if needed)
