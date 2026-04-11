@@ -1,7 +1,6 @@
 package com.sakura.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -15,8 +14,15 @@ import com.sakura.features.settings.MacroTargetsScreen
 import com.sakura.features.workoutlog.WorkoutHistoryScreen
 import com.sakura.features.workoutlog.WorkoutLogScreen
 import com.sakura.features.workoutlog.WorkoutLogViewModel
-import com.sakura.features.workoutlog.WorkoutSessionScreen
 
+/**
+ * App navigation host.
+ *
+ * Phase 3 changes:
+ * - WorkoutSession route removed — active workout view is now inline in WorkoutLogScreen
+ * - WorkoutLogScreen receives simple callbacks: onNavigateToFoodLog, onNavigateToHistory, onNavigateToSettings
+ * - No shared ViewModel pattern needed (no WorkoutSession backstack entry)
+ */
 @Composable
 fun AppNavHost(
     navController: NavHostController,
@@ -75,54 +81,17 @@ fun AppNavHost(
             )
             WorkoutLogScreen(
                 viewModel = workoutLogViewModel,
-                onStartSession = { splitDay ->
-                    workoutLogViewModel.startSession(splitDay)
-                    navController.navigate(WorkoutSession)
-                },
-                onResumeSession = {
-                    navController.navigate(WorkoutSession)
+                onNavigateToFoodLog = {
+                    // Replace WorkoutLog with FoodLog — no back-stack accumulation
+                    navController.navigate(FoodLog) {
+                        popUpTo<WorkoutLog> { inclusive = true }
+                    }
                 },
                 onNavigateToHistory = {
                     navController.navigate(WorkoutHistory)
                 },
-                onNavigateToFoodLog = {
-                    navController.navigate(FoodLog) {
-                        popUpTo<WorkoutLog> { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable<WorkoutSession> {
-            // Share the same ViewModel instance from the WorkoutLog backstack entry
-            // so that the session draft persists across navigation.
-            val parentEntry = remember(it) {
-                try {
-                    navController.getBackStackEntry<WorkoutLog>()
-                } catch (_: Exception) {
-                    null
-                }
-            }
-            val workoutLogViewModel: WorkoutLogViewModel = if (parentEntry != null) {
-                viewModel(
-                    viewModelStoreOwner = parentEntry,
-                    factory = WorkoutLogViewModel.factory(
-                        workoutRepo = appContainer.workoutRepository,
-                        prefsRepo = appContainer.prefsRepo
-                    )
-                )
-            } else {
-                viewModel(
-                    factory = WorkoutLogViewModel.factory(
-                        workoutRepo = appContainer.workoutRepository,
-                        prefsRepo = appContainer.prefsRepo
-                    )
-                )
-            }
-            WorkoutSessionScreen(
-                viewModel = workoutLogViewModel,
-                onSessionFinished = {
-                    navController.popBackStack()
+                onNavigateToSettings = {
+                    navController.navigate(Settings)
                 }
             )
         }

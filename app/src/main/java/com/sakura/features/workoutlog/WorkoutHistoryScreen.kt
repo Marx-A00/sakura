@@ -38,11 +38,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.sakura.data.workout.ExerciseType
+import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.WorkoutSession
 import com.sakura.ui.theme.CherryBlossomPink
 import java.time.format.DateTimeFormatter
 
+/**
+ * Workout history screen — list of past sessions with expandable exercise detail.
+ *
+ * Changes from old version:
+ * - Handles null splitDay (shows "Freestyle" when no template)
+ * - Shows volume per session ("Vol: X kg")
+ * - Uses ExerciseCategory (not ExerciseType) for set display labels
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutHistoryScreen(
@@ -86,7 +94,7 @@ fun WorkoutHistoryScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Complete a workout session to see it here",
+                    "Log some workouts to see them here",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -135,6 +143,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
+                    // Handles null splitDay — shows "Freestyle" when no template used
                     Text(
                         text = session.splitDay?.displayName ?: "Freestyle",
                         fontSize = 12.sp,
@@ -148,7 +157,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                 )
             }
 
-            // Summary metrics
+            // Summary metrics: exercise count + volume (WORK-09) + duration
             Spacer(Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -161,7 +170,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                 )
                 if (session.totalVolume > 0) {
                     Text(
-                        "${session.totalVolume.toInt()} kg",
+                        "Vol: ${session.totalVolume.toInt()} kg",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -173,30 +182,42 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                if (session.isComplete) {
+                    Text(
+                        "Complete",
+                        fontSize = 12.sp,
+                        color = CherryBlossomPink,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
-            // Expandable exercise detail
+            // Expandable exercise detail with category badge
             if (expanded) {
                 Spacer(Modifier.height(10.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(10.dp))
 
                 session.exercises.forEach { exerciseLog ->
-                    Text(
-                        text = exerciseLog.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = CherryBlossomPink
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = exerciseLog.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = CherryBlossomPink
+                        )
+                        // Category badge in history (small, subtle)
+                        Text(
+                            text = exerciseLog.category.label,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     exerciseLog.sets.forEach { set ->
-                        val setLabel = when {
-                            exerciseLog.exerciseType == ExerciseType.TIMED ->
-                                "  Set ${set.setNumber}: ${set.holdSecs}s hold"
-                            set.unit == "bw" ->
-                                "  Set ${set.setNumber}: ${set.reps} reps"
-                            else ->
-                                "  Set ${set.setNumber}: ${formatHistWeight(set.weight)}${set.unit} × ${set.reps}"
-                        }
+                        val setLabel = formatSetLabel(set, exerciseLog.category)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -222,6 +243,15 @@ private fun SessionHistoryCard(session: WorkoutSession) {
         }
     }
 }
+
+private fun formatSetLabel(set: com.sakura.data.workout.SetLog, category: ExerciseCategory): String =
+    "  Set ${set.setNumber}: " + when (category) {
+        ExerciseCategory.TIMED -> "${set.holdSecs}s hold"
+        ExerciseCategory.CARDIO -> "${set.durationMin ?: 0}min" + (set.distanceKm?.let { " · ${it}km" } ?: "")
+        ExerciseCategory.STRETCH -> "${set.durationMin ?: 0}min"
+        ExerciseCategory.BODYWEIGHT -> "${set.reps} reps"
+        ExerciseCategory.WEIGHTED -> "${formatHistWeight(set.weight)}${set.unit} × ${set.reps}"
+    }
 
 private fun formatHistWeight(weight: Double): String =
     if (weight == weight.toLong().toDouble()) weight.toLong().toString()

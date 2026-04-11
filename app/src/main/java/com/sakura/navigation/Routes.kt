@@ -22,10 +22,9 @@ object Settings
 @Serializable
 object WorkoutLog
 
-/** Type-safe navigation route for the active workout session screen (Phase 3). */
-@Serializable
-object WorkoutSession
-
-/** Type-safe navigation route for the workout history screen (Phase 3). */
+/**
+ * Type-safe navigation route for the workout history screen (Phase 3).
+ * WorkoutSession route removed — the active session view is now integrated into WorkoutLogScreen.
+ */
 @Serializable
 object WorkoutHistory

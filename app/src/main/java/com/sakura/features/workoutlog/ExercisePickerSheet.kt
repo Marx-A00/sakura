@@ -1,6 +1,7 @@
 package com.sakura.features.workoutlog
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,45 +9,85 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.sakura.data.workout.ExerciseDefinition
+import androidx.compose.ui.unit.sp
+import com.sakura.data.workout.ExerciseCategory
+import com.sakura.data.workout.ExerciseLibrary
+import com.sakura.data.workout.LibraryExercise
 import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.ForestGreen
 import kotlinx.coroutines.launch
 
 /**
- * ModalBottomSheet listing primary exercise name and all alternatives.
- * Shows checkmark on the currently selected option.
- * Uses invokeOnCompletion dismiss pattern from 02-02 decision.
+ * Searchable exercise library browser.
+ * Replaces the old alternative-picker sheet with a full library browser.
+ *
+ * Layout (matches 03-exercise-picker.png):
+ * - "Add Exercise" title + X close button
+ * - Search bar
+ * - Category filter chips: All | Weighted | Bodyweight | Cardio | Timed | Stretch
+ * - Exercise list with name (bold) + subtitle (category · muscles) + + circle button
+ * - "+ Create New Exercise" at bottom
+ *
+ * Uses invokeOnCompletion dismiss pattern (02-02 decision).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExercisePickerSheet(
     sheetState: SheetState,
-    definition: ExerciseDefinition,
-    selectedAlternative: String?,     // null = primary exercise selected
-    onSelect: (String?) -> Unit,      // null = primary, non-null = alternative name
+    onAddExercise: (LibraryExercise) -> Unit,
+    onCreateExercise: (name: String, category: ExerciseCategory) -> Unit,
     onDismiss: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<ExerciseCategory?>(null) }
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     fun dismiss() {
         scope.launch { sheetState.hide() }.invokeOnCompletion {
             if (!sheetState.isVisible) onDismiss()
         }
+    }
+
+    val filteredExercises = remember(searchQuery, selectedCategory) {
+        ExerciseLibrary.search(searchQuery, selectedCategory)
     }
 
     ModalBottomSheet(
@@ -56,71 +97,238 @@ fun ExercisePickerSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            Text(
-                "Choose exercise",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            // Primary exercise option
-            val isPrimarySelected = selectedAlternative == null
-            ExerciseOptionRow(
-                name = definition.name,
-                isSelected = isPrimarySelected,
-                onClick = {
-                    onSelect(null)  // null = select primary
-                    dismiss()
+            // Title row with close button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Add Exercise",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = { dismiss() }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close")
                 }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search exercises...") },
+                leadingIcon = {
+                    Icon(Icons.Filled.Search, contentDescription = null)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
             )
 
-            // Alternative options
-            definition.alternatives.forEach { alt ->
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                val isAltSelected = selectedAlternative == alt
-                ExerciseOptionRow(
-                    name = alt,
-                    isSelected = isAltSelected,
-                    onClick = {
-                        onSelect(alt)
-                        dismiss()
-                    }
+            Spacer(Modifier.height(12.dp))
+
+            // Category filter chips (scrollable row)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedCategory == null,
+                        onClick = { selectedCategory = null },
+                        label = { Text("All") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = CherryBlossomPink,
+                            selectedLabelColor = androidx.compose.ui.graphics.Color.White
+                        )
+                    )
+                }
+                items(ExerciseCategory.entries) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = {
+                            selectedCategory = if (selectedCategory == category) null else category
+                        },
+                        label = { Text(category.displayName) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = CherryBlossomPink,
+                            selectedLabelColor = androidx.compose.ui.graphics.Color.White
+                        )
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Exercise list
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                items(filteredExercises, key = { it.name }) { exercise ->
+                    ExerciseListItem(
+                        exercise = exercise,
+                        onAdd = {
+                            onAddExercise(exercise)
+                            dismiss()
+                        }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 0.dp))
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Create New Exercise link
+            TextButton(
+                onClick = { showCreateDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "+ Create New Exercise",
+                    color = ForestGreen,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
                 )
             }
 
             Spacer(Modifier.height(16.dp))
         }
     }
+
+    // Create new exercise dialog
+    if (showCreateDialog) {
+        CreateExerciseDialog(
+            onCreate = { name, category ->
+                showCreateDialog = false
+                onCreateExercise(name, category)
+                dismiss()
+            },
+            onDismiss = { showCreateDialog = false }
+        )
+    }
 }
 
 @Composable
-private fun ExerciseOptionRow(
-    name: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
+private fun ExerciseListItem(
+    exercise: LibraryExercise,
+    onAdd: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 14.dp),
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) CherryBlossomPink else MaterialTheme.colorScheme.onSurface
-        )
-        if (isSelected) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = exercise.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            // Subtitle: category · muscles (matches mockup)
+            val subtitle = buildString {
+                append(exercise.category.displayName)
+                if (exercise.muscleGroups.isNotEmpty()) {
+                    append(" · ")
+                    append(exercise.muscleGroups.joinToString(", "))
+                }
+            }
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onAdd) {
             Icon(
-                imageVector = Icons.Filled.Check,
-                contentDescription = "Selected",
-                tint = CherryBlossomPink,
-                modifier = Modifier.size(20.dp)
+                Icons.Filled.AddCircle,
+                contentDescription = "Add ${exercise.name}",
+                tint = ForestGreen,
+                modifier = Modifier.size(28.dp)
             )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateExerciseDialog(
+    onCreate: (name: String, category: ExerciseCategory) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf(ExerciseCategory.WEIGHTED) }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create New Exercise") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Exercise name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words
+                    )
+                )
+                // Category dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory.displayName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        ExerciseCategory.entries.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.displayName) },
+                                onClick = {
+                                    selectedCategory = category
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onCreate(name.trim(), selectedCategory)
+                    }
+                },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Create", color = CherryBlossomPink)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
