@@ -6,6 +6,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.sakura.data.workout.ExerciseCategory
+import com.sakura.data.workout.ExerciseLibrary
+import com.sakura.data.workout.ExerciseLog
+import com.sakura.data.workout.ExerciseType
+import com.sakura.data.workout.LibraryExercise
 import com.sakura.data.workout.SetLog
 import com.sakura.data.workout.SplitDay
 import com.sakura.data.workout.WorkoutRepository
@@ -13,20 +18,18 @@ import com.sakura.data.workout.WorkoutSession
 import com.sakura.data.workout.WorkoutTemplates
 import com.sakura.preferences.AppPreferencesRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutLogViewModel(
     private val workoutRepo: WorkoutRepository,
     private val prefsRepo: AppPreferencesRepository,
@@ -34,130 +37,65 @@ class WorkoutLogViewModel(
 ) : ViewModel() {
 
     // -------------------------------------------------------------------------
-    // Reload trigger — incremented after session save to force state refresh
+    // Date navigation — mirrors FoodLogViewModel pattern
+    // -------------------------------------------------------------------------
+
+    private val _selectedDate = MutableStateFlow(LocalDate.now())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
+
+    // -------------------------------------------------------------------------
+    // Reload trigger — increment after any mutation to force state refresh
+    // combine() pattern from 02-02 decision: avoids StateFlow.equals() short-circuit
     // -------------------------------------------------------------------------
 
     private val _reloadTrigger = MutableStateFlow(0)
 
     // -------------------------------------------------------------------------
-    // Session draft — null when no active session
-    // -------------------------------------------------------------------------
-
-    private val _sessionDraft = MutableStateFlow<SessionDraft?>(null)
-    val sessionDraft: StateFlow<SessionDraft?> = _sessionDraft.asStateFlow()
-
-    // -------------------------------------------------------------------------
-    // Rest timer
-    // -------------------------------------------------------------------------
-
-    private val _restSecondsRemaining = MutableStateFlow(0)
-    val restSecondsRemaining: StateFlow<Int> = _restSecondsRemaining.asStateFlow()
-
-    private var restTimerJob: Job? = null
-
-    fun startRestTimer(durationSeconds: Int) {
-        restTimerJob?.cancel()
-        restTimerJob = viewModelScope.launch {
-            var remaining = durationSeconds
-            _restSecondsRemaining.value = remaining
-            while (remaining > 0) {
-                delay(1000)
-                remaining--
-                _restSecondsRemaining.value = remaining
-            }
-        }
-    }
-
-    fun cancelRestTimer() {
-        restTimerJob?.cancel()
-        _restSecondsRemaining.value = 0
-    }
-
-    // -------------------------------------------------------------------------
-    // PR detection
+    // PR notification — emitted after addSet detects a personal record
     // -------------------------------------------------------------------------
 
     private val _prDetected = MutableStateFlow<PrNotification?>(null)
     val prDetected: StateFlow<PrNotification?> = _prDetected.asStateFlow()
 
-    private fun checkForPR(exerciseName: String, set: SetLog) {
-        viewModelScope.launch {
-            val pb = workoutRepo.findPersonalBest(exerciseName) ?: return@launch
-            // Only check PR if there IS prior history (null = first session, don't show PR)
-            val prType = when {
-                set.unit != "bw" && set.weight > pb.weight -> "Weight"
-                set.unit == "bw" && set.holdSecs == 0 && set.reps > pb.reps -> "Reps"
-                set.holdSecs > 0 && set.holdSecs > pb.holdSecs -> "Hold"
-                else -> null
-            }
-            if (prType != null) {
-                _prDetected.value = PrNotification(exerciseName = exerciseName, prType = prType)
-            }
-        }
-    }
-
-    fun dismissPrNotification() {
-        _prDetected.value = null
-    }
-
     // -------------------------------------------------------------------------
-    // Session UI state — derived from draft + rest timer + PR
+    // Main UI state — derived from selectedDate + reloadTrigger
     // -------------------------------------------------------------------------
 
-    val sessionUiState: StateFlow<SessionUiState> = combine(
-        _sessionDraft,
-        _restSecondsRemaining,
-        _prDetected
-    ) { draft, restSecs, pr ->
-        if (draft == null) {
-            SessionUiState.Inactive
-        } else {
-            SessionUiState.Active(
-                splitDay = draft.splitDay,
-                exercises = draft.exercises.map { de ->
-                    SessionExercise(
-                        definition = de.definition,
-                        selectedAlternative = de.selectedAlternative,
-                        loggedSets = de.loggedSets,
-                        previousSets = de.previousSets
-                    )
-                },
-                restSecondsRemaining = restSecs,
-                prDetected = pr,
-                startTimeMillis = draft.startTimeMillis
-            )
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = SessionUiState.Inactive
-    )
-
-    // -------------------------------------------------------------------------
-    // Log UI state — derives from prefs + reload trigger
-    // -------------------------------------------------------------------------
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val logUiState: StateFlow<WorkoutLogUiState> =
-        combine(prefsRepo.lastWorkoutSplitDay, prefsRepo.lastWorkoutDate, _reloadTrigger) { splitDay, date, _ ->
-            splitDay  // only care about splitDay for next-day calculation
-        }
-        .flatMapLatest { lastSplitDayLabel ->
+    val uiState: StateFlow<WorkoutLogUiState> = combine(
+        _selectedDate, _reloadTrigger
+    ) { date, _ -> date }
+        .flatMapLatest { date ->
             flow {
                 emit(WorkoutLogUiState.Loading)
                 try {
-                    val lastSplitDay = lastSplitDayLabel?.let { SplitDay.fromLabel(it) }
-                    val nextSplitDay = SplitDay.nextAfter(lastSplitDay)
-                    val lastSession: WorkoutSession? = if (lastSplitDay != null) {
-                        workoutRepo.loadLastSessionForSplitDay(lastSplitDay)
-                    } else {
-                        null
+                    val session = workoutRepo.loadSession(date)
+                    val exercises = session?.exercises ?: emptyList()
+
+                    // Load previous sets for each exercise for auto-fill reference
+                    val previousSetsMap = mutableMapOf<String, List<SetLog>>()
+                    exercises.forEach { ex ->
+                        val prev = workoutRepo.loadPreviousSetsForExercise(ex.name)
+                        if (prev.isNotEmpty()) previousSetsMap[ex.name] = prev
                     }
+
                     emit(
-                        WorkoutLogUiState.Ready(
-                            nextSplitDay = nextSplitDay,
-                            lastSession = lastSession,
-                            hasActiveSession = _sessionDraft.value != null
+                        WorkoutLogUiState.DayLoaded(
+                            date = date,
+                            isToday = date == LocalDate.now(),
+                            templateName = session?.templateName,
+                            exercises = exercises.map { ex ->
+                                DayExercise(
+                                    exerciseLog = ex,
+                                    targetSets = null,   // template targets not persisted per-exercise yet
+                                    targetReps = null,
+                                    targetHoldSecs = null,
+                                    previousSets = previousSetsMap[ex.name] ?: emptyList(),
+                                    category = ex.category
+                                )
+                            },
+                            isComplete = session?.isComplete ?: false,
+                            totalVolume = session?.totalVolume ?: 0.0,
+                            previousSetsMap = previousSetsMap
                         )
                     )
                 } catch (e: Exception) {
@@ -178,88 +116,152 @@ class WorkoutLogViewModel(
         )
 
     // -------------------------------------------------------------------------
-    // Session lifecycle
+    // Date navigation (mirror FoodLogViewModel pattern)
     // -------------------------------------------------------------------------
 
-    fun startSession(splitDay: SplitDay) {
+    fun navigateDate(delta: Int) {
+        _selectedDate.value = _selectedDate.value.plusDays(delta.toLong())
+    }
+
+    fun goToToday() {
+        _selectedDate.value = LocalDate.now()
+    }
+
+    // -------------------------------------------------------------------------
+    // Template loading — seeds the day with exercises from the selected split day
+    // -------------------------------------------------------------------------
+
+    fun loadTemplate(splitDay: SplitDay) {
         viewModelScope.launch {
             val template = WorkoutTemplates.forDay(splitDay)
-            val lastSession = workoutRepo.loadLastSessionForSplitDay(splitDay)
-
-            val draftExercises = template.exercises.map { def ->
-                val previousSets = lastSession?.exercises
-                    ?.find { ex ->
-                        ex.name.trim().lowercase() == def.name.trim().lowercase() ||
-                            def.alternatives.any { alt ->
-                                ex.name.trim().lowercase() == alt.trim().lowercase()
-                            }
-                    }
-                    ?.sets?.map { s -> SetLog(s.setNumber, s.reps, s.weight, s.unit, s.holdSecs, s.rpe, false) }
-                    ?: emptyList()
-
-                val selectedAlt = lastSession?.exercises
-                    ?.find { ex ->
-                        def.alternatives.any { alt ->
-                            alt.trim().lowercase() == ex.name.trim().lowercase()
-                        }
-                    }
-                    ?.name  // preserve last session's alternative selection
-
-                DraftExercise(
-                    definition = def,
-                    selectedAlternative = selectedAlt,
-                    previousSets = previousSets
+            val date = _selectedDate.value
+            template.exercises.forEachIndexed { idx, def ->
+                val exerciseLog = ExerciseLog(
+                    id = System.currentTimeMillis() + idx,
+                    name = def.name,
+                    exerciseType = def.exerciseType,
+                    category = def.category,
+                    sets = emptyList()
                 )
+                workoutRepo.addExercise(date, exerciseLog)
+                // Small delay to ensure unique IDs when iterating rapidly
+                kotlinx.coroutines.delay(2)
             }
+            _reloadTrigger.value++
+        }
+    }
 
-            _sessionDraft.value = SessionDraft(
-                splitDay = splitDay,
-                exercises = draftExercises.toMutableList()
+    // -------------------------------------------------------------------------
+    // Add a single exercise to the day (from library picker)
+    // -------------------------------------------------------------------------
+
+    fun addExercise(libraryExercise: LibraryExercise) {
+        viewModelScope.launch {
+            val date = _selectedDate.value
+            // Map category label to ExerciseType for org file storage.
+            // ExerciseType.fromLabel("cardio") returns CARDIO (added in 03-02).
+            val exerciseType = ExerciseType.fromLabel(libraryExercise.category.label)
+            val exerciseLog = ExerciseLog(
+                id = System.currentTimeMillis(),
+                name = libraryExercise.name,
+                exerciseType = exerciseType,
+                category = libraryExercise.category,
+                sets = emptyList()
             )
+            workoutRepo.addExercise(date, exerciseLog)
+            _reloadTrigger.value++
         }
     }
 
-    fun logSet(exerciseIndex: Int, set: SetLog) {
-        val draft = _sessionDraft.value ?: return
-        val exerciseName = draft.exercises[exerciseIndex].displayName
-        _sessionDraft.value = draft.addSet(exerciseIndex, set)
+    // -------------------------------------------------------------------------
+    // Add a set to an exercise (immediate write — no draft/finish lifecycle)
+    // -------------------------------------------------------------------------
 
-        // Start rest timer automatically after logging a set
+    fun addSet(exerciseId: Long, set: SetLog) {
         viewModelScope.launch {
-            val defaultSecs = prefsRepo.defaultRestTimerSecs.first()
-            startRestTimer(defaultSecs)
+            val date = _selectedDate.value
+            workoutRepo.addSet(date, exerciseId, set)
+            // Check for PR after logging the set
+            val exerciseName = (uiState.value as? WorkoutLogUiState.DayLoaded)
+                ?.exercises?.find { it.exerciseLog.id == exerciseId }
+                ?.exerciseLog?.name
+            if (exerciseName != null) {
+                checkForPR(exerciseName, set)
+            }
+            _reloadTrigger.value++
         }
-
-        // Check for PR asynchronously
-        checkForPR(exerciseName, set)
     }
 
-    fun selectAlternative(exerciseIndex: Int, alternativeName: String) {
-        val draft = _sessionDraft.value ?: return
-        _sessionDraft.value = draft.selectAlternative(exerciseIndex, alternativeName)
-    }
+    // -------------------------------------------------------------------------
+    // Remove exercise from day
+    // -------------------------------------------------------------------------
 
-    fun finishSession() {
+    fun removeExercise(exerciseId: Long) {
         viewModelScope.launch {
-            val draft = _sessionDraft.value ?: return@launch
-            val session = draft.toWorkoutSession(LocalDate.now())
-            val result = workoutRepo.saveSession(session)
-            if (result.isSuccess) {
-                // Update last workout info in preferences for split awareness
-                // Only update lastWorkout prefs if session has an assigned split day
-                session.splitDay?.let { sd ->
-                    prefsRepo.setLastWorkout(
-                        splitDay = sd.label,
-                        date = session.date.toString()
-                    )
-                }
-                _sessionDraft.value = null
-                cancelRestTimer()
-                _prDetected.value = null
-                // Trigger reload of the log screen state
-                _reloadTrigger.value++
+            workoutRepo.removeExercise(_selectedDate.value, exerciseId)
+            _reloadTrigger.value++
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Remove a set from an exercise
+    // -------------------------------------------------------------------------
+
+    fun removeSet(exerciseId: Long, setNumber: Int) {
+        viewModelScope.launch {
+            workoutRepo.removeSet(_selectedDate.value, exerciseId, setNumber)
+            _reloadTrigger.value++
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Mark day complete (soft flag)
+    // -------------------------------------------------------------------------
+
+    fun toggleComplete() {
+        viewModelScope.launch {
+            val current = (uiState.value as? WorkoutLogUiState.DayLoaded)?.isComplete ?: false
+            workoutRepo.markComplete(_selectedDate.value, !current)
+            _reloadTrigger.value++
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Create new exercise in library and add to day
+    // -------------------------------------------------------------------------
+
+    fun createAndAddExercise(name: String, category: ExerciseCategory) {
+        val newExercise = LibraryExercise(name = name, category = category, isBuiltIn = false)
+        ExerciseLibrary.addUserExercise(newExercise)
+        viewModelScope.launch {
+            workoutRepo.saveUserExercises(ExerciseLibrary.userExercises())
+            // Also add to today's workout immediately
+            addExercise(newExercise)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // PR detection
+    // -------------------------------------------------------------------------
+
+    private fun checkForPR(exerciseName: String, set: SetLog) {
+        viewModelScope.launch {
+            val pb = workoutRepo.findPersonalBest(exerciseName) ?: return@launch
+            // Only flag as PR if there IS prior history (null = first session, no PR)
+            val prType = when {
+                set.unit != "bw" && set.weight > pb.weight -> "Weight"
+                set.unit == "bw" && set.holdSecs == 0 && set.reps > pb.reps -> "Reps"
+                set.holdSecs > 0 && set.holdSecs > pb.holdSecs -> "Hold"
+                else -> null
+            }
+            if (prType != null) {
+                _prDetected.value = PrNotification(exerciseName, prType)
             }
         }
+    }
+
+    fun dismissPrNotification() {
+        _prDetected.value = null
     }
 
     // -------------------------------------------------------------------------
@@ -276,7 +278,18 @@ class WorkoutLogViewModel(
     }
 
     // -------------------------------------------------------------------------
-    // Factory — same pattern as FoodLogViewModel
+    // Initialise user exercises from persistent storage on startup
+    // -------------------------------------------------------------------------
+
+    init {
+        viewModelScope.launch {
+            val exercises = workoutRepo.loadUserExercises()
+            ExerciseLibrary.loadUserExercises(exercises)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Factory — same pattern as FoodLogViewModel (02-02 decision)
     // -------------------------------------------------------------------------
 
     companion object {

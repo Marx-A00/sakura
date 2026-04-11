@@ -1,44 +1,55 @@
 package com.sakura.features.workoutlog
 
-import com.sakura.data.workout.ExerciseDefinition
+import com.sakura.data.workout.ExerciseCategory
+import com.sakura.data.workout.ExerciseLog
 import com.sakura.data.workout.SetLog
-import com.sakura.data.workout.SplitDay
-import com.sakura.data.workout.WorkoutSession
+import java.time.LocalDate
 
+/**
+ * Day-based UI state for the workout log tab.
+ * Replaces the old session-based state (Ready/SessionUiState) with a single
+ * DayLoaded state that shows exercises and logged sets inline.
+ *
+ * This mirrors FoodLogUiState.Success in concept — a "loaded day" model with
+ * incremental writes instead of draft-then-save.
+ */
 sealed interface WorkoutLogUiState {
     data object Loading : WorkoutLogUiState
-    data class Ready(
-        val nextSplitDay: SplitDay?,          // suggested next workout day (null if no history)
-        val lastSession: WorkoutSession?,      // most recent session for summary display
-        val hasActiveSession: Boolean          // true if a session draft is in progress
+
+    data class DayLoaded(
+        val date: LocalDate,
+        val isToday: Boolean,
+        val templateName: String?,                     // e.g., "Monday — Lift" if loaded from template
+        val exercises: List<DayExercise>,              // exercises for this day
+        val isComplete: Boolean,                       // soft complete flag
+        val totalVolume: Double,                       // total volume in kg for the day (WORK-09)
+        val previousSetsMap: Map<String, List<SetLog>> // exercise name -> previous sets (for auto-fill)
     ) : WorkoutLogUiState
+
     sealed interface Error : WorkoutLogUiState {
         data object FolderUnavailable : Error
         data class Generic(val message: String) : Error
     }
 }
 
-sealed interface SessionUiState {
-    data object Inactive : SessionUiState
-    data class Active(
-        val splitDay: SplitDay,
-        val exercises: List<SessionExercise>,   // current exercise list with logged sets
-        val restSecondsRemaining: Int,
-        val prDetected: PrNotification?,        // non-null when a PR was just detected
-        val startTimeMillis: Long               // session start time for duration calculation
-    ) : SessionUiState
-}
+/**
+ * An exercise entry for today's day view, wrapping the persisted ExerciseLog
+ * with UI-facing metadata (template targets, previous sets, category).
+ */
+data class DayExercise(
+    val exerciseLog: ExerciseLog,              // the persisted exercise with its sets
+    val targetSets: Int?,                      // from template (null if freestyle)
+    val targetReps: Int?,                      // from template
+    val targetHoldSecs: Int?,                  // from template (timed exercises)
+    val previousSets: List<SetLog>,            // from last session for auto-fill reference
+    val category: ExerciseCategory             // determines which input fields to show
+)
 
-data class SessionExercise(
-    val definition: ExerciseDefinition,
-    val selectedAlternative: String?,           // non-null if user picked an alternative
-    val loggedSets: List<SetLog>,
-    val previousSets: List<SetLog>              // auto-filled from last session (empty if first time)
-) {
-    val displayName: String get() = selectedAlternative ?: definition.name
-}
-
+/**
+ * PR notification displayed as a dismissible AlertDialog.
+ * Emitted after addSet detects a new personal record.
+ */
 data class PrNotification(
     val exerciseName: String,
-    val prType: String                          // "Weight", "Reps", or "Hold"
+    val prType: String                         // "Weight", "Reps", or "Hold"
 )
