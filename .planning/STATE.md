@@ -9,23 +9,24 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 2 of 4 (Food Logging)
-Plan: 2 of 3 in current phase — COMPLETE (device verified on Galaxy S21 FE)
-Status: In progress — 02-02 complete, ready for 02-03
-Last activity: 2026-04-11 — Completed 02-02 (food logging UI, device verification approved)
+Phase: 3 of 5 (Workout Logging)
+Plan: 1 of 3 in current phase — COMPLETE
+Status: In progress — 03-01 complete, ready for 03-02
+Last activity: 2026-04-11 — Completed 03-01 (workout data layer)
 
-Progress: [█████░░░░░] 56% (5/9 plans complete)
+Progress: [██████░░░░] 60% (6/10 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: ~11 min
-- Total execution time: ~47 min
+- Total plans completed: 5
+- Average duration: ~10 min
+- Total execution time: ~52 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 3 plans done (02-02 multi-session with device testing)
+- Phase 3: 1 of 3 plans done, ~5 min
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (12 min), 01-02 (~15 min), 01-03 (~12 min), 02-01 (~8 min)
@@ -54,6 +55,9 @@ Recent decisions affecting current work:
 - [02-02]: combine() over same-value reassignment for reload — MutableStateFlow.equals() short-circuits; _reloadTrigger counter forces downstream re-execution without changing the primary key
 - [02-02]: ViewModel.factory() companion with CreationExtras.createSavedStateHandle() — standard pattern for manual DI without Hilt; used in FoodLogViewModel, to be followed by all future ViewModels
 - [02-02]: invokeOnCompletion dismiss pattern for ModalBottomSheet — prevents race between hide animation and onDismiss; applied to all bottom sheets in the project
+- [03-01]: OrgExerciseLog + OrgSetEntry at org levels 3+4 (not flattened) — enables per-set logging, PR tracking, timed holds; backward compat via synthesized single set when old :sets: property found
+- [03-01]: findPersonalBest returns null (not PersonalBest(0,0,0)) when no prior history — prevents PR false positives on first session for any exercise
+- [03-01]: OrgDateSection.toWorkoutSession() returns null when splitDay missing — legacy sections without Phase 3 metadata don't surface as WorkoutSessions
 
 ### Pending Todos
 
@@ -69,6 +73,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-11 UTC
-Stopped at: 02-02 complete — device verification approved on Galaxy S21 FE
+Stopped at: 03-01 complete — workout data layer fully implemented and tested
 Resume file: None
-Next plan: 02-03-PLAN.md (food library/template management screens, if needed)
+Next plan: 03-02-PLAN.md (workout session UI — WorkoutLogScreen, WorkoutSessionScreen, WorkoutLogViewModel)
