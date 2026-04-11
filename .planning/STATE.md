@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 3 of 5 (Workout Logging)
-Plan: 1 of 3 in current phase — COMPLETE
-Status: In progress — 03-01 complete, ready for 03-02
-Last activity: 2026-04-11 — Completed 03-01 (workout data layer)
+Plan: 2 of 3 in current phase — COMPLETE
+Status: In progress — 03-01 and 03-02 complete, ready for 03-03
+Last activity: 2026-04-11 — Completed 03-02 (incremental workout data layer)
 
-Progress: [██████░░░░] 60% (6/10 plans complete)
+Progress: [███████░░░] 70% (7/10 plans complete)
 
 ## Performance Metrics
 
@@ -26,7 +26,7 @@ Progress: [██████░░░░] 60% (6/10 plans complete)
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 3 plans done (02-02 multi-session with device testing)
-- Phase 3: 1 of 3 plans done, ~5 min
+- Phase 3: 2 of 3 plans done, ~13 min total
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (12 min), 01-02 (~15 min), 01-03 (~12 min), 02-01 (~8 min)
@@ -58,6 +58,10 @@ Recent decisions affecting current work:
 - [03-01]: OrgExerciseLog + OrgSetEntry at org levels 3+4 (not flattened) — enables per-set logging, PR tracking, timed holds; backward compat via synthesized single set when old :sets: property found
 - [03-01]: findPersonalBest returns null (not PersonalBest(0,0,0)) when no prior history — prevents PR false positives on first session for any exercise
 - [03-01]: OrgDateSection.toWorkoutSession() returns null when splitDay missing — legacy sections without Phase 3 metadata don't surface as WorkoutSessions
+- [03-02]: ExerciseCategory kept as enum (not sealed class) — categories are stable, drive UI behavior; user-creatable things are exercises not categories
+- [03-02]: User exercises persisted in DataStore JSON (stringPreferencesKey) not a separate org file — flat list, simple structure, avoids new org format
+- [03-02]: WorkoutSession.splitDay is now nullable (SplitDay?) — null means freestyle day, valid session, no template required
+- [03-02]: Cardio set properties reuse PROP_DURATION_MIN constant — context (set vs session nesting) disambiguates meaning
 
 ### Pending Todos
 
@@ -73,6 +77,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-11 UTC
-Stopped at: 03-01 complete — workout data layer fully implemented and tested
+Stopped at: 03-02 complete — incremental data layer with ExerciseCategory, ExerciseLibrary, cardio support
 Resume file: None
-Next plan: 03-02-PLAN.md (workout session UI — WorkoutLogScreen, WorkoutSessionScreen, WorkoutLogViewModel)
+Next plan: 03-03-PLAN.md (workout logging UI — WorkoutDayScreen, ExercisePickerSheet, SetInputSheet day-based UX)
