@@ -51,8 +51,20 @@ object OrgWriter {
             }
         }
 
-        if (section.exercises.isNotEmpty()) {
-            // Workout section: single "** Workout" subheading, all exercises listed under it
+        if (section.exerciseLogs.isNotEmpty()) {
+            // Phase 3 workout section: ** Workout with metadata drawer, then *** exercises with **** sets
+            sb.append("\n")
+            sb.append(OrgSchema.formatWorkoutHeading(section.splitDay, section.volume, section.durationMin))
+            section.exerciseLogs.forEach { exerciseLog ->
+                sb.append("\n")
+                sb.append(OrgSchema.formatExerciseLog(exerciseLog))
+                exerciseLog.sets.forEach { set ->
+                    sb.append("\n")
+                    sb.append(OrgSchema.formatSetEntry(set))
+                }
+            }
+        } else if (section.exercises.isNotEmpty()) {
+            // Legacy flat workout section: single "** Workout" subheading, all exercises listed under it
             sb.append("\n")
             sb.append("** Workout")
             section.exercises.forEach { exercise ->

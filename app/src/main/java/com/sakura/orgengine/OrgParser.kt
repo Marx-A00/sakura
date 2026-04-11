@@ -12,13 +12,22 @@ import java.time.LocalDate
  *   FOOD    -- expects meal group headings (level 2) and food item headings (level 3)
  *              with property drawers containing protein/carbs/fat/calories
  *   WORKOUT -- expects a workout heading (level 2) and exercise headings (level 3)
- *              with property drawers containing sets/reps/weight/unit
+ *              with level-4 "Set N" headings and property drawers (Phase 3 format).
+ *              Backward compat: old flat format (sets/reps/weight/unit on exercise drawer)
+ *              is parsed into a single-set OrgExerciseLog.
  *
  * Property drawer parsing:
  *   *** Item name          <- ITEM_HEADING_REGEX captures item name
  *   :PROPERTIES:           <- enter drawer state
  *   :key: value            <- accumulate key/value pairs via PROPERTY_REGEX
  *   :END:                  <- exit drawer state; build and emit entry
+ *
+ * WORKOUT mode level structure:
+ *   ** Workout             <- session heading with metadata drawer
+ *   *** Exercise name      <- exercise heading with id/type drawer (level 3)
+ *   **** Set 1             <- set heading (level 4)
+ *   :PROPERTIES:           <- set drawer with reps/weight/unit/etc
+ *   :END:
  */
 object OrgParser {
 
@@ -40,7 +49,28 @@ object OrgParser {
         var currentMeals = mutableListOf<OrgMealGroup>()
         var currentMealLabel: String? = null
         var currentMealEntries = mutableListOf<OrgFoodEntry>()
+
+        // Legacy workout accumulators (backward compat)
         var currentExercises = mutableListOf<OrgExerciseEntry>()
+
+        // Phase 3 workout accumulators
+        var currentExerciseLogs = mutableListOf<OrgExerciseLog>()
+        var currentExerciseLogName: String? = null
+        var currentExerciseLogId: Long = 0L
+        var currentExerciseLogType: String = "barbell"
+        var currentExerciseLogSets = mutableListOf<OrgSetEntry>()
+
+        // Workout session metadata (from ** Workout property drawer)
+        var currentSplitDay: String? = null
+        var currentVolume: Int? = null
+        var currentDurationMin: Int? = null
+
+        // Set-level tracking
+        var currentSetNumber: Int? = null
+
+        // Drawer level tracking: which level is the current drawer for
+        // "workout" = ** Workout drawer, "exercise" = *** Exercise drawer, "set" = **** Set drawer
+        var currentDrawerContext: String = "none"
 
         // Property drawer state
         var inPropertyDrawer = false
@@ -61,22 +91,53 @@ object OrgParser {
         }
 
         /**
+         * Flush the current exercise log (Phase 3) into exerciseLogs.
+         * Called when we see a new level-3 heading or a new date heading.
+         */
+        fun flushCurrentExerciseLog() {
+            val name = currentExerciseLogName ?: return
+            val log = OrgExerciseLog(
+                name = name,
+                id = currentExerciseLogId,
+                exerciseType = currentExerciseLogType,
+                sets = currentExerciseLogSets.toList()
+            )
+            currentExerciseLogs.add(log)
+            currentExerciseLogName = null
+            currentExerciseLogId = 0L
+            currentExerciseLogType = "barbell"
+            currentExerciseLogSets = mutableListOf()
+            currentSetNumber = null
+        }
+
+        /**
          * Flush the current date section into sections list.
          * Called when we see a new date heading or reach end of input.
          */
         fun flushCurrentSection() {
             val date = currentDate ?: return
             flushCurrentMeal()
+            if (mode == ParseMode.WORKOUT) {
+                flushCurrentExerciseLog()
+            }
             sections.add(
                 OrgDateSection(
                     date = date,
                     meals = currentMeals.toList(),
-                    exercises = currentExercises.toList()
+                    exercises = currentExercises.toList(),
+                    exerciseLogs = currentExerciseLogs.toList(),
+                    splitDay = currentSplitDay,
+                    volume = currentVolume,
+                    durationMin = currentDurationMin
                 )
             )
             currentDate = null
             currentMeals = mutableListOf()
             currentExercises = mutableListOf()
+            currentExerciseLogs = mutableListOf()
+            currentSplitDay = null
+            currentVolume = null
+            currentDurationMin = null
         }
 
         for (line in content.lines()) {
@@ -86,6 +147,35 @@ object OrgParser {
                     flushCurrentSection()
                     val match = OrgSchema.DATE_HEADING_REGEX.find(line)!!
                     currentDate = LocalDate.parse(match.groupValues[1], OrgSchema.DATE_PARSE_FORMATTER)
+                    currentDrawerContext = "none"
+                }
+
+                // Level-4 set heading: **** Set N (WORKOUT mode only, check before level-3)
+                mode == ParseMode.WORKOUT && OrgSchema.SET_HEADING_REGEX.matches(line) -> {
+                    val match = OrgSchema.SET_HEADING_REGEX.find(line)!!
+                    currentSetNumber = match.groupValues[1].toIntOrNull() ?: 1
+                    currentDrawerContext = "set"
+                    drawerProperties = mutableMapOf()
+                }
+
+                // Level-3 item heading: *** Item name
+                OrgSchema.ITEM_HEADING_REGEX.matches(line) -> {
+                    val match = OrgSchema.ITEM_HEADING_REGEX.find(line)!!
+                    val name = match.groupValues[1]
+                    when (mode) {
+                        ParseMode.FOOD -> {
+                            currentItemName = name
+                            drawerProperties = mutableMapOf()
+                        }
+                        ParseMode.WORKOUT -> {
+                            // Flush previous exercise log before starting a new one
+                            flushCurrentExerciseLog()
+                            currentExerciseLogName = name
+                            currentDrawerContext = "exercise"
+                            currentItemName = name
+                            drawerProperties = mutableMapOf()
+                        }
+                    }
                 }
 
                 // Level-2 heading: ** SomeLabel (meal group or workout)
@@ -98,30 +188,26 @@ object OrgParser {
                             currentMealLabel = match.groupValues[1]
                         }
                         ParseMode.WORKOUT -> {
-                            // "** Workout" — just a label, no meal tracking needed
+                            // "** Workout" — session-level heading; prepare to read metadata drawer
+                            currentDrawerContext = "workout"
+                            drawerProperties = mutableMapOf()
                         }
                     }
-                }
-
-                // Level-3 item heading: *** Item name
-                OrgSchema.ITEM_HEADING_REGEX.matches(line) -> {
-                    val match = OrgSchema.ITEM_HEADING_REGEX.find(line)!!
-                    currentItemName = match.groupValues[1]
-                    drawerProperties = mutableMapOf()
                 }
 
                 // Property drawer open
                 line.trim() == OrgSchema.PROPERTIES_START -> {
                     inPropertyDrawer = true
+                    drawerProperties = mutableMapOf()
                 }
 
                 // Property drawer close — build and emit entry from accumulated state
                 line.trim() == OrgSchema.PROPERTIES_END && inPropertyDrawer -> {
                     inPropertyDrawer = false
-                    val itemName = currentItemName
-                    if (itemName != null) {
-                        when (mode) {
-                            ParseMode.FOOD -> {
+                    when (mode) {
+                        ParseMode.FOOD -> {
+                            val itemName = currentItemName
+                            if (itemName != null) {
                                 val entry = OrgFoodEntry(
                                     name = itemName,
                                     protein = drawerProperties[OrgSchema.PROP_PROTEIN]?.toIntOrNull() ?: 0,
@@ -135,20 +221,73 @@ object OrgParser {
                                 )
                                 currentMealEntries.add(entry)
                             }
-                            ParseMode.WORKOUT -> {
-                                val entry = OrgExerciseEntry(
-                                    name = itemName,
-                                    sets = drawerProperties["sets"]?.toIntOrNull() ?: 0,
-                                    reps = drawerProperties["reps"]?.toIntOrNull() ?: 0,
-                                    weight = drawerProperties["weight"]?.toDoubleOrNull() ?: 0.0,
-                                    unit = drawerProperties["unit"] ?: "kg"
-                                )
-                                currentExercises.add(entry)
+                            currentItemName = null
+                            drawerProperties = mutableMapOf()
+                        }
+                        ParseMode.WORKOUT -> {
+                            when (currentDrawerContext) {
+                                "workout" -> {
+                                    // Session-level metadata drawer
+                                    currentSplitDay = drawerProperties[OrgSchema.PROP_SPLIT_DAY]
+                                    currentVolume = drawerProperties[OrgSchema.PROP_VOLUME]?.toIntOrNull()
+                                    currentDurationMin = drawerProperties[OrgSchema.PROP_DURATION_MIN]?.toIntOrNull()
+                                    drawerProperties = mutableMapOf()
+                                }
+                                "exercise" -> {
+                                    // Exercise-level drawer: read id and exercise_type
+                                    // Also check for old flat format (sets/reps/weight/unit)
+                                    currentExerciseLogId = drawerProperties[OrgSchema.PROP_ID]?.toLongOrNull() ?: 0L
+                                    currentExerciseLogType = drawerProperties[OrgSchema.PROP_EXERCISE_TYPE] ?: "barbell"
+
+                                    // Backward compat: if old flat format properties found and no set headings follow,
+                                    // synthesize a single OrgSetEntry. We detect this when :sets: is present.
+                                    val oldSets = drawerProperties[OrgSchema.PROP_SETS]?.toIntOrNull()
+                                    if (oldSets != null) {
+                                        // Old format — synthesize single set entry
+                                        val syntheticSet = OrgSetEntry(
+                                            setNumber = 1,
+                                            reps = drawerProperties[OrgSchema.PROP_REPS]?.toIntOrNull() ?: 0,
+                                            weight = drawerProperties[OrgSchema.PROP_WEIGHT]?.toDoubleOrNull() ?: 0.0,
+                                            unit = drawerProperties[OrgSchema.PROP_UNIT] ?: "kg",
+                                            holdSecs = 0,
+                                            rpe = null,
+                                            isPr = false
+                                        )
+                                        currentExerciseLogSets.add(syntheticSet)
+                                        // Also add to legacy exercises list for backward compat
+                                        val legacyEntry = OrgExerciseEntry(
+                                            name = currentExerciseLogName ?: "",
+                                            sets = oldSets,
+                                            reps = drawerProperties[OrgSchema.PROP_REPS]?.toIntOrNull() ?: 0,
+                                            weight = drawerProperties[OrgSchema.PROP_WEIGHT]?.toDoubleOrNull() ?: 0.0,
+                                            unit = drawerProperties[OrgSchema.PROP_UNIT] ?: "kg"
+                                        )
+                                        currentExercises.add(legacyEntry)
+                                    }
+                                    drawerProperties = mutableMapOf()
+                                }
+                                "set" -> {
+                                    // Set-level drawer: build OrgSetEntry
+                                    val setNum = currentSetNumber ?: 1
+                                    val setEntry = OrgSetEntry(
+                                        setNumber = setNum,
+                                        reps = drawerProperties[OrgSchema.PROP_REPS]?.toIntOrNull() ?: 0,
+                                        weight = drawerProperties[OrgSchema.PROP_WEIGHT]?.toDoubleOrNull() ?: 0.0,
+                                        unit = drawerProperties[OrgSchema.PROP_UNIT] ?: "kg",
+                                        holdSecs = drawerProperties[OrgSchema.PROP_HOLD_SECS]?.toIntOrNull() ?: 0,
+                                        rpe = drawerProperties[OrgSchema.PROP_RPE]?.toIntOrNull(),
+                                        isPr = drawerProperties[OrgSchema.PROP_IS_PR]?.toBooleanStrictOrNull() ?: false
+                                    )
+                                    currentExerciseLogSets.add(setEntry)
+                                    currentSetNumber = null
+                                    drawerProperties = mutableMapOf()
+                                }
+                                else -> {
+                                    drawerProperties = mutableMapOf()
+                                }
                             }
                         }
                     }
-                    currentItemName = null
-                    drawerProperties = mutableMapOf()
                 }
 
                 // Property key-value inside a drawer: :key: value

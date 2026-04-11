@@ -395,7 +395,277 @@ class OrgParserTest {
     }
 
     // -------------------------------------------------------------------------
-    // Test 11: Parse meal templates file
+    // Test 11: Parse Phase 3 workout file with per-set format (level 3+4)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseWorkoutFile_perSetFormat_phase3() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |:PROPERTIES:
+            |:split_day: monday-lift
+            |:volume: 3200
+            |:duration_min: 60
+            |:END:
+            |*** Bench Press
+            |:PROPERTIES:
+            |:id: 1712661600000
+            |:exercise_type: barbell
+            |:END:
+            |**** Set 1
+            |:PROPERTIES:
+            |:reps: 5
+            |:weight: 80
+            |:unit: kg
+            |:is_pr: false
+            |:END:
+            |**** Set 2
+            |:PROPERTIES:
+            |:reps: 5
+            |:weight: 82.5
+            |:unit: kg
+            |:rpe: 8
+            |:is_pr: true
+            |:END:
+            |*** Pull-ups
+            |:PROPERTIES:
+            |:id: 1712661600001
+            |:exercise_type: calisthenics
+            |:END:
+            |**** Set 1
+            |:PROPERTIES:
+            |:reps: 11
+            |:weight: 0
+            |:unit: bw
+            |:is_pr: true
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+        assertEquals(april9, section.date)
+        assertEquals("monday-lift", section.splitDay)
+        assertEquals(3200, section.volume)
+        assertEquals(60, section.durationMin)
+        assertEquals(2, section.exerciseLogs.size)
+
+        val bench = section.exerciseLogs[0]
+        assertEquals("Bench Press", bench.name)
+        assertEquals(1712661600000L, bench.id)
+        assertEquals("barbell", bench.exerciseType)
+        assertEquals(2, bench.sets.size)
+
+        val set1 = bench.sets[0]
+        assertEquals(1, set1.setNumber)
+        assertEquals(5, set1.reps)
+        assertEquals(80.0, set1.weight, 0.001)
+        assertEquals("kg", set1.unit)
+        assertNull(set1.rpe)
+        assertEquals(false, set1.isPr)
+
+        val set2 = bench.sets[1]
+        assertEquals(2, set2.setNumber)
+        assertEquals(5, set2.reps)
+        assertEquals(82.5, set2.weight, 0.001)
+        assertEquals(8, set2.rpe)
+        assertEquals(true, set2.isPr)
+
+        val pullups = section.exerciseLogs[1]
+        assertEquals("Pull-ups", pullups.name)
+        assertEquals("calisthenics", pullups.exerciseType)
+        assertEquals(1, pullups.sets.size)
+        assertEquals("bw", pullups.sets[0].unit)
+        assertEquals(true, pullups.sets[0].isPr)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 12: Backward compat — old flat format parses into single-set exerciseLog
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseWorkoutFile_oldFlatFormat_backwardCompat() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |*** Squat
+            |:PROPERTIES:
+            |:sets: 3
+            |:reps: 5
+            |:weight: 100
+            |:unit: kg
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+
+        // Old exercises list still populated (backward compat)
+        assertEquals(1, section.exercises.size)
+        assertEquals("Squat", section.exercises[0].name)
+        assertEquals(3, section.exercises[0].sets)
+
+        // New exerciseLogs also populated with single synthesized set
+        assertEquals(1, section.exerciseLogs.size)
+        val log = section.exerciseLogs[0]
+        assertEquals("Squat", log.name)
+        assertEquals(1, log.sets.size)
+        val synthSet = log.sets[0]
+        assertEquals(1, synthSet.setNumber)
+        assertEquals(5, synthSet.reps)
+        assertEquals(100.0, synthSet.weight, 0.001)
+        assertEquals("kg", synthSet.unit)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 13: Phase 3 workout round-trip (write then parse)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun roundTrip_workoutFile_phase3Format() {
+        val original = OrgFile(
+            sections = listOf(
+                OrgDateSection(
+                    date = april9,
+                    meals = emptyList(),
+                    exercises = emptyList(),
+                    exerciseLogs = listOf(
+                        OrgExerciseLog(
+                            name = "Bench Press",
+                            id = 1712661600000L,
+                            exerciseType = "barbell",
+                            sets = listOf(
+                                OrgSetEntry(setNumber = 1, reps = 5, weight = 80.0, unit = "kg", isPr = false),
+                                OrgSetEntry(setNumber = 2, reps = 5, weight = 82.5, unit = "kg", rpe = 8, isPr = true)
+                            )
+                        ),
+                        OrgExerciseLog(
+                            name = "Pull-ups",
+                            id = 1712661600001L,
+                            exerciseType = "calisthenics",
+                            sets = listOf(
+                                OrgSetEntry(setNumber = 1, reps = 11, weight = 0.0, unit = "bw", isPr = true)
+                            )
+                        )
+                    ),
+                    splitDay = "monday-lift",
+                    volume = 3200,
+                    durationMin = 60
+                )
+            )
+        )
+
+        val written = OrgWriter.write(original)
+        val parsed = OrgParser.parse(written, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, parsed.sections.size)
+        val section = parsed.sections[0]
+        assertEquals(april9, section.date)
+        assertEquals("monday-lift", section.splitDay)
+        assertEquals(3200, section.volume)
+        assertEquals(60, section.durationMin)
+        assertEquals(2, section.exerciseLogs.size)
+
+        val bench = section.exerciseLogs[0]
+        assertEquals("Bench Press", bench.name)
+        assertEquals(1712661600000L, bench.id)
+        assertEquals(2, bench.sets.size)
+        assertEquals(80.0, bench.sets[0].weight, 0.001)
+        assertEquals(82.5, bench.sets[1].weight, 0.001)
+        assertEquals(true, bench.sets[1].isPr)
+        assertEquals(8, bench.sets[1].rpe)
+
+        val pullups = section.exerciseLogs[1]
+        assertEquals("Pull-ups", pullups.name)
+        assertEquals(1, pullups.sets.size)
+        assertEquals(true, pullups.sets[0].isPr)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 14: Timed exercise parses hold_secs correctly
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseWorkoutFile_timedExercise_parsesHoldSecs() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |:PROPERTIES:
+            |:split_day: tuesday-calisthenics
+            |:END:
+            |*** Hollow Body Hold
+            |:PROPERTIES:
+            |:id: 1712661600002
+            |:exercise_type: timed
+            |:END:
+            |**** Set 1
+            |:PROPERTIES:
+            |:reps: 1
+            |:weight: 0
+            |:unit: bw
+            |:hold_secs: 25
+            |:is_pr: false
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+        assertEquals("tuesday-calisthenics", section.splitDay)
+        assertEquals(1, section.exerciseLogs.size)
+
+        val hollow = section.exerciseLogs[0]
+        assertEquals("Hollow Body Hold", hollow.name)
+        assertEquals("timed", hollow.exerciseType)
+        assertEquals(1, hollow.sets.size)
+        assertEquals(25, hollow.sets[0].holdSecs)
+        assertEquals("bw", hollow.sets[0].unit)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 15: Phase 3 workout write produces correct multi-level org structure
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun writeWorkoutSection_phase3Format_producesCorrectStructure() {
+        val section = OrgDateSection(
+            date = april9,
+            meals = emptyList(),
+            exercises = emptyList(),
+            exerciseLogs = listOf(
+                OrgExerciseLog(
+                    name = "Bench Press",
+                    id = 1000L,
+                    exerciseType = "barbell",
+                    sets = listOf(
+                        OrgSetEntry(setNumber = 1, reps = 5, weight = 80.0, unit = "kg", isPr = false)
+                    )
+                )
+            ),
+            splitDay = "monday-lift"
+        )
+
+        val result = OrgWriter.writeSection(section)
+
+        assertTrue(result.contains("** Workout"))
+        assertTrue(result.contains(":split_day: monday-lift"))
+        assertTrue(result.contains("*** Bench Press"))
+        assertTrue(result.contains(":id: 1000"))
+        assertTrue(result.contains(":exercise_type: barbell"))
+        assertTrue(result.contains("**** Set 1"))
+        assertTrue(result.contains(":reps: 5"))
+        assertTrue(result.contains(":weight: 80"))
+        assertTrue(result.contains(":unit: kg"))
+        assertTrue(result.contains(":is_pr: false"))
+    }
+
+    // -------------------------------------------------------------------------
+    // Original Test 11: Parse meal templates file (renumbered to 16)
     // -------------------------------------------------------------------------
 
     @Test

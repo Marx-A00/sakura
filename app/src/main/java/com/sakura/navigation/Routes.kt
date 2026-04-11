@@ -17,3 +17,15 @@ object FoodLog
 /** Type-safe navigation route for the settings screen (Phase 2). */
 @Serializable
 object Settings
+
+/** Type-safe navigation route for the workout log screen (Phase 3). */
+@Serializable
+object WorkoutLog
+
+/** Type-safe navigation route for the active workout session screen (Phase 3). */
+@Serializable
+object WorkoutSession
+
+/** Type-safe navigation route for the workout history screen (Phase 3). */
+@Serializable
+object WorkoutHistory

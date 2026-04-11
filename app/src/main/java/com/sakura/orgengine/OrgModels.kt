@@ -13,11 +13,19 @@ data class OrgFile(
  * A single date heading in an org log file.
  * A section contains either meals (food-log.org) or exercises (workout-log.org) — never both.
  * The fields that do not apply to a given file type will be empty lists.
+ *
+ * exerciseLogs: new per-set workout format (Phase 3, level 3+4 structure).
+ * exercises: old flat format — kept for backward-compat parsing only.
+ * splitDay, volume, durationMin: workout session metadata from ** Workout property drawer.
  */
 data class OrgDateSection(
     val date: LocalDate,
-    val meals: List<OrgMealGroup>,        // populated for food-log.org
-    val exercises: List<OrgExerciseEntry>  // populated for workout-log.org
+    val meals: List<OrgMealGroup>,                         // populated for food-log.org
+    val exercises: List<OrgExerciseEntry>,                  // old flat format (backward compat)
+    val exerciseLogs: List<OrgExerciseLog> = emptyList(),  // new per-set format (Phase 3)
+    val splitDay: String? = null,                           // e.g., "monday-lift"
+    val volume: Int? = null,                                // total session volume
+    val durationMin: Int? = null                            // session duration in minutes
 )
 
 /**
@@ -50,8 +58,9 @@ data class OrgFoodEntry(
 )
 
 /**
- * A single exercise log entry within a workout session.
+ * A single exercise log entry within a workout session (legacy flat format).
  * Weight is stored as Double to support fractional plates (e.g., 82.5 kg).
+ * Kept for backward-compat parsing of old workout-log.org entries.
  */
 data class OrgExerciseEntry(
     val name: String,
@@ -59,6 +68,30 @@ data class OrgExerciseEntry(
     val reps: Int,
     val weight: Double,    // numeric weight value
     val unit: String = "kg" // weight unit — "kg" or "lbs"
+)
+
+/**
+ * A single exercise log in the new per-set workout format (Phase 3).
+ * Level-3 heading in workout-log.org, with level-4 Set headings as children.
+ */
+data class OrgExerciseLog(
+    val name: String,
+    val id: Long,                          // epoch millis
+    val exerciseType: String,              // "barbell", "dumbbell", "machine", "calisthenics", "timed"
+    val sets: List<OrgSetEntry>
+)
+
+/**
+ * A single set within an OrgExerciseLog. Level-4 heading in workout-log.org.
+ */
+data class OrgSetEntry(
+    val setNumber: Int,                    // 1-indexed, matches heading "Set N"
+    val reps: Int,
+    val weight: Double,                    // 0.0 for bodyweight
+    val unit: String,                      // "kg", "lbs", "bw"
+    val holdSecs: Int = 0,                 // 0 for non-timed
+    val rpe: Int? = null,                  // optional 6-10
+    val isPr: Boolean = false
 )
 
 // -------------------------------------------------------------------------

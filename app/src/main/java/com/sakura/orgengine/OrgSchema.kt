@@ -110,6 +110,12 @@ object OrgSchema {
      */
     fun formatExerciseGroupHeading(label: String): String = "** $label"
 
+    /** Regex to match "** Workout" heading specifically (Phase 3). */
+    val WORKOUT_HEADING_REGEX = Regex("""^\*\* Workout$""")
+
+    /** Regex to match and capture set number from level-4 set heading: **** Set N */
+    val SET_HEADING_REGEX = Regex("""^\*{4} Set (\d+)$""")
+
     // -------------------------------------------------------------------------
     // Property drawer parsing constants
     // -------------------------------------------------------------------------
@@ -142,6 +148,15 @@ object OrgSchema {
     const val PROP_SERVING_SIZE = "serving_size"
     const val PROP_SERVING_UNIT = "serving_unit"
     const val PROP_NOTES = "notes"
+
+    // Workout-specific property keys (Phase 3)
+    const val PROP_HOLD_SECS = "hold_secs"
+    const val PROP_RPE = "rpe"
+    const val PROP_IS_PR = "is_pr"
+    const val PROP_EXERCISE_TYPE = "exercise_type"
+    const val PROP_SPLIT_DAY = "split_day"
+    const val PROP_VOLUME = "volume"
+    const val PROP_DURATION_MIN = "duration_min"
 
     // -------------------------------------------------------------------------
     // Food entries (food-log.org)
@@ -278,11 +293,11 @@ object OrgSchema {
     }
 
     // -------------------------------------------------------------------------
-    // Exercise entries
+    // Exercise entries (legacy flat format — backward compat)
     // -------------------------------------------------------------------------
 
     /**
-     * Serializes an exercise entry to org property drawer format.
+     * Serializes an exercise entry to org property drawer format (legacy flat format).
      *
      * Example output:
      *   *** Bench Press
@@ -304,6 +319,79 @@ object OrgSchema {
         ":weight: ${formatWeight(entry.weight)}\n" +
         ":unit: ${entry.unit}\n" +
         PROPERTIES_END
+
+    // -------------------------------------------------------------------------
+    // Workout session format (Phase 3 per-set format)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Serializes the "** Workout" heading with session metadata property drawer.
+     *
+     * Example output:
+     *   ** Workout
+     *   :PROPERTIES:
+     *   :split_day: monday-lift
+     *   :volume: 12450
+     *   :duration_min: 62
+     *   :END:
+     */
+    fun formatWorkoutHeading(splitDay: String?, volume: Int?, durationMin: Int?): String {
+        val sb = StringBuilder()
+        sb.append("** Workout\n")
+        sb.append("$PROPERTIES_START\n")
+        splitDay?.let { sb.append(":$PROP_SPLIT_DAY: $it\n") }
+        volume?.let { sb.append(":$PROP_VOLUME: $it\n") }
+        durationMin?.let { sb.append(":$PROP_DURATION_MIN: $it\n") }
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
+
+    /**
+     * Serializes an exercise log (level-3 heading) with :id: and :exercise_type: properties.
+     *
+     * Example output:
+     *   *** Bench Press
+     *   :PROPERTIES:
+     *   :id: 1712661600000
+     *   :exercise_type: barbell
+     *   :END:
+     */
+    fun formatExerciseLog(exercise: OrgExerciseLog): String {
+        val sb = StringBuilder()
+        sb.append("*** ${exercise.name}\n")
+        sb.append("$PROPERTIES_START\n")
+        sb.append(":$PROP_ID: ${exercise.id}\n")
+        sb.append(":$PROP_EXERCISE_TYPE: ${exercise.exerciseType}\n")
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
+
+    /**
+     * Serializes a single set entry (level-4 heading) with all set properties.
+     * Only writes :hold_secs: when > 0. Only writes :rpe: when non-null.
+     *
+     * Example output:
+     *   **** Set 1
+     *   :PROPERTIES:
+     *   :reps: 5
+     *   :weight: 80
+     *   :unit: kg
+     *   :is_pr: false
+     *   :END:
+     */
+    fun formatSetEntry(set: OrgSetEntry): String {
+        val sb = StringBuilder()
+        sb.append("**** Set ${set.setNumber}\n")
+        sb.append("$PROPERTIES_START\n")
+        sb.append(":$PROP_REPS: ${set.reps}\n")
+        sb.append(":$PROP_WEIGHT: ${formatWeight(set.weight)}\n")
+        sb.append(":$PROP_UNIT: ${set.unit}\n")
+        if (set.holdSecs > 0) sb.append(":$PROP_HOLD_SECS: ${set.holdSecs}\n")
+        set.rpe?.let { sb.append(":$PROP_RPE: $it\n") }
+        sb.append(":$PROP_IS_PR: ${set.isPr}\n")
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
 
     // -------------------------------------------------------------------------
     // Internal helpers

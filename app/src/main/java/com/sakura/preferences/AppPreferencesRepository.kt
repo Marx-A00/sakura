@@ -32,6 +32,11 @@ class AppPreferencesRepository(private val context: Context) {
         val MACRO_TARGET_PROTEIN = intPreferencesKey("macro_target_protein")
         val MACRO_TARGET_CARBS = intPreferencesKey("macro_target_carbs")
         val MACRO_TARGET_FAT = intPreferencesKey("macro_target_fat")
+
+        // Workout split tracking (Phase 3)
+        val LAST_WORKOUT_SPLIT_DAY = stringPreferencesKey("last_workout_split_day")
+        val LAST_WORKOUT_DATE = stringPreferencesKey("last_workout_date")
+        val DEFAULT_REST_TIMER_SECS = intPreferencesKey("default_rest_timer_secs")
     }
 
     /** The user-configured Syncthing folder path, or null if not yet set. */
@@ -145,6 +150,40 @@ class AppPreferencesRepository(private val context: Context) {
             preferences[MACRO_TARGET_PROTEIN] = targets.protein
             preferences[MACRO_TARGET_CARBS] = targets.carbs
             preferences[MACRO_TARGET_FAT] = targets.fat
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Workout split tracking (Phase 3)
+    // -------------------------------------------------------------------------
+
+    /** The split day label of the last completed workout session, or null if no history. */
+    val lastWorkoutSplitDay: Flow<String?> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[LAST_WORKOUT_SPLIT_DAY] }
+
+    /** The ISO date string (yyyy-MM-dd) of the last completed workout, or null if no history. */
+    val lastWorkoutDate: Flow<String?> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[LAST_WORKOUT_DATE] }
+
+    /** Default rest timer duration in seconds. Defaults to 90 seconds. */
+    val defaultRestTimerSecs: Flow<Int> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[DEFAULT_REST_TIMER_SECS] ?: 90 }
+
+    /** Record the most recently completed workout session's split day and date. */
+    suspend fun setLastWorkout(splitDay: String, date: String) {
+        context.appDataStore.edit { prefs ->
+            prefs[LAST_WORKOUT_SPLIT_DAY] = splitDay
+            prefs[LAST_WORKOUT_DATE] = date
+        }
+    }
+
+    /** Update the default rest timer duration. */
+    suspend fun setDefaultRestTimerSecs(seconds: Int) {
+        context.appDataStore.edit { prefs ->
+            prefs[DEFAULT_REST_TIMER_SECS] = seconds
         }
     }
 }
