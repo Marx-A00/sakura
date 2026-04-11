@@ -44,6 +44,44 @@ Weekly schedule with 4 training days, 2 recovery days, 1 off day.
 
 ### Sunday - Off
 
+## UX Model: Day-Based Logging (redesign from session model)
+
+The workout tab follows the **same day-based container model as food logging**. There is no "start session" / "finish session" lifecycle.
+
+### Core Flow
+1. User opens Workout tab → sees today (or selected day via date nav)
+2. If empty: "Start from Template" button seeds the day with a template's exercises, or "Add Exercise" to add one at a time
+3. Exercises appear as inline cards. User taps "+ Add Set" to log a set → opens Set Input Sheet → set is **written immediately** (like food entries)
+4. User can add, remove, reorder, and modify exercises freely — template is a suggestion, not a constraint
+5. "Complete" is a **soft optional flag** — signals the day is done but doesn't lock anything
+6. Multiple workouts per day supported (e.g., walking at lunch + lifting at 4pm)
+7. User picks which workout template to use — **no auto-suggestion by day**
+
+### Exercise Categories (extensible)
+Categories determine which input fields are shown. Stored as data, not a rigid enum. Category lives on the exercise definition — user picks it once when creating, never again.
+
+Built-in categories:
+- **Weighted** (barbell, dumbbell, machine) → weight + reps per set
+- **Bodyweight** (pull-ups, push-ups) → reps per set only
+- **Timed Hold** (planks, dead hangs) → hold duration per set
+- **Cardio** (walking, running, cycling) → duration + optional distance
+- **Stretch** → duration only
+
+The set log data model uses nullable fields: `weight`, `reps`, `holdSecs`, `durationMin`, `distanceKm`. The category determines which fields the UI shows.
+
+### Exercise Library
+- Built-in list of common exercises (pre-categorized)
+- User-added exercises **persist** and appear in search
+- Searchable by name, filterable by category
+- "Create New Exercise" flow: name → pick category → saved to library
+
+### Design References
+Screen mockups in this directory:
+- `03-workout-empty-state.png` — empty day, template/add buttons
+- `03-workout-active.png` — exercises loaded, sets logged, PR badge
+- `03-exercise-picker.png` — searchable exercise list with category filters
+- `03-set-input-sheet.png` — bottom sheet for logging a weighted set
+
 ## Key Design Implications
 
 1. **Not a traditional 4-day split** — it's 2 gym lift days + 2 home calisthenics days
@@ -56,3 +94,5 @@ Weekly schedule with 4 training days, 2 recovery days, 1 off day.
 8. **Recovery days** (Wed/Sat) are walking + stretching — may or may not be logged
 9. **PR tracking** should work for both weight-based lifts AND bodyweight progressions (max reps, hold duration)
 10. **Volume tracking** needs to handle: weight × sets × reps (lifts), bodyweight × sets × reps (calisthenics), and timed holds
+11. **Rest timer** is nice-to-have, not a focus
+12. **Exercise library** with user-persisted exercises is in scope for Phase 3

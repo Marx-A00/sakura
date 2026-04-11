@@ -13,7 +13,7 @@ Sakura is a personal Android app (Kotlin + Jetpack Compose) for logging food and
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Device setup, org engine, file layer, and onboarding
-- [ ] **Phase 2: Food Logging** - Complete food tracking end-to-end with org file output
+- [x] **Phase 2: Food Logging** - Complete food tracking end-to-end with org file output
 - [ ] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
 - [ ] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
 - [ ] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
@@ -56,21 +56,23 @@ Plans:
 - [x] 02-02-PLAN.md — Food Log UI: FoodLogScreen with progress bars and meal sections, entry/library bottom sheets, date navigation, macro targets settings, SavedStateHandle draft save, navigation wiring, device verification
 
 ### Phase 3: Workout Logging
-**Goal**: User can log a complete workout session using their 4-day split templates, with previous session weights auto-filled, a rest timer between sets, PR detection, and all data written to workout-log.org.
+**Goal**: User can log workouts using a day-based model (mirroring food logging) with template-seeded exercises, incremental per-set writes, extensible exercise categories, a persistent exercise library, PR detection, and all data written to workout-log.org.
 **Depends on**: Phase 2
 **Requirements**: WORK-01, WORK-02, WORK-03, WORK-04, WORK-05, WORK-06, WORK-07, WORK-08, WORK-09, WORK-10
 **Success Criteria** (what must be TRUE):
-  1. User can start a workout by selecting a split day (push / pull / legs / compound) and have the exercise list pre-populated from that day's template
-  2. When starting a session, sets/reps/weight from the previous session for that split day are auto-filled as starting values
-  3. User can log sets, reps, and weight per exercise; a rest timer starts automatically between sets
-  4. The app detects a new personal record during a session and surfaces it to the user
-  5. User can view workout history showing past sessions with exercises, sets, reps, and weight logged
-  6. The home screen shows which split day is today and a summary of the last session for that day
-**Plans**: TBD
+  1. User can start a workout by selecting a template (split day) and have the exercise list pre-populated
+  2. When logging sets, weight/reps from the previous session are auto-filled as starting values
+  3. User can log sets per exercise with fields adapting by category (weighted, bodyweight, timed, cardio, stretch)
+  4. The app detects a new personal record and surfaces it with a PR badge
+  5. User can view workout history showing past days with exercises, sets, and metrics
+  6. User can add exercises from a searchable library and create new custom exercises
+  7. Each set is written immediately to workout-log.org (incremental, like food logging)
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 03-01: WorkoutRepository, OrgWorkoutRepository, WorkoutLogViewModel, and Workout Log screen
-- [ ] 03-02: Workout templates (4-day split), exercise library, previous session auto-fill, rest timer, PR tracking, split awareness, and volume tracking
+- [x] 03-01-PLAN.md — Workout data layer: domain models, OrgWorkoutRepository, OrgEngine extensions, WorkoutTemplates
+- [ ] 03-02-PLAN.md — Data layer modifications: extensible categories, exercise library, incremental repository methods, cardio/stretch support
+- [ ] 03-03-PLAN.md — Complete UI rewrite: day-based WorkoutLogScreen, exercise picker, set input sheet, ViewModel, navigation, device verification
 
 ### Phase 4: Dashboard and Polish
 **Goal**: A unified home screen summarizes the day at a glance, history views for both domains are polished, analytics charts show weekly patterns, and sync status is always visible.
@@ -113,6 +115,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-04-09 |
 | 2. Food Logging | 2/2 | Complete | 2026-04-11 |
-| 3. Workout Logging | 0/2 | Not started | - |
+| 3. Workout Logging | 1/3 | In progress | - |
 | 4. Dashboard and Polish | 0/2 | Not started | - |
 | 5. Local Storage Mode | 0/2 | Not started | - |
