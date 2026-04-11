@@ -16,15 +16,15 @@
 
 ### Food Tracking
 
-- [ ] **FOOD-01**: Log food entry with name, protein, carbs, fat, calories
-- [ ] **FOOD-02**: Meal groupings (breakfast, lunch, dinner, snacks)
-- [ ] **FOOD-03**: Daily macro targets (static, user-configurable)
-- [ ] **FOOD-04**: Today's food summary (macros logged vs targets)
-- [ ] **FOOD-05**: Quick-add calories/macros without named food
-- [ ] **FOOD-06**: Custom food library (save frequently eaten foods)
-- [ ] **FOOD-07**: Meal templates / saved meals
-- [ ] **FOOD-08**: View past day's food log
-- [ ] **FOOD-09**: Edit/delete logged food entries
+- [x] **FOOD-01**: Log food entry with name, protein, carbs, fat, calories
+- [x] **FOOD-02**: Meal groupings (breakfast, lunch, dinner, snacks)
+- [x] **FOOD-03**: Daily macro targets (static, user-configurable)
+- [x] **FOOD-04**: Today's food summary (macros logged vs targets)
+- [x] **FOOD-05**: Quick-add calories/macros without named food
+- [x] **FOOD-06**: Custom food library (save frequently eaten foods)
+- [x] **FOOD-07**: Meal templates / saved meals
+- [x] **FOOD-08**: View past day's food log
+- [x] **FOOD-09**: Edit/delete logged food entries
 
 ### Workout Tracking
 
@@ -45,7 +45,7 @@
 - [ ] **SYNC-02**: Read org files from Syncthing-managed folder (two-way)
 - [ ] **SYNC-03**: Handle Syncthing .sync-conflict files gracefully
 - [ ] **SYNC-04**: Sync status indicator
-- [ ] **SYNC-05**: Draft save/restore for entry forms
+- [x] **SYNC-05**: Draft save/restore for entry forms
 - [ ] **SYNC-06**: Graceful degradation when sync folder unavailable
 
 ### Dashboard & Analytics
@@ -118,15 +118,15 @@
 | FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Complete |
 | FOUND-06 | Phase 1 | Complete |
-| FOOD-01 | Phase 2 | Pending |
-| FOOD-02 | Phase 2 | Pending |
-| FOOD-03 | Phase 2 | Pending |
-| FOOD-04 | Phase 2 | Pending |
-| FOOD-05 | Phase 2 | Pending |
-| FOOD-06 | Phase 2 | Pending |
-| FOOD-07 | Phase 2 | Pending |
-| FOOD-08 | Phase 2 | Pending |
-| FOOD-09 | Phase 2 | Pending |
+| FOOD-01 | Phase 2 | Complete |
+| FOOD-02 | Phase 2 | Complete |
+| FOOD-03 | Phase 2 | Complete |
+| FOOD-04 | Phase 2 | Complete |
+| FOOD-05 | Phase 2 | Complete |
+| FOOD-06 | Phase 2 | Complete |
+| FOOD-07 | Phase 2 | Complete |
+| FOOD-08 | Phase 2 | Complete |
+| FOOD-09 | Phase 2 | Complete |
 | WORK-01 | Phase 3 | Pending |
 | WORK-02 | Phase 3 | Pending |
 | WORK-03 | Phase 3 | Pending |
@@ -141,7 +141,7 @@
 | SYNC-02 | Phase 1 | Complete |
 | SYNC-03 | Phase 1 | Complete |
 | SYNC-04 | Phase 4 | Pending |
-| SYNC-05 | Phase 2 | Pending |
+| SYNC-05 | Phase 2 | Complete |
 | SYNC-06 | Phase 1 | Complete |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |

@@ -52,8 +52,8 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Data layer: domain models, FoodRepository, OrgFoodRepository, OrgSchema updates, macro target preferences, AppContainer wiring
-- [ ] 02-02-PLAN.md — Food Log UI: FoodLogScreen with progress bars and meal sections, entry/library bottom sheets, date navigation, macro targets settings, SavedStateHandle draft save, navigation wiring, device verification
+- [x] 02-01-PLAN.md — Data layer: domain models, FoodRepository, OrgFoodRepository, OrgSchema updates, macro target preferences, AppContainer wiring
+- [x] 02-02-PLAN.md — Food Log UI: FoodLogScreen with progress bars and meal sections, entry/library bottom sheets, date navigation, macro targets settings, SavedStateHandle draft save, navigation wiring, device verification
 
 ### Phase 3: Workout Logging
 **Goal**: User can log a complete workout session using their 4-day split templates, with previous session weights auto-filled, a rest timer between sets, PR detection, and all data written to workout-log.org.
@@ -112,7 +112,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-04-09 |
-| 2. Food Logging | 0/2 | Planning complete | - |
+| 2. Food Logging | 2/2 | Complete | 2026-04-11 |
 | 3. Workout Logging | 0/2 | Not started | - |
 | 4. Dashboard and Polish | 0/2 | Not started | - |
 | 5. Local Storage Mode | 0/2 | Not started | - |
