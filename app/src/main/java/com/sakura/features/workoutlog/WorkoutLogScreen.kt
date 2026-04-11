@@ -275,7 +275,7 @@ private fun LastSessionCard(session: WorkoutSession?) {
             } else {
                 val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
                 Text(
-                    "${session.date.format(formatter)} — ${session.splitDay.displayName}",
+                    "${session.date.format(formatter)}${session.splitDay?.let { " — ${it.displayName}" } ?: ""}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )

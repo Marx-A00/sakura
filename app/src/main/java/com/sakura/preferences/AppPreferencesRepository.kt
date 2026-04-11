@@ -37,6 +37,9 @@ class AppPreferencesRepository(private val context: Context) {
         val LAST_WORKOUT_SPLIT_DAY = stringPreferencesKey("last_workout_split_day")
         val LAST_WORKOUT_DATE = stringPreferencesKey("last_workout_date")
         val DEFAULT_REST_TIMER_SECS = intPreferencesKey("default_rest_timer_secs")
+
+        // User-created exercise library (Phase 3 plan 02)
+        val USER_EXERCISES_JSON = stringPreferencesKey("user_exercises_json")
     }
 
     /** The user-configured Syncthing folder path, or null if not yet set. */
@@ -184,6 +187,25 @@ class AppPreferencesRepository(private val context: Context) {
     suspend fun setDefaultRestTimerSecs(seconds: Int) {
         context.appDataStore.edit { prefs ->
             prefs[DEFAULT_REST_TIMER_SECS] = seconds
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // User exercise library (Phase 3 plan 02)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Raw JSON string for user-created exercises.
+     * Empty string = no user exercises. Parsed by OrgWorkoutRepository.
+     */
+    val userExercisesJson: Flow<String> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[USER_EXERCISES_JSON] ?: "" }
+
+    /** Persist user exercises as a JSON string. */
+    suspend fun saveUserExercisesJson(json: String) {
+        context.appDataStore.edit { prefs ->
+            prefs[USER_EXERCISES_JSON] = json
         }
     }
 }

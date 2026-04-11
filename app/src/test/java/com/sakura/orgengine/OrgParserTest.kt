@@ -665,7 +665,183 @@ class OrgParserTest {
     }
 
     // -------------------------------------------------------------------------
-    // Original Test 11: Parse meal templates file (renumbered to 16)
+    // Test 16: Cardio exercise with duration_min and distance_km parses correctly
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseWorkoutFile_cardioSet_parsesCardioFields() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |:PROPERTIES:
+            |:split_day: monday-lift
+            |:END:
+            |*** Walking
+            |:PROPERTIES:
+            |:id: 1712661600005
+            |:exercise_type: cardio
+            |:category: cardio
+            |:END:
+            |**** Set 1
+            |:PROPERTIES:
+            |:reps: 0
+            |:weight: 0
+            |:unit: bw
+            |:duration_min: 45
+            |:distance_km: 3.5
+            |:is_pr: false
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+        assertEquals(1, section.exerciseLogs.size)
+
+        val walking = section.exerciseLogs[0]
+        assertEquals("Walking", walking.name)
+        assertEquals("cardio", walking.exerciseType)
+        assertEquals("cardio", walking.category)
+        assertEquals(1, walking.sets.size)
+
+        val set1 = walking.sets[0]
+        assertEquals(45, set1.durationMin)
+        assertEquals(3.5, set1.distanceKm!!, 0.001)
+        assertEquals("bw", set1.unit)
+        assertEquals(0, set1.reps)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 17: Freestyle day (no split_day) returns valid OrgDateSection
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseWorkoutFile_freestyleDay_noSplitDay_returnsValidSection() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |:PROPERTIES:
+            |:volume: 1200
+            |:END:
+            |*** Bench Press
+            |:PROPERTIES:
+            |:id: 1712661600010
+            |:exercise_type: barbell
+            |:category: weighted
+            |:END:
+            |**** Set 1
+            |:PROPERTIES:
+            |:reps: 5
+            |:weight: 80
+            |:unit: kg
+            |:is_pr: false
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+        assertEquals(april9, section.date)
+        assertNull(section.splitDay)           // no split_day property
+        assertEquals(1200, section.volume)
+        assertEquals(1, section.exerciseLogs.size)
+
+        val bench = section.exerciseLogs[0]
+        assertEquals("Bench Press", bench.name)
+        assertEquals("weighted", bench.category)
+        assertEquals(1, bench.sets.size)
+        assertEquals(80.0, bench.sets[0].weight, 0.001)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 18: complete flag is parsed from ** Workout drawer
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun parseWorkoutFile_completeFlag_parsedCorrectly() {
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |:PROPERTIES:
+            |:split_day: monday-lift
+            |:complete: true
+            |:END:
+            |*** OHP
+            |:PROPERTIES:
+            |:id: 9999
+            |:exercise_type: barbell
+            |:END:
+            |**** Set 1
+            |:PROPERTIES:
+            |:reps: 6
+            |:weight: 50
+            |:unit: kg
+            |:is_pr: false
+            |:END:
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+        assertEquals(true, section.complete)
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 19: Cardio set round-trips through write and parse
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun roundTrip_cardioSet_preservesCardioFields() {
+        val original = OrgFile(
+            sections = listOf(
+                OrgDateSection(
+                    date = april9,
+                    meals = emptyList(),
+                    exercises = emptyList(),
+                    exerciseLogs = listOf(
+                        OrgExerciseLog(
+                            name = "Walking",
+                            id = 1234L,
+                            exerciseType = "cardio",
+                            category = "cardio",
+                            sets = listOf(
+                                OrgSetEntry(
+                                    setNumber = 1,
+                                    reps = 0,
+                                    weight = 0.0,
+                                    unit = "bw",
+                                    durationMin = 45,
+                                    distanceKm = 3.5
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        val written = OrgWriter.write(original)
+        val parsed = OrgParser.parse(written, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, parsed.sections.size)
+        val section = parsed.sections[0]
+        assertEquals(1, section.exerciseLogs.size)
+
+        val walking = section.exerciseLogs[0]
+        assertEquals("Walking", walking.name)
+        assertEquals("cardio", walking.category)
+        assertEquals(1, walking.sets.size)
+
+        val set1 = walking.sets[0]
+        assertEquals(45, set1.durationMin)
+        assertEquals(3.5, set1.distanceKm!!, 0.001)
+    }
+
+    // -------------------------------------------------------------------------
+    // Original Test 11: Parse meal templates file (renumbered to 20)
     // -------------------------------------------------------------------------
 
     @Test

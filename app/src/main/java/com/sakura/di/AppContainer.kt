@@ -31,5 +31,5 @@ class AppContainer(context: Context) {
     val foodRepository: FoodRepository = OrgFoodRepository(syncBackend)
 
     /** Workout data repository backed by workout-log.org via SyncBackend. */
-    val workoutRepository: WorkoutRepository = OrgWorkoutRepository(syncBackend)
+    val workoutRepository: WorkoutRepository = OrgWorkoutRepository(syncBackend, prefsRepo = prefsRepo)
 }

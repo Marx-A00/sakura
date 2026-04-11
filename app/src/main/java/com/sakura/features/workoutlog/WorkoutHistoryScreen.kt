@@ -102,7 +102,7 @@ fun WorkoutHistoryScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(history, key = { it.date.toString() + it.splitDay.label }) { session ->
+                items(history, key = { it.date.toString() + (it.splitDay?.label ?: "freestyle") }) { session ->
                     SessionHistoryCard(session = session)
                 }
             }
@@ -136,7 +136,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = session.splitDay.displayName,
+                        text = session.splitDay?.displayName ?: "Freestyle",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

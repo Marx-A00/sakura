@@ -246,10 +246,13 @@ class WorkoutLogViewModel(
             val result = workoutRepo.saveSession(session)
             if (result.isSuccess) {
                 // Update last workout info in preferences for split awareness
-                prefsRepo.setLastWorkout(
-                    splitDay = session.splitDay.label,
-                    date = session.date.toString()
-                )
+                // Only update lastWorkout prefs if session has an assigned split day
+                session.splitDay?.let { sd ->
+                    prefsRepo.setLastWorkout(
+                        splitDay = sd.label,
+                        date = session.date.toString()
+                    )
+                }
                 _sessionDraft.value = null
                 cancelRestTimer()
                 _prDetected.value = null
