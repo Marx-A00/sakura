@@ -18,8 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,9 +30,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -87,9 +82,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun WorkoutLogScreen(
     viewModel: WorkoutLogViewModel,
-    onNavigateToFoodLog: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToHistory: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -145,12 +138,6 @@ fun WorkoutLogScreen(
                 )
             )
         },
-        bottomBar = {
-            WorkoutBottomNav(
-                onNavigateToFoodLog = onNavigateToFoodLog,
-                onNavigateToSettings = onNavigateToSettings
-            )
-        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -666,58 +653,6 @@ private fun TemplatePickerDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
-}
-
-// ---------------------------------------------------------------------------
-// Bottom navigation bar (matches mockup — FOOD | WORKOUT | HOME | SETTINGS)
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun WorkoutBottomNav(
-    onNavigateToFoodLog: () -> Unit,
-    onNavigateToSettings: () -> Unit
-) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface
-    ) {
-        NavigationBarItem(
-            selected = false,
-            onClick = onNavigateToFoodLog,
-            icon = {
-                Icon(
-                    Icons.Filled.DateRange,
-                    contentDescription = "Food",
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            label = { Text("FOOD", fontSize = 10.sp) }
-        )
-        NavigationBarItem(
-            selected = true,
-            onClick = { /* already on workout */ },
-            icon = {
-                Icon(Icons.Filled.Star, contentDescription = "Workout")
-            },
-            label = { Text("WORKOUT", fontSize = 10.sp) },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = CherryBlossomPink,
-                selectedIconColor = Color.White,
-                selectedTextColor = CherryBlossomPink
-            )
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* Phase 4 */ },
-            icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-            label = { Text("HOME", fontSize = 10.sp) }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = onNavigateToSettings,
-            icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
-            label = { Text("SETTINGS", fontSize = 10.sp) }
-        )
-    }
 }
 
 // ---------------------------------------------------------------------------

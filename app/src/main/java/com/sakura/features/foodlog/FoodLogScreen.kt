@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -37,18 +36,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -85,9 +78,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodLogScreen(
-    viewModel: FoodLogViewModel,
-    onNavigateToSettings: () -> Unit,
-    onNavigateToWorkout: () -> Unit = {}
+    viewModel: FoodLogViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -178,47 +169,6 @@ fun FoodLogScreen(
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = "Add food entry", tint = Color.White)
                 }
-            }
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { /* already on food */ },
-                    icon = {
-                        Icon(
-                            Icons.Filled.DateRange,
-                            contentDescription = "Food",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    label = { Text("FOOD", fontSize = 10.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = CherryBlossomPink,
-                        selectedIconColor = Color.White,
-                        selectedTextColor = CherryBlossomPink
-                    )
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onNavigateToWorkout,
-                    icon = { Icon(Icons.Filled.Star, contentDescription = "Workout") },
-                    label = { Text("WORKOUT", fontSize = 10.sp) }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { /* Phase 4 */ },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-                    label = { Text("HOME", fontSize = 10.sp) }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onNavigateToSettings,
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
-                    label = { Text("SETTINGS", fontSize = 10.sp) }
-                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
