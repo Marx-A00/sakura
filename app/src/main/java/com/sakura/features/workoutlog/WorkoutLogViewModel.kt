@@ -17,6 +17,7 @@ import com.sakura.data.workout.WorkoutRepository
 import com.sakura.data.workout.WorkoutSession
 import com.sakura.data.workout.WorkoutTemplates
 import com.sakura.preferences.AppPreferencesRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +28,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -281,6 +284,64 @@ class WorkoutLogViewModel(
     }
 
     // -------------------------------------------------------------------------
+    // Calendar — 4-week rolling grid
+    // -------------------------------------------------------------------------
+
+    private val _calendarDays = MutableStateFlow<List<CalendarDay>>(emptyList())
+    val calendarDays: StateFlow<List<CalendarDay>> = _calendarDays.asStateFlow()
+
+    /**
+     * Loads 28 days ending today, aligned to Monday week boundaries.
+     *
+     * Grid starts on the Monday 3+ weeks before today so we always show
+     * exactly 4 full ISO weeks. Past days show workout data from history;
+     * future days are left empty.
+     */
+    fun loadCalendar() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val today = LocalDate.now()
+
+            // Find the Monday that starts 4 complete weeks ending this week.
+            // "This week's Monday" minus 3 weeks = start of a 4-week window.
+            val thisMonday = today.with(DayOfWeek.MONDAY).let {
+                // If today IS Monday, we still want it to be the current week's Monday
+                if (it.isAfter(today)) it.minusWeeks(1) else it
+            }
+            val startMonday = thisMonday.minusWeeks(3)
+
+            // Load all history and build a date -> session map
+            val allSessions = try { workoutRepo.loadHistory() } catch (e: Exception) { emptyList() }
+            val sessionByDate = allSessions.associateBy { it.date }
+
+            // Build 28 CalendarDay entries
+            val days = buildList {
+                var current = startMonday
+                repeat(28) {
+                    val session = sessionByDate[current]
+                    val isPast = current.isBefore(today)
+                    val isToday = current == today
+                    val isFuture = current.isAfter(today)
+
+                    add(
+                        CalendarDay(
+                            date = current,
+                            splitDay = session?.splitDay,
+                            splitLabel = session?.templateName
+                                ?: session?.splitDay?.displayName?.substringAfterLast("— ")?.trim(),
+                            isComplete = session?.isComplete ?: false,
+                            isPast = isPast || isToday,
+                            isToday = isToday
+                        )
+                    )
+                    current = current.plusDays(1)
+                }
+            }
+
+            _calendarDays.value = days
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Initialise user exercises from persistent storage on startup
     // -------------------------------------------------------------------------
 
@@ -289,6 +350,7 @@ class WorkoutLogViewModel(
             val exercises = workoutRepo.loadUserExercises()
             ExerciseLibrary.loadUserExercises(exercises)
         }
+        loadCalendar()
     }
 
     // -------------------------------------------------------------------------

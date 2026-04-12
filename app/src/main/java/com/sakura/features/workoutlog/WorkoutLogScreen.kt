@@ -93,6 +93,7 @@ fun WorkoutLogScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val prDetected by viewModel.prDetected.collectAsStateWithLifecycle()
+    val calendarDays by viewModel.calendarDays.collectAsStateWithLifecycle()
 
     // Date picker
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -214,6 +215,7 @@ fun WorkoutLogScreen(
                     if (state.exercises.isEmpty()) {
                         // EMPTY STATE — matches 03-workout-empty-state.png
                         EmptyDayContent(
+                            calendarDays = calendarDays,
                             onStartFromTemplate = { showTemplatePicker = true },
                             onAddExercise = { showExercisePicker = true }
                         )
@@ -221,6 +223,7 @@ fun WorkoutLogScreen(
                         // ACTIVE STATE — matches 03-workout-active.png
                         ActiveDayContent(
                             state = state,
+                            calendarDays = calendarDays,
                             onToggleComplete = { viewModel.toggleComplete() },
                             onAddSet = { exerciseId -> setInputExerciseId = exerciseId },
                             onAddExercise = { showExercisePicker = true },
@@ -334,53 +337,72 @@ fun WorkoutLogScreen(
 
 @Composable
 private fun EmptyDayContent(
+    calendarDays: List<CalendarDay>,
     onStartFromTemplate: () -> Unit,
     onAddExercise: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            horizontal = 16.dp,
+            vertical = 16.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Icon(
-            imageVector = Icons.Filled.Star,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "No workout logged",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Pick a template to get started, or add exercises one at a time.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        Spacer(Modifier.height(32.dp))
-
-        // Start from Template — green filled button (matches mockup)
-        Button(
-            onClick = onStartFromTemplate,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
-        ) {
-            Text("Start from Template", color = Color.White)
+        // Calendar at top
+        if (calendarDays.isNotEmpty()) {
+            item {
+                SplitCalendar(days = calendarDays)
+            }
         }
-        Spacer(Modifier.height(12.dp))
 
-        // Add Exercise — outlined button (matches mockup)
-        OutlinedButton(
-            onClick = onAddExercise,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("+ Add Exercise")
+        // Empty state body
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "No workout logged",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Pick a template to get started, or add exercises one at a time.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(Modifier.height(32.dp))
+
+                // Start from Template — green filled button (matches mockup)
+                Button(
+                    onClick = onStartFromTemplate,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                ) {
+                    Text("Start from Template", color = Color.White)
+                }
+                Spacer(Modifier.height(12.dp))
+
+                // Add Exercise — outlined button (matches mockup)
+                OutlinedButton(
+                    onClick = onAddExercise,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("+ Add Exercise")
+                }
+            }
         }
     }
 }
@@ -392,6 +414,7 @@ private fun EmptyDayContent(
 @Composable
 private fun ActiveDayContent(
     state: WorkoutLogUiState.DayLoaded,
+    calendarDays: List<CalendarDay>,
     onToggleComplete: () -> Unit,
     onAddSet: (Long) -> Unit,
     onAddExercise: () -> Unit,
@@ -405,6 +428,13 @@ private fun ActiveDayContent(
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Training calendar at the top
+        if (calendarDays.isNotEmpty()) {
+            item {
+                SplitCalendar(days = calendarDays)
+            }
+        }
+
         // Header: template name + Complete button (matches 03-workout-active.png)
         item {
             Row(

@@ -3,6 +3,7 @@ package com.sakura.features.workoutlog
 import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.ExerciseLog
 import com.sakura.data.workout.SetLog
+import com.sakura.data.workout.SplitDay
 import java.time.LocalDate
 
 /**
@@ -43,6 +44,19 @@ data class DayExercise(
     val targetHoldSecs: Int?,                  // from template (timed exercises)
     val previousSets: List<SetLog>,            // from last session for auto-fill reference
     val category: ExerciseCategory             // determines which input fields to show
+)
+
+/**
+ * A single day in the 4-week rolling calendar grid.
+ * Used by SplitCalendar composable to display workout history and today's position.
+ */
+data class CalendarDay(
+    val date: LocalDate,
+    val splitDay: SplitDay? = null,
+    val splitLabel: String? = null,
+    val isComplete: Boolean = false,
+    val isPast: Boolean = true,
+    val isToday: Boolean = false
 )
 
 /**
