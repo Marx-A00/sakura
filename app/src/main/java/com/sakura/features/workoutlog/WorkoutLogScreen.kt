@@ -1,6 +1,7 @@
 package com.sakura.features.workoutlog
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,7 +65,9 @@ import com.sakura.ui.theme.CherryBlossomPink
 import com.sakura.ui.theme.DeepRose
 import com.sakura.ui.theme.ForestGreen
 import com.sakura.ui.theme.WarmCream
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
@@ -87,6 +93,9 @@ fun WorkoutLogScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val prDetected by viewModel.prDetected.collectAsStateWithLifecycle()
+
+    // Date picker
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
     // Template picker dialog
     var showTemplatePicker by rememberSaveable { mutableStateOf(false) }
@@ -117,7 +126,9 @@ fun WorkoutLogScreen(
                             text = formatWorkoutDate(selectedDate),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showDatePicker = true },
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         IconButton(onClick = { viewModel.navigateDate(1) }) {
@@ -285,6 +296,35 @@ fun WorkoutLogScreen(
                 }
             }
         )
+    }
+
+    // Date picker dialog — tapping date title opens this
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        viewModel.navigateToDate(date)
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }
 

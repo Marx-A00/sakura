@@ -123,6 +123,10 @@ class WorkoutLogViewModel(
         _selectedDate.value = _selectedDate.value.plusDays(delta.toLong())
     }
 
+    fun navigateToDate(date: LocalDate) {
+        _selectedDate.value = date
+    }
+
     fun goToToday() {
         _selectedDate.value = LocalDate.now()
     }
