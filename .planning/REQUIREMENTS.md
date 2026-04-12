@@ -28,16 +28,16 @@
 
 ### Workout Tracking
 
-- [ ] **WORK-01**: Log sets, reps, weight per exercise
-- [ ] **WORK-02**: Previous session auto-fill from last logged session
-- [ ] **WORK-03**: Workout templates (encode 4-day full body split)
-- [ ] **WORK-04**: Exercise library (user's actual exercises)
-- [ ] **WORK-05**: PR tracking (automatic new bests detection)
-- [ ] **WORK-06**: Workout history view
+- [x] **WORK-01**: Log sets, reps, weight per exercise
+- [x] **WORK-02**: Previous session auto-fill from last logged session
+- [x] **WORK-03**: Workout templates (encode 4-day full body split)
+- [x] **WORK-04**: Exercise library (user's actual exercises)
+- [x] **WORK-05**: PR tracking (automatic new bests detection)
+- [x] **WORK-06**: Workout history view
 - [ ] **WORK-07**: Rest timer
 - [ ] **WORK-08**: Today's planned workout on home screen
-- [ ] **WORK-09**: Volume tracking per session
-- [ ] **WORK-10**: Training split awareness (knows current day in split)
+- [x] **WORK-09**: Volume tracking per session
+- [x] **WORK-10**: Training split awareness (knows current day in split)
 
 ### Sync & Infrastructure
 
@@ -127,16 +127,16 @@
 | FOOD-07 | Phase 2 | Complete |
 | FOOD-08 | Phase 2 | Complete |
 | FOOD-09 | Phase 2 | Complete |
-| WORK-01 | Phase 3 | Pending |
-| WORK-02 | Phase 3 | Pending |
-| WORK-03 | Phase 3 | Pending |
-| WORK-04 | Phase 3 | Pending |
-| WORK-05 | Phase 3 | Pending |
-| WORK-06 | Phase 3 | Pending |
+| WORK-01 | Phase 3 | Complete |
+| WORK-02 | Phase 3 | Complete |
+| WORK-03 | Phase 3 | Complete |
+| WORK-04 | Phase 3 | Complete |
+| WORK-05 | Phase 3 | Complete |
+| WORK-06 | Phase 3 | Complete |
 | WORK-07 | Phase 3 | Pending |
-| WORK-08 | Phase 3 | Pending |
-| WORK-09 | Phase 3 | Pending |
-| WORK-10 | Phase 3 | Pending |
+| WORK-08 | Phase 4 | Pending |
+| WORK-09 | Phase 3 | Complete |
+| WORK-10 | Phase 3 | Complete |
 | SYNC-01 | Phase 1 | Complete |
 | SYNC-02 | Phase 1 | Complete |
 | SYNC-03 | Phase 1 | Complete |

@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Device setup, org engine, file layer, and onboarding
 - [x] **Phase 2: Food Logging** - Complete food tracking end-to-end with org file output
-- [ ] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
+- [x] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
 - [ ] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
 - [ ] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
 
@@ -71,8 +71,8 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Workout data layer: domain models, OrgWorkoutRepository, OrgEngine extensions, WorkoutTemplates
-- [ ] 03-02-PLAN.md — Data layer modifications: extensible categories, exercise library, incremental repository methods, cardio/stretch support
-- [ ] 03-03-PLAN.md — Complete UI rewrite: day-based WorkoutLogScreen, exercise picker, set input sheet, ViewModel, navigation, device verification
+- [x] 03-02-PLAN.md — Data layer modifications: extensible categories, exercise library, incremental repository methods, cardio/stretch support
+- [x] 03-03-PLAN.md — Complete UI rewrite: day-based WorkoutLogScreen, exercise picker, set input sheet, ViewModel, navigation, device verification
 
 ### Phase 4: Dashboard and Polish
 **Goal**: A unified home screen summarizes the day at a glance, history views for both domains are polished, analytics charts show weekly patterns, and sync status is always visible.
@@ -115,6 +115,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-04-09 |
 | 2. Food Logging | 2/2 | Complete | 2026-04-11 |
-| 3. Workout Logging | 1/3 | In progress | - |
+| 3. Workout Logging | 3/3 | Complete | 2026-04-12 |
 | 4. Dashboard and Polish | 0/2 | Not started | - |
 | 5. Local Storage Mode | 0/2 | Not started | - |
