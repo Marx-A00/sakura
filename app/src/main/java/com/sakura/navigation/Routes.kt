@@ -28,3 +28,7 @@ object WorkoutLog
  */
 @Serializable
 object WorkoutHistory
+
+/** Type-safe navigation route for the home/dashboard screen (Phase 4). */
+@Serializable
+object Home

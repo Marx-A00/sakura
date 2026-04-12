@@ -83,4 +83,34 @@ class SyncthingFileBackend(
             ?.map { it.name }
             ?: emptyList()
     }
+
+    override suspend fun checkSyncStatus(): SyncStatus = withContext(ioDispatcher) {
+        val path = try {
+            prefsRepo.syncFolderPath.first()
+        } catch (e: Exception) {
+            null
+        } ?: return@withContext SyncStatus(null, false, false)
+
+        val folder = File(path)
+        if (!folder.exists() || !folder.isDirectory) {
+            return@withContext SyncStatus(null, false, false)
+        }
+
+        // Check permission — if not granted, folder is not accessible
+        if (!Environment.isExternalStorageManager()) {
+            return@withContext SyncStatus(null, false, false)
+        }
+
+        val allFiles = folder.listFiles() ?: return@withContext SyncStatus(null, false, true)
+
+        // Detect conflicts: any file with .sync-conflict in the name
+        val hasConflicts = allFiles.any { it.isFile && it.name.contains(".sync-conflict") }
+
+        // Last sync time: most recently modified non-conflict .org file
+        val lastSyncedAt = allFiles
+            .filter { it.isFile && it.name.endsWith(".org") && !it.name.contains(".sync-conflict") }
+            .maxOfOrNull { it.lastModified() }
+
+        SyncStatus(lastSyncedAt, hasConflicts, folderAccessible = true)
+    }
 }
