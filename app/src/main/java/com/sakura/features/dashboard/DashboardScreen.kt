@@ -51,6 +51,7 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel) {
     val state by viewModel.today.collectAsStateWithLifecycle()
+    val weeklyState by viewModel.weekly.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -110,7 +111,10 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
         ) { page ->
             when (page) {
                 0 -> FoodProgressCard(state = state)
-                else -> ChartPlaceholder(label = "Weekly macros — coming soon")
+                else -> FoodWeeklyCard(
+                    weeklyState = weeklyState,
+                    onWeeksChanged = { viewModel.loadWeekly(it) }
+                )
             }
         }
 
@@ -122,7 +126,10 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
         ) { page ->
             when (page) {
                 0 -> WorkoutSummaryCard(state = state)
-                else -> ChartPlaceholder(label = "Weekly volume — coming soon")
+                else -> WorkoutVolumeCard(
+                    weeklyState = weeklyState,
+                    onWeeksChanged = { viewModel.loadWeekly(it) }
+                )
             }
         }
 

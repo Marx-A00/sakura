@@ -47,18 +47,22 @@ data class RecentWorkoutDay(
 )
 
 // -------------------------------------------------------------------------
-// Weekly analytics state (stub — Plan 02 will populate)
+// Weekly analytics state — Plan 02
 // -------------------------------------------------------------------------
 
 /**
  * UI state for the weekly analytics charts (Plan 02).
- * Stub until Plan 02 implements chart data loading.
+ * Holds macro and volume time series data plus computed averages.
  */
 data class WeeklyAnalyticsState(
     val isLoading: Boolean = true,
     val macroData: List<DailyMacros> = emptyList(),
     val volumeData: List<DailyVolume> = emptyList(),
-    val selectedWeeks: Int = 1
+    val selectedWeeks: Int = 1,
+    // Weekly averages for the averages row below the macro chart
+    val avgProtein: Int = 0,
+    val avgCarbs: Int = 0,
+    val avgFat: Int = 0
 )
 
 /** Daily macro totals for the food chart. */

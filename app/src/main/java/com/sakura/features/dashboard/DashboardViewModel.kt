@@ -15,15 +15,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 /**
- * ViewModel for the Home/Dashboard screen (Phase 4 plan 01).
+ * ViewModel for the Home/Dashboard screen (Phase 4).
  *
  * Aggregates today's food macro totals, today's workout summary, recent history,
  * and sync status into DashboardTodayState.
  *
- * WeeklyAnalyticsState is a stub — Plan 02 will implement chart data loading.
+ * WeeklyAnalyticsState is populated by loadWeekly() — called on init for 1W
+ * and on demand when the user switches time ranges.
  */
 class DashboardViewModel(
     private val foodRepo: FoodRepository,
@@ -40,6 +42,7 @@ class DashboardViewModel(
 
     init {
         refresh()
+        loadWeekly(1)
     }
 
     fun refresh() {
@@ -111,11 +114,90 @@ class DashboardViewModel(
     }
 
     /**
-     * Stub — Plan 02 will implement weekly chart data loading.
-     * Sets selectedWeeks and marks as loading until Plan 02 populates macroData/volumeData.
+     * Load weekly analytics data for the given number of weeks (1, 2, or 4).
+     *
+     * Sets isLoading = true immediately (before the IO coroutine) so composables
+     * can show a spinner right away. Runs food and workout loading concurrently
+     * with the today refresh (separate coroutines on Dispatchers.IO).
      */
     fun loadWeekly(weeks: Int) {
-        _weekly.value = WeeklyAnalyticsState(isLoading = true, selectedWeeks = weeks)
+        // Set loading state immediately — before launching IO coroutine
+        _weekly.value = _weekly.value.copy(isLoading = true, selectedWeeks = weeks)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val today = LocalDate.now()
+            val startDate = today.minusDays((weeks * 7 - 1).toLong())
+            val dateRange = generateSequence(startDate) { it.plusDays(1) }
+                .takeWhile { !it.isAfter(today) }
+                .toList()
+
+            // ----------------------------------------------------------------
+            // Food: load each day and aggregate macros
+            // ----------------------------------------------------------------
+            val macroData = mutableListOf<DailyMacros>()
+            for (date in dateRange) {
+                val meals = try { foodRepo.loadDay(date) } catch (e: Exception) { emptyList() }
+                val protein = meals.sumOf { it.totalProtein }
+                val carbs = meals.sumOf { it.totalCarbs }
+                val fat = meals.sumOf { it.totalFat }
+                macroData.add(DailyMacros(date, protein, carbs, fat))
+            }
+
+            // Compute averages
+            val avgProtein = if (macroData.isNotEmpty())
+                macroData.map { it.protein }.average().toInt() else 0
+            val avgCarbs = if (macroData.isNotEmpty())
+                macroData.map { it.carbs }.average().toInt() else 0
+            val avgFat = if (macroData.isNotEmpty())
+                macroData.map { it.fat }.average().toInt() else 0
+
+            // ----------------------------------------------------------------
+            // Workout: load history once, filter to date range, compute volume
+            // ----------------------------------------------------------------
+            val allSessions = try { workoutRepo.loadHistory() } catch (e: Exception) { emptyList() }
+            val sessionMap = allSessions
+                .filter { !it.date.isBefore(startDate) && !it.date.isAfter(today) }
+                .associateBy { it.date }
+
+            // Build daily volume list
+            val rawVolumes = dateRange.map { date ->
+                date to (sessionMap[date]?.totalVolume ?: 0.0)
+            }
+
+            // Compute 3-day moving average trend
+            val volumeData = rawVolumes.mapIndexed { idx, (date, vol) ->
+                // Collect up to 3 days ending at idx (inclusive) that have data
+                val windowValues = (maxOf(0, idx - 2)..idx)
+                    .map { rawVolumes[it].second }
+                    .filter { it > 0.0 }
+                val trendValue = if (windowValues.isNotEmpty()) windowValues.average() else 0.0
+                DailyVolume(date, vol, trendValue)
+            }
+
+            // Carry forward trendValue for zero-volume days after first workout
+            val volumeDataFilled = buildList {
+                var lastTrend = 0.0
+                for (dv in volumeData) {
+                    val trend = if (dv.trendValue > 0.0) {
+                        lastTrend = dv.trendValue
+                        dv.trendValue
+                    } else {
+                        lastTrend
+                    }
+                    add(dv.copy(trendValue = trend))
+                }
+            }
+
+            _weekly.value = WeeklyAnalyticsState(
+                isLoading = false,
+                macroData = macroData,
+                volumeData = volumeDataFilled,
+                selectedWeeks = weeks,
+                avgProtein = avgProtein,
+                avgCarbs = avgCarbs,
+                avgFat = avgFat
+            )
+        }
     }
 
     // -------------------------------------------------------------------------
