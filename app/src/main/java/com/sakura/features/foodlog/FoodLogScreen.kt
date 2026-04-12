@@ -37,14 +37,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -138,25 +142,23 @@ fun FoodLogScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         IconButton(onClick = { viewModel.navigatePrevDay() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous day")
                         }
                         Text(
                             text = formatDate(selectedDate),
-                            modifier = Modifier.clickable { showDatePicker = true },
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showDatePicker = true },
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp
+                            fontSize = 16.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         IconButton(onClick = { viewModel.navigateNextDay() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next day")
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -178,29 +180,53 @@ fun FoodLogScreen(
                 }
             }
         },
+        bottomBar = {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                NavigationBarItem(
+                    selected = true,
+                    onClick = { /* already on food */ },
+                    icon = {
+                        Icon(
+                            Icons.Filled.DateRange,
+                            contentDescription = "Food",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    label = { Text("FOOD", fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = CherryBlossomPink,
+                        selectedIconColor = Color.White,
+                        selectedTextColor = CherryBlossomPink
+                    )
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = onNavigateToWorkout,
+                    icon = { Icon(Icons.Filled.Star, contentDescription = "Workout") },
+                    label = { Text("WORKOUT", fontSize = 10.sp) }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { /* Phase 4 */ },
+                    icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
+                    label = { Text("HOME", fontSize = 10.sp) }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = onNavigateToSettings,
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
+                    label = { Text("SETTINGS", fontSize = 10.sp) }
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
-            // Food / Workout tab row for switching between features
-            PrimaryTabRow(selectedTabIndex = 0) {
-                Tab(
-                    selected = true,
-                    onClick = { /* already here */ },
-                    text = { Text("Food") }
-                )
-                Tab(
-                    selected = false,
-                    onClick = onNavigateToWorkout,
-                    text = { Text("Workout") }
-                )
-            }
-
-        Box(
-            modifier = Modifier.fillMaxSize()
         ) {
             when (val state = uiState) {
                 is FoodLogUiState.Loading -> {
@@ -341,7 +367,6 @@ fun FoodLogScreen(
                 }
             }
         }
-        } // end Column (wraps tab row + main content Box)
     }
 
     // Date picker dialog

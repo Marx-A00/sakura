@@ -274,6 +274,7 @@ fun WorkoutLogScreen(
                 previousSets = dayExercise.previousSets,
                 onLogSet = { set ->
                     viewModel.addSet(exerciseId, set)
+                    setInputExerciseId = null
                 },
                 onDismiss = { setInputExerciseId = null }
             )
