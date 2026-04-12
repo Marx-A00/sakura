@@ -180,14 +180,29 @@ class WorkoutLogViewModel(
     fun addSet(exerciseId: Long, set: SetLog) {
         viewModelScope.launch {
             val date = _selectedDate.value
-            workoutRepo.addSet(date, exerciseId, set)
-            // Check for PR after logging the set
             val exerciseName = (uiState.value as? WorkoutLogUiState.DayLoaded)
                 ?.exercises?.find { it.exerciseLog.id == exerciseId }
                 ?.exerciseLog?.name
+
+            // Check for PR BEFORE writing so isPr is stored on the set
+            var setToWrite = set
             if (exerciseName != null) {
-                checkForPR(exerciseName, set)
+                val pb = workoutRepo.findPersonalBest(exerciseName)
+                if (pb != null) {
+                    val prType = when {
+                        set.unit != "bw" && set.weight > pb.weight -> "Weight"
+                        set.unit == "bw" && set.holdSecs == 0 && set.reps > pb.reps -> "Reps"
+                        set.holdSecs > 0 && set.holdSecs > pb.holdSecs -> "Hold"
+                        else -> null
+                    }
+                    if (prType != null) {
+                        setToWrite = set.copy(isPr = true)
+                        _prDetected.value = PrNotification(exerciseName, prType)
+                    }
+                }
             }
+
+            workoutRepo.addSet(date, exerciseId, setToWrite)
             _reloadTrigger.value++
         }
     }
@@ -243,22 +258,6 @@ class WorkoutLogViewModel(
     // -------------------------------------------------------------------------
     // PR detection
     // -------------------------------------------------------------------------
-
-    private fun checkForPR(exerciseName: String, set: SetLog) {
-        viewModelScope.launch {
-            val pb = workoutRepo.findPersonalBest(exerciseName) ?: return@launch
-            // Only flag as PR if there IS prior history (null = first session, no PR)
-            val prType = when {
-                set.unit != "bw" && set.weight > pb.weight -> "Weight"
-                set.unit == "bw" && set.holdSecs == 0 && set.reps > pb.reps -> "Reps"
-                set.holdSecs > 0 && set.holdSecs > pb.holdSecs -> "Hold"
-                else -> null
-            }
-            if (prType != null) {
-                _prDetected.value = PrNotification(exerciseName, prType)
-            }
-        }
-    }
 
     fun dismissPrNotification() {
         _prDetected.value = null

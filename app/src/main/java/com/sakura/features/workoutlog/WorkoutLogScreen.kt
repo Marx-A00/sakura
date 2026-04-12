@@ -135,6 +135,11 @@ fun WorkoutLogScreen(
                         }
                     }
                 },
+                actions = {
+                    IconButton(onClick = onNavigateToHistory) {
+                        Icon(Icons.Filled.DateRange, contentDescription = "History")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
