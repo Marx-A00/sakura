@@ -27,6 +27,17 @@
             </intent-filter>
         </activity>
 
+        <!-- Demo activity for loading animation prototype — delete when done -->
+        <activity
+            android:name=".features.loading.LoadingDemoActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Sakura">
+            <intent-filter>
+                <action android:name="com.sakura.LOADING_DEMO" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>
