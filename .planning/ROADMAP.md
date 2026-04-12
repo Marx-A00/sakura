@@ -78,17 +78,18 @@ Plans:
 **Goal**: A unified home screen summarizes the day at a glance, history views for both domains are polished, analytics charts show weekly patterns, and sync status is always visible.
 **Depends on**: Phase 3
 **Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, SYNC-04
+**Plans**: 2 plans in 2 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Home screen with today's macro + workout summary, MainScaffold navigation restructure, sync status badge, DatePicker on date titles
+- [ ] 04-02-PLAN.md — Weekly macro grouped bar chart, workout volume combo chart, 1W/2W/4W time ranges, training split calendar in workout tab
+
 **Success Criteria** (what must be TRUE):
   1. The home screen shows today's macro progress (logged vs. target) and today's planned workout in a single view
   2. Food log history view and workout history view are accessible and show past entries read from org files
   3. Weekly macro averages and workout volume trends are displayed as charts
   4. Training split calendar shows which day falls on which date across recent weeks
   5. A sync status indicator shows the last-synced timestamp and surfaces any .sync-conflict file warnings
-**Plans**: TBD
-
-Plans:
-- [ ] 04-01: TodayScreen with unified macro + workout summary, navigation polish, and sync status indicator
-- [ ] 04-02: Weekly macro averages chart, workout volume trends chart, and training split calendar
 
 ### Phase 5: Local Storage Mode
 **Goal**: A non-technical user (e.g. mom on Android) can install the app and start logging food and workouts immediately — no Syncthing, no folder paths, no storage permissions. Data lives in app-internal storage with zero configuration.
