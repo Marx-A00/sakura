@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 4 of 5 (Dashboard and Polish) — In progress
-Plan: 1 of 3 in current phase — COMPLETE
-Status: In progress — plan 04-01 complete, paused at checkpoint for human verification
-Last activity: 2026-04-12 — Completed 04-01 (home screen + navigation restructure)
+Plan: 2 of 3 in current phase — COMPLETE (paused at checkpoint:human-verify)
+Status: In progress — plan 04-02 auto tasks complete, paused at checkpoint for human verification
+Last activity: 2026-04-12 — Completed 04-02 auto tasks (weekly charts + split calendar)
 
-Progress: [█████████░] 90% (9/10 plans complete)
+Progress: [██████████] 91% (10/11 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: ~11 min
-- Total execution time: ~93 min
+- Total execution time: ~102 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 2 plans done — COMPLETE
 - Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
-- Phase 4: 1 of 3 plans done, ~8 min so far — In progress
+- Phase 4: 2 of 3 plans done, ~17 min so far — In progress
 
 **Recent Trend:**
-- Last 3 plans: 03-02 (~8 min), 03-03 (~20 min), 04-01 (~8 min)
-- Trend: stable
+- Last 3 plans: 03-03 (~20 min), 04-01 (~8 min), 04-02 (~9 min)
+- Trend: stable, fast
 
 *Updated after each plan completion*
 
@@ -68,6 +68,10 @@ Recent decisions affecting current work:
 - [04-01]: MainScaffold pattern: single Scaffold at AppNavHost level with shared NavigationBar; isTabDestination() extension controls visibility
 - [04-01]: SyncStatus data class co-located in SyncBackend.kt with interface
 - [04-01]: FoodLogScreen/WorkoutLogScreen onNavigateToSettings removed — settings now accessed via shared nav bar only
+- [04-02]: Fill(SolidColor(color)) for Vico color — Fill(Color) constructor is inaccessible from Kotlin source; Fill(Brush) is the public constructor
+- [04-02]: LineCartesianLayer.Line direct constructor used — rememberLine() companion extension unresolvable in Kotlin 2.x
+- [04-02]: ColumnCartesianLayer.MergeMode.Grouped() must be instantiated — class not singleton
+- [04-02]: SplitCalendar uses Column+Row grid — predictable fixed height, no nested scroll issues
 
 ### Pending Todos
 
@@ -83,7 +87,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:35:31Z
-Stopped at: 04-01 complete — paused at checkpoint:human-verify (tasks 1-3 done)
+Last session: 2026-04-12T18:55:00Z
+Stopped at: 04-02 auto tasks complete — paused at checkpoint:human-verify (tasks 1-2 done)
 Resume file: None
-Next: Continue 04-01 checkpoint (approve or report issues), then proceed to 04-02 and 04-03
+Next: 04-02 checkpoint approval, then 04-03 (settings and polish)
