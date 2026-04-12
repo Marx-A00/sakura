@@ -9,27 +9,28 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 3 of 5 (Workout Logging) — COMPLETE
-Plan: 3 of 3 in current phase — COMPLETE
-Status: Phase 3 complete, ready for Phase 4
-Last activity: 2026-04-12 — Completed Phase 3 (workout logging)
+Phase: 4 of 5 (Dashboard and Polish) — In progress
+Plan: 1 of 3 in current phase — COMPLETE
+Status: In progress — plan 04-01 complete, paused at checkpoint for human verification
+Last activity: 2026-04-12 — Completed 04-01 (home screen + navigation restructure)
 
-Progress: [████████░░] 80% (8/10 plans complete)
+Progress: [█████████░] 90% (9/10 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: ~12 min
-- Total execution time: ~85 min
+- Total plans completed: 9
+- Average duration: ~11 min
+- Total execution time: ~93 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 2 plans done — COMPLETE
 - Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
+- Phase 4: 1 of 3 plans done, ~8 min so far — In progress
 
 **Recent Trend:**
-- Last 3 plans: 03-01 (~5 min), 03-02 (~8 min), 03-03 (~20 min)
+- Last 3 plans: 03-02 (~8 min), 03-03 (~20 min), 04-01 (~8 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -62,12 +63,17 @@ Recent decisions affecting current work:
 - [03-03]: NavigationBar replaces PrimaryTabRow — consistent 4-tab bottom nav (FOOD/WORKOUT/HOME/SETTINGS)
 - [03-03]: setInputExerciseId cleared immediately on log — prevents reload race
 - [03-03]: PR check runs before addSet so isPr=true is persisted to org file
+- [04-01]: compileSdk bumped to 36 (required by vico 3.1.0); targetSdk stays 35 — no runtime behavior change
+- [04-01]: gradle.properties created with Xmx2048m — default 512MiB OOMs during vico dex merge
+- [04-01]: MainScaffold pattern: single Scaffold at AppNavHost level with shared NavigationBar; isTabDestination() extension controls visibility
+- [04-01]: SyncStatus data class co-located in SyncBackend.kt with interface
+- [04-01]: FoodLogScreen/WorkoutLogScreen onNavigateToSettings removed — settings now accessed via shared nav bar only
 
 ### Pending Todos
 
 - Document Samsung One UI Auto Blocker disable step in device setup notes
 - WORK-07 (rest timer) not implemented — deferred, not critical for v1
-- WORK-08 (today's workout on home screen) deferred to Phase 4
+- WORK-08 (today's workout on home screen) — COMPLETE in 04-01
 
 ### Blockers/Concerns
 
@@ -77,7 +83,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-12 UTC
-Stopped at: Phase 3 complete — all workout logging features implemented and verified
+Last session: 2026-04-12T17:35:31Z
+Stopped at: 04-01 complete — paused at checkpoint:human-verify (tasks 1-3 done)
 Resume file: None
-Next phase: Phase 4 — Dashboard and Polish
+Next: Continue 04-01 checkpoint (approve or report issues), then proceed to 04-02 and 04-03
