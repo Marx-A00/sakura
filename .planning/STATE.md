@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** One cohesive system for food and workout tracking that the user fully controls, with data living in org files that flow into their existing Emacs workflow.
-**Current focus:** Phase 4 - Dashboard and Polish
+**Current focus:** Phase 5 - Local Storage Mode
 
 ## Current Position
 
-Phase: 4 of 5 (Dashboard and Polish) — In progress
-Plan: 2 of 3 in current phase — COMPLETE (paused at checkpoint:human-verify)
-Status: In progress — plan 04-02 auto tasks complete, paused at checkpoint for human verification
-Last activity: 2026-04-12 — Completed 04-02 auto tasks (weekly charts + split calendar)
+Phase: 4 of 5 (Dashboard and Polish) — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
+Status: Phase 4 complete, ready for Phase 5
+Last activity: 2026-04-12 — Completed Phase 4 (dashboard and polish)
 
-Progress: [██████████] 91% (10/11 plans complete)
+Progress: [██████████] 100% (10/10 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 10
 - Average duration: ~11 min
-- Total execution time: ~102 min
+- Total execution time: ~110 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 2 plans done — COMPLETE
 - Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
-- Phase 4: 2 of 3 plans done, ~17 min so far — In progress
+- Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
 
 **Recent Trend:**
 - Last 3 plans: 03-03 (~20 min), 04-01 (~8 min), 04-02 (~9 min)
-- Trend: stable, fast
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -67,17 +67,15 @@ Recent decisions affecting current work:
 - [04-01]: gradle.properties created with Xmx2048m — default 512MiB OOMs during vico dex merge
 - [04-01]: MainScaffold pattern: single Scaffold at AppNavHost level with shared NavigationBar; isTabDestination() extension controls visibility
 - [04-01]: SyncStatus data class co-located in SyncBackend.kt with interface
-- [04-01]: FoodLogScreen/WorkoutLogScreen onNavigateToSettings removed — settings now accessed via shared nav bar only
-- [04-02]: Fill(SolidColor(color)) for Vico color — Fill(Color) constructor is inaccessible from Kotlin source; Fill(Brush) is the public constructor
-- [04-02]: LineCartesianLayer.Line direct constructor used — rememberLine() companion extension unresolvable in Kotlin 2.x
-- [04-02]: ColumnCartesianLayer.MergeMode.Grouped() must be instantiated — class not singleton
-- [04-02]: SplitCalendar uses Column+Row grid — predictable fixed height, no nested scroll issues
+- [04-01]: Vico org.jetbrains.compose.material3 excluded in build.gradle.kts to prevent DatePicker NoSuchMethodError
+- [04-02]: Vico 3.1.0 API: Fill(SolidColor(color)) required, LineCartesianLayer.Line direct constructor, MergeMode.Grouped() instantiation
+- [04-02]: SplitCalendar uses Column/Row (not LazyVerticalGrid) to avoid nested scrollable containers
 
 ### Pending Todos
 
 - Document Samsung One UI Auto Blocker disable step in device setup notes
 - WORK-07 (rest timer) not implemented — deferred, not critical for v1
-- WORK-08 (today's workout on home screen) — COMPLETE in 04-01
+- UI polish items noted by user during Phase 4 verification — to address after all phases
 
 ### Blockers/Concerns
 
@@ -87,7 +85,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-12T18:55:00Z
-Stopped at: 04-02 auto tasks complete — paused at checkpoint:human-verify (tasks 1-2 done)
+Last session: 2026-04-12 UTC
+Stopped at: Phase 4 complete — all dashboard and analytics features implemented and verified
 Resume file: None
-Next: 04-02 checkpoint approval, then 04-03 (settings and polish)
+Next phase: Phase 5 — Local Storage Mode

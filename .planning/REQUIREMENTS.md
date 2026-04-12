@@ -35,7 +35,7 @@
 - [x] **WORK-05**: PR tracking (automatic new bests detection)
 - [x] **WORK-06**: Workout history view
 - [ ] **WORK-07**: Rest timer
-- [ ] **WORK-08**: Today's planned workout on home screen
+- [x] **WORK-08**: Today's planned workout on home screen
 - [x] **WORK-09**: Volume tracking per session
 - [x] **WORK-10**: Training split awareness (knows current day in split)
 
@@ -44,18 +44,18 @@
 - [ ] **SYNC-01**: Write org files to Syncthing-managed folder
 - [ ] **SYNC-02**: Read org files from Syncthing-managed folder (two-way)
 - [ ] **SYNC-03**: Handle Syncthing .sync-conflict files gracefully
-- [ ] **SYNC-04**: Sync status indicator
+- [x] **SYNC-04**: Sync status indicator
 - [x] **SYNC-05**: Draft save/restore for entry forms
 - [ ] **SYNC-06**: Graceful degradation when sync folder unavailable
 
 ### Dashboard & Analytics
 
-- [ ] **DASH-01**: Today home screen (macros progress + today's workout)
-- [ ] **DASH-02**: Food log history view
-- [ ] **DASH-03**: Workout history view (past sessions)
-- [ ] **DASH-04**: Weekly macro averages (charts)
-- [ ] **DASH-05**: Volume tracking trends
-- [ ] **DASH-06**: Training split calendar
+- [x] **DASH-01**: Today home screen (macros progress + today's workout)
+- [x] **DASH-02**: Food log history view
+- [x] **DASH-03**: Workout history view (past sessions)
+- [x] **DASH-04**: Weekly macro averages (charts)
+- [x] **DASH-05**: Volume tracking trends
+- [x] **DASH-06**: Training split calendar
 
 ## v2 Requirements
 
@@ -134,21 +134,21 @@
 | WORK-05 | Phase 3 | Complete |
 | WORK-06 | Phase 3 | Complete |
 | WORK-07 | Phase 3 | Pending |
-| WORK-08 | Phase 4 | Pending |
+| WORK-08 | Phase 4 | Complete |
 | WORK-09 | Phase 3 | Complete |
 | WORK-10 | Phase 3 | Complete |
 | SYNC-01 | Phase 1 | Complete |
 | SYNC-02 | Phase 1 | Complete |
 | SYNC-03 | Phase 1 | Complete |
-| SYNC-04 | Phase 4 | Pending |
+| SYNC-04 | Phase 4 | Complete |
 | SYNC-05 | Phase 2 | Complete |
 | SYNC-06 | Phase 1 | Complete |
-| DASH-01 | Phase 4 | Pending |
-| DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 4 | Pending |
-| DASH-04 | Phase 4 | Pending |
-| DASH-05 | Phase 4 | Pending |
-| DASH-06 | Phase 4 | Pending |
+| DASH-01 | Phase 4 | Complete |
+| DASH-02 | Phase 4 | Complete |
+| DASH-03 | Phase 4 | Complete |
+| DASH-04 | Phase 4 | Complete |
+| DASH-05 | Phase 4 | Complete |
+| DASH-06 | Phase 4 | Complete |
 
 | LOCAL-01 | Phase 5 | Pending |
 | LOCAL-02 | Phase 5 | Pending |

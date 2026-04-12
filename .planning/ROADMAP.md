@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Device setup, org engine, file layer, and onboarding
 - [x] **Phase 2: Food Logging** - Complete food tracking end-to-end with org file output
 - [x] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
-- [ ] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
+- [x] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
 - [ ] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
 
 ## Phase Details
@@ -81,8 +81,8 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — Home screen with today's macro + workout summary, MainScaffold navigation restructure, sync status badge, DatePicker on date titles
-- [ ] 04-02-PLAN.md — Weekly macro grouped bar chart, workout volume combo chart, 1W/2W/4W time ranges, training split calendar in workout tab
+- [x] 04-01-PLAN.md — Home screen with today's macro + workout summary, MainScaffold navigation restructure, sync status badge, DatePicker on date titles
+- [x] 04-02-PLAN.md — Weekly macro grouped bar chart, workout volume combo chart, 1W/2W/4W time ranges, training split calendar in workout tab
 
 **Success Criteria** (what must be TRUE):
   1. The home screen shows today's macro progress (logged vs. target) and today's planned workout in a single view
@@ -117,5 +117,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 3/3 | Complete | 2026-04-09 |
 | 2. Food Logging | 2/2 | Complete | 2026-04-11 |
 | 3. Workout Logging | 3/3 | Complete | 2026-04-12 |
-| 4. Dashboard and Polish | 0/2 | Not started | - |
+| 4. Dashboard and Polish | 2/2 | Complete | 2026-04-12 |
 | 5. Local Storage Mode | 0/2 | Not started | - |
