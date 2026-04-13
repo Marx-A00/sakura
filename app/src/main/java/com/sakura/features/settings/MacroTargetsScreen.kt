@@ -18,6 +18,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -68,6 +71,13 @@ fun MacroTargetsScreen(
     var fat by remember(currentTargets) { mutableStateOf(currentTargets.fat.toString()) }
 
     var showMigrationDialog by remember { mutableStateOf(false) }
+
+    // Rest timer prefs
+    val timerEnabled by prefsRepo.timerEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val timerAutoStart by prefsRepo.timerAutoStart.collectAsStateWithLifecycle(initialValue = true)
+    val defaultRestSecs by prefsRepo.defaultRestTimerSecs.collectAsStateWithLifecycle(initialValue = 90)
+    val notifType by prefsRepo.timerNotificationType.collectAsStateWithLifecycle(initialValue = "VIBRATION")
+    var defaultRestSecsInput by remember(defaultRestSecs) { mutableStateOf(defaultRestSecs.toString()) }
 
     Scaffold(
         topBar = {
@@ -152,6 +162,115 @@ fun MacroTargetsScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = CherryBlossomPink)
             ) {
                 Text("Save", color = Color.White)
+            }
+
+            // ---------------------------------------------------------------
+            // Rest Timer section
+            // ---------------------------------------------------------------
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            HorizontalDivider()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Rest Timer",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Master toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Rest Timer Enabled",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = timerEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch { prefsRepo.setTimerEnabled(enabled) }
+                    }
+                )
+            }
+
+            if (timerEnabled) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Auto-start toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Auto-start after logging set",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = timerAutoStart,
+                        onCheckedChange = { autoStart ->
+                            scope.launch { prefsRepo.setTimerAutoStart(autoStart) }
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Default duration field
+                OutlinedTextField(
+                    value = defaultRestSecsInput,
+                    onValueChange = { newVal ->
+                        val digits = newVal.filter { c -> c.isDigit() }
+                        defaultRestSecsInput = digits
+                        val parsed = digits.toIntOrNull()
+                        if (parsed != null) {
+                            scope.launch { prefsRepo.setDefaultRestTimerSecs(parsed.coerceIn(5, 600)) }
+                        }
+                    },
+                    label = { Text("Default Rest Duration (seconds)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Notification type selector
+                Text(
+                    text = "Completion Alert",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("VIBRATION" to "Vibrate", "SOUND" to "Sound", "BOTH" to "Both", "NONE" to "None")
+                        .forEach { (type, label) ->
+                            FilterChip(
+                                selected = notifType == type,
+                                onClick = {
+                                    scope.launch { prefsRepo.setTimerNotificationType(type) }
+                                },
+                                label = { Text(label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+                }
             }
 
             // ---------------------------------------------------------------
