@@ -141,6 +141,13 @@ class AppPreferencesRepository(private val context: Context) {
         }
     }
 
+    /** Clear the onboarding complete flag so the user is taken through onboarding again on next launch. */
+    suspend fun clearOnboardingComplete() {
+        context.appDataStore.edit { preferences ->
+            preferences.remove(ONBOARDING_COMPLETE)
+        }
+    }
+
     suspend fun setStorageMode(mode: StorageMode) {
         context.appDataStore.edit { preferences ->
             preferences[STORAGE_MODE] = mode.name
