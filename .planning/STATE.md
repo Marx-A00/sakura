@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 6 of 7 (Fix Data Bugs) — PENDING
-Plan: 0 of ? in current phase — needs planning
-Status: Gap closure phases created from milestone audit
-Last activity: 2026-04-13 — Created gap closure phases 6-7
+Phase: 6 of 7 (Fix Data Bugs) — In progress
+Plan: 2 of 2 in current phase (06-02 complete)
+Status: Phase 6 complete — both data bug fix plans executed
+Last activity: 2026-04-13 — Completed 06-02-PLAN.md (LOCAL->SYNCTHING migration fix)
 
-Progress: [██████████░░] 85% (12/14 plans estimated)
+Progress: [████████████░░] 92% (14/15 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: ~10 min
-- Total execution time: ~130 min
+- Total plans completed: 14
+- Average duration: ~8 min
+- Total execution time: ~132 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
@@ -29,9 +29,10 @@ Progress: [██████████░░] 85% (12/14 plans estimated)
 - Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
 - Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
 - Phase 5: 2 of 2 plans done, ~11 min total — COMPLETE
+- Phase 6: 2 of 2 plans done, ~2 min total — COMPLETE
 
 **Recent Trend:**
-- Last 3 plans: 04-02 (~9 min), 05-01 (~3 min), 05-02 (~8 min)
+- Last 3 plans: 05-01 (~3 min), 05-02 (~8 min), 06-02 (~1 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [05-02]: DisposableEffect for permission checking guarded behind Syncthing-path states only
 - [05-02]: clearOnboardingComplete() added for Local→Syncthing migration path
 - [05-02]: Migration uses ComponentActivity.recreate() for full container reconstruction
+- [06-02]: copyLocalOrgFilesToFolder() is unconditional — fresh installs are safe (empty listFiles is a no-op); overwrite=true ensures idempotency
 
 ### Pending Todos
 
@@ -93,7 +95,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-13 UTC
-Stopped at: Gap closure phases 6-7 created from milestone audit
+Last session: 2026-04-13T17:09:57Z
+Stopped at: Completed 06-02-PLAN.md — LOCAL->SYNCTHING migration fix
 Resume file: None
-Next action: Plan Phase 6 (Fix Data Bugs)
+Next action: Execute Phase 7 plans
