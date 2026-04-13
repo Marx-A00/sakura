@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.sakura.data.food.FoodRepository
 import com.sakura.data.workout.WorkoutRepository
 import com.sakura.preferences.AppPreferencesRepository
+import com.sakura.preferences.StorageMode
 import com.sakura.sync.SyncBackend
 import com.sakura.sync.SyncStatus
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +92,10 @@ class DashboardViewModel(
                 SyncStatus(null, false, false)
             }
 
+            // Determine if running in local mode (hides sync badge on dashboard)
+            val mode = try { prefsRepo.storageMode.first() } catch (e: Exception) { null }
+            val isLocalMode = (mode == StorageMode.LOCAL)
+
             _today.value = DashboardTodayState(
                 isLoading = false,
                 totalCalories = totalCalories,
@@ -108,7 +113,8 @@ class DashboardViewModel(
                 isWorkoutComplete = todaySession?.isComplete ?: false,
                 hasWorkout = hasWorkout,
                 recentWorkoutDays = recentWorkoutDays,
-                syncStatus = syncStatus
+                syncStatus = syncStatus,
+                isLocalMode = isLocalMode
             )
         }
     }

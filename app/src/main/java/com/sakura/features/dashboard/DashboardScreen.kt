@@ -93,14 +93,16 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            SyncStatusBadge(
-                syncStatus = state.syncStatus,
-                onTap = { message ->
-                    scope.launch {
-                        snackbarHostState.showSnackbar(message)
+            if (!state.isLocalMode) {
+                SyncStatusBadge(
+                    syncStatus = state.syncStatus,
+                    onTap = { message ->
+                        scope.launch {
+                            snackbarHostState.showSnackbar(message)
+                        }
                     }
-                }
-            )
+                )
+            }
         }
 
         // Food progress card with HorizontalPager

@@ -30,7 +30,9 @@ data class DashboardTodayState(
     val hasWorkout: Boolean = false,
     val recentWorkoutDays: List<RecentWorkoutDay> = emptyList(),
     // Sync status
-    val syncStatus: SyncStatus = SyncStatus(null, false, false)
+    val syncStatus: SyncStatus = SyncStatus(null, false, false),
+    // True when the app is running in local storage mode — hides sync-related UI
+    val isLocalMode: Boolean = false
 )
 
 /** A single day's calorie total for the recent history row. */
