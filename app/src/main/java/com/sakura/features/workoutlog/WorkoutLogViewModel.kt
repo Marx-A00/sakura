@@ -21,6 +21,7 @@ import com.sakura.data.workout.WorkoutRepository
 import com.sakura.data.workout.WorkoutSession
 import com.sakura.data.workout.WorkoutTemplates
 import com.sakura.preferences.AppPreferencesRepository
+import com.sakura.sync.SyncBackendError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -134,14 +135,12 @@ class WorkoutLogViewModel(
                             previousSetsMap = previousSetsMap
                         )
                     )
+                } catch (e: SyncBackendError.FolderUnavailable) {
+                    emit(WorkoutLogUiState.Error.FolderUnavailable)
+                } catch (e: SyncBackendError.PermissionDenied) {
+                    emit(WorkoutLogUiState.Error.FolderUnavailable)
                 } catch (e: Exception) {
-                    if (e.message?.contains("folder", ignoreCase = true) == true ||
-                        e.message?.contains("unavailable", ignoreCase = true) == true
-                    ) {
-                        emit(WorkoutLogUiState.Error.FolderUnavailable)
-                    } else {
-                        emit(WorkoutLogUiState.Error.Generic(e.message ?: "Unknown error"))
-                    }
+                    emit(WorkoutLogUiState.Error.Generic(e.message ?: "Unknown error"))
                 }
             }
         }

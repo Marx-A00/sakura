@@ -6,10 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 object Onboarding
 
-/** Type-safe navigation route for the main app screen. */
-@Serializable
-object Main
-
 /** Type-safe navigation route for the food log screen (Phase 2). */
 @Serializable
 object FoodLog

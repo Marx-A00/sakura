@@ -11,6 +11,7 @@ import com.sakura.data.food.FoodLibraryItem
 import com.sakura.data.food.FoodRepository
 import com.sakura.data.food.MealTemplate
 import com.sakura.preferences.AppPreferencesRepository
+import com.sakura.sync.SyncBackendError
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -56,14 +57,12 @@ class FoodLogViewModel(
                     prefsRepo.macroTargets.collect { targets ->
                         emit(FoodLogUiState.Success(meals = meals, targets = targets))
                     }
+                } catch (e: SyncBackendError.FolderUnavailable) {
+                    emit(FoodLogUiState.Error.FolderUnavailable)
+                } catch (e: SyncBackendError.PermissionDenied) {
+                    emit(FoodLogUiState.Error.FolderUnavailable)
                 } catch (e: Exception) {
-                    if (e.message?.contains("folder", ignoreCase = true) == true ||
-                        e.message?.contains("unavailable", ignoreCase = true) == true
-                    ) {
-                        emit(FoodLogUiState.Error.FolderUnavailable)
-                    } else {
-                        emit(FoodLogUiState.Error.Generic(e.message ?: "Unknown error"))
-                    }
+                    emit(FoodLogUiState.Error.Generic(e.message ?: "Unknown error"))
                 }
             }
         }

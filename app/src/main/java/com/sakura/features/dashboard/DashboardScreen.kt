@@ -193,23 +193,6 @@ private fun DashboardPagerCard(
     }
 }
 
-/**
- * Placeholder for chart pages (Plan 02 will replace these).
- */
-@Composable
-private fun ChartPlaceholder(label: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
 /** Returns a greeting based on the current hour of day. */
 private fun timeBasedGreeting(): String {
     val hour = java.time.LocalTime.now().hour
