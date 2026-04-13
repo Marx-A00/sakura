@@ -453,7 +453,8 @@ private data class SerializableLibraryExercise(
     val name: String,
     val categoryLabel: String,
     val muscleGroups: List<String> = emptyList(),
-    val isBuiltIn: Boolean = false
+    val isBuiltIn: Boolean = false,
+    val restSecs: Int? = null
 )
 
 private fun LibraryExercise.toSerializable(): SerializableLibraryExercise =
@@ -461,7 +462,8 @@ private fun LibraryExercise.toSerializable(): SerializableLibraryExercise =
         name = this.name,
         categoryLabel = this.category.label,
         muscleGroups = this.muscleGroups,
-        isBuiltIn = this.isBuiltIn
+        isBuiltIn = this.isBuiltIn,
+        restSecs = this.restSecs
     )
 
 private fun SerializableLibraryExercise.toLibraryExercise(): LibraryExercise =
@@ -469,7 +471,8 @@ private fun SerializableLibraryExercise.toLibraryExercise(): LibraryExercise =
         name = this.name,
         category = ExerciseCategory.fromLabel(this.categoryLabel),
         muscleGroups = this.muscleGroups,
-        isBuiltIn = this.isBuiltIn
+        isBuiltIn = this.isBuiltIn,
+        restSecs = this.restSecs
     )
 
 // =============================================================================

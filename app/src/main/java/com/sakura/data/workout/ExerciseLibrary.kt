@@ -9,7 +9,8 @@ data class LibraryExercise(
     val name: String,
     val category: ExerciseCategory,
     val muscleGroups: List<String> = emptyList(),
-    val isBuiltIn: Boolean = true
+    val isBuiltIn: Boolean = true,
+    val restSecs: Int? = null
 )
 
 /**

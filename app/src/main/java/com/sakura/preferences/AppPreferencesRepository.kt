@@ -49,6 +49,11 @@ class AppPreferencesRepository(private val context: Context) {
 
         // User-created exercise library (Phase 3 plan 02)
         val USER_EXERCISES_JSON = stringPreferencesKey("user_exercises_json")
+
+        // Rest timer settings (Phase 7)
+        val TIMER_ENABLED = booleanPreferencesKey("rest_timer_enabled")
+        val TIMER_AUTO_START = booleanPreferencesKey("rest_timer_auto_start")
+        val TIMER_NOTIFICATION_TYPE = stringPreferencesKey("rest_timer_notif_type")
     }
 
     /** The user-configured Syncthing folder path, or null if not yet set. */
@@ -241,6 +246,37 @@ class AppPreferencesRepository(private val context: Context) {
         context.appDataStore.edit { prefs ->
             prefs[USER_EXERCISES_JSON] = json
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Rest timer settings (Phase 7)
+    // -------------------------------------------------------------------------
+
+    /** Master on/off toggle for the rest timer. Defaults to true (enabled). */
+    val timerEnabled: Flow<Boolean> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[TIMER_ENABLED] ?: true }
+
+    /** Auto-start timer after logging a set. Defaults to true. */
+    val timerAutoStart: Flow<Boolean> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[TIMER_AUTO_START] ?: true }
+
+    /** Notification type on timer completion: VIBRATION, SOUND, BOTH, NONE. Defaults to VIBRATION. */
+    val timerNotificationType: Flow<String> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[TIMER_NOTIFICATION_TYPE] ?: "VIBRATION" }
+
+    suspend fun setTimerEnabled(enabled: Boolean) {
+        context.appDataStore.edit { it[TIMER_ENABLED] = enabled }
+    }
+
+    suspend fun setTimerAutoStart(autoStart: Boolean) {
+        context.appDataStore.edit { it[TIMER_AUTO_START] = autoStart }
+    }
+
+    suspend fun setTimerNotificationType(type: String) {
+        context.appDataStore.edit { it[TIMER_NOTIFICATION_TYPE] = type }
     }
 
     // -------------------------------------------------------------------------
