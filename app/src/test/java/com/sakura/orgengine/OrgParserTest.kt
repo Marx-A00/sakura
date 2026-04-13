@@ -841,7 +841,58 @@ class OrgParserTest {
     }
 
     // -------------------------------------------------------------------------
-    // Original Test 11: Parse meal templates file (renumbered to 20)
+    // Test 20: isPr round-trip via OrgSchema.formatSetEntry -> OrgParser.parse
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun test_parse_workout_isPr_round_trip() {
+        // Build set entry with isPr = true
+        val setEntry = OrgSetEntry(
+            setNumber = 1,
+            reps = 5,
+            weight = 100.0,
+            unit = "kg",
+            isPr = true
+        )
+
+        // Format via OrgSchema (same path used by addSet at runtime)
+        val formattedSet = OrgSchema.formatSetEntry(setEntry)
+
+        // Embed in minimal valid workout org file
+        val content = """
+            |* <2026-04-09 Thu>
+            |** Workout
+            |:PROPERTIES:
+            |:split_day: monday-lift
+            |:END:
+            |*** Squat
+            |:PROPERTIES:
+            |:id: 9000000001
+            |:exercise_type: barbell
+            |:END:
+            |${formattedSet.trimEnd()}
+        """.trimMargin()
+
+        val orgFile = OrgParser.parse(content, OrgParser.ParseMode.WORKOUT)
+
+        assertEquals(1, orgFile.sections.size)
+        val section = orgFile.sections[0]
+        assertEquals(1, section.exerciseLogs.size)
+
+        val squat = section.exerciseLogs[0]
+        assertEquals("Squat", squat.name)
+        assertEquals(1, squat.sets.size)
+
+        val set = squat.sets[0]
+        assertEquals(1, set.setNumber)
+        assertEquals(5, set.reps)
+        assertEquals(100.0, set.weight, 0.001)
+        assertEquals("kg", set.unit)
+        assertTrue("isPr should survive formatSetEntry -> parse round-trip", set.isPr)
+    }
+
+    // -------------------------------------------------------------------------
+    // Original Test 11: Parse meal templates file (renumbered to 21)
     // -------------------------------------------------------------------------
 
     @Test
