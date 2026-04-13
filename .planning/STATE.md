@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** One cohesive system for food and workout tracking that the user fully controls, with data living in org files that flow into their existing Emacs workflow.
-**Current focus:** Phase 5 - Local Storage Mode
+**Current focus:** All phases complete — milestone ready for audit
 
 ## Current Position
 
-Phase: 5 of 5 (Local Storage Mode) — In progress
-Plan: 1 of 3 in current phase — COMPLETE
-Status: Phase 5 in progress
-Last activity: 2026-04-13 — Completed 05-01-PLAN.md (local storage backend + mode wiring)
+Phase: 5 of 5 (Local Storage Mode) — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
+Status: All 5 phases complete, milestone ready for audit
+Last activity: 2026-04-13 — Completed Phase 5 (local storage mode)
 
-Progress: [███████████░░] 85% (11/13 plans complete)
+Progress: [██████████] 100% (12/12 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: ~10 min
-- Total execution time: ~113 min
+- Total execution time: ~130 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 2 plans done — COMPLETE
 - Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
 - Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
-- Phase 5: 1 of 3 plans done, ~3 min so far — In progress
+- Phase 5: 2 of 2 plans done, ~11 min total — COMPLETE
 
 **Recent Trend:**
-- Last 3 plans: 04-01 (~8 min), 04-02 (~9 min), 05-01 (~3 min)
-- Trend: fast
+- Last 3 plans: 04-02 (~9 min), 05-01 (~3 min), 05-02 (~8 min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -75,6 +75,9 @@ Recent decisions affecting current work:
 - [05-01]: storageMode Flow returns null for "not yet selected" — MainActivity falls back to LOCAL at runtime without persisting
 - [05-01]: AppContainer constructed in Composable via remember(resolvedMode) — SakuraApplication holds only prefsRepo
 - [05-01]: isLocalMode boolean on DashboardTodayState — ViewModel reads storageMode.first(), converts to bool for UI
+- [05-02]: DisposableEffect for permission checking guarded behind Syncthing-path states only
+- [05-02]: clearOnboardingComplete() added for Local→Syncthing migration path
+- [05-02]: Migration uses ComponentActivity.recreate() for full container reconstruction
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-13 UTC
-Stopped at: Completed 05-01-PLAN.md — LocalStorageBackend, StorageMode, AppContainer wiring, dashboard local mode
+Stopped at: Phase 5 complete — all local storage mode features implemented and verified
 Resume file: None
-Next plan: 05-02 (onboarding storage mode selection flow)
+Next action: Milestone audit — all 5 phases complete

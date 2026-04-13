@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Food Logging** - Complete food tracking end-to-end with org file output
 - [x] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
 - [x] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
-- [ ] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
+- [x] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
 
 ## Phase Details
 
@@ -104,8 +104,8 @@ Plans:
 **Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 05-01-PLAN.md — LocalStorageBackend, StorageMode preference, AppContainer conditional wiring, dashboard badge hiding in local mode
-- [ ] 05-02-PLAN.md — Onboarding expansion (Welcome + ModeSelection screens), Settings storage section with bidirectional migration, device verification
+- [x] 05-01-PLAN.md — LocalStorageBackend, StorageMode preference, AppContainer conditional wiring, dashboard badge hiding in local mode
+- [x] 05-02-PLAN.md — Onboarding expansion (Welcome + ModeSelection screens), Settings storage section with bidirectional migration, device verification
 
 ## Progress
 
@@ -118,4 +118,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Food Logging | 2/2 | Complete | 2026-04-11 |
 | 3. Workout Logging | 3/3 | Complete | 2026-04-12 |
 | 4. Dashboard and Polish | 2/2 | Complete | 2026-04-12 |
-| 5. Local Storage Mode | 0/2 | Not started | - |
+| 5. Local Storage Mode | 2/2 | Complete | 2026-04-13 |

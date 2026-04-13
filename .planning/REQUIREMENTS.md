@@ -61,10 +61,10 @@
 
 ### Local Storage Mode (Non-Technical Users)
 
-- **LOCAL-01**: LocalStorageBackend implementation using app-internal storage (no permissions, no setup)
-- **LOCAL-02**: Simplified onboarding flow for local mode (no folder path, no MANAGE_EXTERNAL_STORAGE)
-- **LOCAL-03**: Storage mode selection during onboarding — "Simple" (local) vs "Power User" (Syncthing)
-- **LOCAL-04**: Data lives entirely on-device in app-internal files, zero configuration
+- [x] **LOCAL-01**: LocalStorageBackend implementation using app-internal storage (no permissions, no setup)
+- [x] **LOCAL-02**: Simplified onboarding flow for local mode (no folder path, no MANAGE_EXTERNAL_STORAGE)
+- [x] **LOCAL-03**: Storage mode selection during onboarding — "Simple" (local) vs "Power User" (Syncthing)
+- [x] **LOCAL-04**: Data lives entirely on-device in app-internal files, zero configuration
 
 ### Cloud Sync (Future)
 
@@ -150,10 +150,10 @@
 | DASH-05 | Phase 4 | Complete |
 | DASH-06 | Phase 4 | Complete |
 
-| LOCAL-01 | Phase 5 | Pending |
-| LOCAL-02 | Phase 5 | Pending |
-| LOCAL-03 | Phase 5 | Pending |
-| LOCAL-04 | Phase 5 | Pending |
+| LOCAL-01 | Phase 5 | Complete |
+| LOCAL-02 | Phase 5 | Complete |
+| LOCAL-03 | Phase 5 | Complete |
+| LOCAL-04 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 37 total
