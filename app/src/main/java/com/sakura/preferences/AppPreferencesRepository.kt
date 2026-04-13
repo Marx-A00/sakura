@@ -9,10 +9,12 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.io.IOException
 
 private val Context.appDataStore: DataStore<Preferences> by preferencesDataStore(name = "sakura_prefs")
@@ -239,6 +241,25 @@ class AppPreferencesRepository(private val context: Context) {
         context.appDataStore.edit { prefs ->
             prefs[USER_EXERCISES_JSON] = json
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // File migration helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Copies all .org files from app-internal storage (filesDir) to [destFolderPath].
+     * Called during LOCAL -> SYNCTHING migration after the user selects a sync folder.
+     * No-op if filesDir contains no .org files (safe for fresh installs).
+     */
+    suspend fun copyLocalOrgFilesToFolder(destFolderPath: String) = withContext(Dispatchers.IO) {
+        val sourceDir = context.filesDir
+        val destDir = java.io.File(destFolderPath)
+        sourceDir.listFiles { file -> file.name.endsWith(".org") }
+            ?.forEach { orgFile ->
+                val dest = java.io.File(destDir, orgFile.name)
+                orgFile.copyTo(dest, overwrite = true)
+            }
     }
 }
 
