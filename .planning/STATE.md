@@ -9,29 +9,30 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 4 of 5 (Dashboard and Polish) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE
-Status: Phase 4 complete, ready for Phase 5
-Last activity: 2026-04-12 — Completed Phase 4 (dashboard and polish)
+Phase: 5 of 5 (Local Storage Mode) — In progress
+Plan: 1 of 3 in current phase — COMPLETE
+Status: Phase 5 in progress
+Last activity: 2026-04-13 — Completed 05-01-PLAN.md (local storage backend + mode wiring)
 
-Progress: [██████████] 100% (10/10 plans complete)
+Progress: [███████████░░] 85% (11/13 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: ~11 min
-- Total execution time: ~110 min
+- Total plans completed: 11
+- Average duration: ~10 min
+- Total execution time: ~113 min
 
 **By Phase:**
 - Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
 - Phase 2: 2 of 2 plans done — COMPLETE
 - Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
 - Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
+- Phase 5: 1 of 3 plans done, ~3 min so far — In progress
 
 **Recent Trend:**
-- Last 3 plans: 03-03 (~20 min), 04-01 (~8 min), 04-02 (~9 min)
-- Trend: stable
+- Last 3 plans: 04-01 (~8 min), 04-02 (~9 min), 05-01 (~3 min)
+- Trend: fast
 
 *Updated after each plan completion*
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 - [04-01]: Vico org.jetbrains.compose.material3 excluded in build.gradle.kts to prevent DatePicker NoSuchMethodError
 - [04-02]: Vico 3.1.0 API: Fill(SolidColor(color)) required, LineCartesianLayer.Line direct constructor, MergeMode.Grouped() instantiation
 - [04-02]: SplitCalendar uses Column/Row (not LazyVerticalGrid) to avoid nested scrollable containers
+- [05-01]: StorageMode enum co-located in AppPreferencesRepository.kt (file level, outside class)
+- [05-01]: storageMode Flow returns null for "not yet selected" — MainActivity falls back to LOCAL at runtime without persisting
+- [05-01]: AppContainer constructed in Composable via remember(resolvedMode) — SakuraApplication holds only prefsRepo
+- [05-01]: isLocalMode boolean on DashboardTodayState — ViewModel reads storageMode.first(), converts to bool for UI
 
 ### Pending Todos
 
@@ -85,7 +90,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-12 UTC
-Stopped at: Phase 4 complete — all dashboard and analytics features implemented and verified
+Last session: 2026-04-13 UTC
+Stopped at: Completed 05-01-PLAN.md — LocalStorageBackend, StorageMode, AppContainer wiring, dashboard local mode
 Resume file: None
-Next phase: Phase 5 — Local Storage Mode
+Next plan: 05-02 (onboarding storage mode selection flow)
