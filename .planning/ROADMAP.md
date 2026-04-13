@@ -17,6 +17,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
 - [x] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
 - [x] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
+- [ ] **Phase 6: Fix Data Bugs** - Migration data loss, PR badge persistence, templateName cold start
+- [ ] **Phase 7: Rest Timer** - Workout rest timer between sets (WORK-07)
 
 ## Phase Details
 
@@ -107,10 +109,34 @@ Plans:
 - [x] 05-01-PLAN.md — LocalStorageBackend, StorageMode preference, AppContainer conditional wiring, dashboard badge hiding in local mode
 - [x] 05-02-PLAN.md — Onboarding expansion (Welcome + ModeSelection screens), Settings storage section with bidirectional migration, device verification
 
+### Phase 6: Fix Data Bugs
+**Goal**: Fix three data integrity bugs identified by milestone audit — LOCAL→SYNCTHING migration data loss, PR badge persistence, and templateName cold start restoration.
+**Depends on**: Phase 5
+**Requirements**: WORK-05 (partial — isPr persistence), LOCAL-03 (partial — migration completeness)
+**Gap Closure**: Closes gaps from v1 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. LOCAL→SYNCTHING migration copies all org files from app-internal storage to the newly selected sync folder before switching backends
+  2. SetLog.isPr is set to true at write time when a PR is detected, and the PR badge renders when reading back from the org file
+  3. WorkoutSession.templateName is derived from splitDay after cold start — dashboard and workout screen show correct template name
+  4. E2E flows 4, 5, and 6 from the audit pass completely
+**Plans**: TBD
+
+### Phase 7: Rest Timer
+**Goal**: Implement a workout rest timer (WORK-07) — the last unsatisfied v1 requirement. User can set a rest duration between sets and see a countdown timer during workouts.
+**Depends on**: Phase 6
+**Requirements**: WORK-07
+**Gap Closure**: Closes WORK-07 gap from v1 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. User can start a configurable rest timer between sets during a workout
+  2. Timer counts down visually and notifies when rest period is complete
+  3. Default rest duration is configurable per exercise or globally
+  4. Timer does not block set logging — user can dismiss or skip the timer
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -119,3 +145,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 3. Workout Logging | 3/3 | Complete | 2026-04-12 |
 | 4. Dashboard and Polish | 2/2 | Complete | 2026-04-12 |
 | 5. Local Storage Mode | 2/2 | Complete | 2026-04-13 |
+| 6. Fix Data Bugs | 0/? | Pending | — |
+| 7. Rest Timer | 0/? | Pending | — |

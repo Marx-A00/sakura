@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** One cohesive system for food and workout tracking that the user fully controls, with data living in org files that flow into their existing Emacs workflow.
-**Current focus:** All phases complete — milestone ready for audit
+**Current focus:** Gap closure phases 6-7 from milestone audit
 
 ## Current Position
 
-Phase: 5 of 5 (Local Storage Mode) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE
-Status: All 5 phases complete, milestone ready for audit
-Last activity: 2026-04-13 — Completed Phase 5 (local storage mode)
+Phase: 6 of 7 (Fix Data Bugs) — PENDING
+Plan: 0 of ? in current phase — needs planning
+Status: Gap closure phases created from milestone audit
+Last activity: 2026-04-13 — Created gap closure phases 6-7
 
-Progress: [██████████] 100% (12/12 plans complete)
+Progress: [██████████░░] 85% (12/14 plans estimated)
 
 ## Performance Metrics
 
@@ -94,6 +94,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-13 UTC
-Stopped at: Phase 5 complete — all local storage mode features implemented and verified
+Stopped at: Gap closure phases 6-7 created from milestone audit
 Resume file: None
-Next action: Milestone audit — all 5 phases complete
+Next action: Plan Phase 6 (Fix Data Bugs)
