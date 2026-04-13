@@ -543,6 +543,7 @@ private fun OrgDateSection.toWorkoutSession(): WorkoutSession? {
     return WorkoutSession(
         date = this.date,
         splitDay = splitDayParsed,
+        templateName = splitDayParsed?.displayName,
         exercises = exerciseList,
         durationMin = this.durationMin ?: 0,
         isComplete = this.complete
