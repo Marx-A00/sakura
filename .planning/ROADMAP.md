@@ -101,11 +101,11 @@ Plans:
   3. Existing Syncthing "Power User" flow remains unchanged and fully functional
   4. Storage mode selection persists across restarts; the app launches into the correct backend on every cold start
   5. All food and workout features (Phases 2-4) work identically regardless of storage mode
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 05-01: LocalStorageBackend implementation, storage mode in AppPreferencesRepository, AppContainer conditional wiring
-- [ ] 05-02: Simplified onboarding flow with mode selection, skip permission/folder screens for local mode
+- [ ] 05-01-PLAN.md — LocalStorageBackend, StorageMode preference, AppContainer conditional wiring, dashboard badge hiding in local mode
+- [ ] 05-02-PLAN.md — Onboarding expansion (Welcome + ModeSelection screens), Settings storage section with bidirectional migration, device verification
 
 ## Progress
 
