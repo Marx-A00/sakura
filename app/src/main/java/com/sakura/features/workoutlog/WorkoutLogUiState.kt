@@ -67,3 +67,16 @@ data class PrNotification(
     val exerciseName: String,
     val prType: String                         // "Weight", "Reps", or "Hold"
 )
+
+/**
+ * Rest timer state — drives countdown display and app bar color.
+ * Hosted in WorkoutLogViewModel, exposed as StateFlow<TimerState>.
+ */
+sealed interface TimerState {
+    /** No timer running. */
+    data object Idle : TimerState
+    /** Countdown in progress. */
+    data class Running(val remainingSecs: Int, val totalSecs: Int) : TimerState
+    /** Timer just completed — shown briefly before returning to Idle. */
+    data object Done : TimerState
+}

@@ -1,5 +1,9 @@
 package com.sakura.features.workoutlog
 
+import android.content.Context
+import android.media.RingtoneManager
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -19,11 +23,14 @@ import com.sakura.data.workout.WorkoutTemplates
 import com.sakura.preferences.AppPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
@@ -59,6 +66,18 @@ class WorkoutLogViewModel(
 
     private val _prDetected = MutableStateFlow<PrNotification?>(null)
     val prDetected: StateFlow<PrNotification?> = _prDetected.asStateFlow()
+
+    // -------------------------------------------------------------------------
+    // Rest timer — drift-corrected countdown (Phase 7 / WORK-07)
+    // -------------------------------------------------------------------------
+
+    private val _timerState = MutableStateFlow<TimerState>(TimerState.Idle)
+    val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
+
+    private val _activeTimerExerciseId = MutableStateFlow<Long?>(null)
+    val activeTimerExerciseId: StateFlow<Long?> = _activeTimerExerciseId.asStateFlow()
+
+    private var timerJob: Job? = null
 
     // -------------------------------------------------------------------------
     // Main UI state — derived from selectedDate + reloadTrigger
@@ -268,6 +287,93 @@ class WorkoutLogViewModel(
 
     fun dismissPrNotification() {
         _prDetected.value = null
+    }
+
+    // -------------------------------------------------------------------------
+    // Rest timer controls (Phase 7 / WORK-07)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Start a drift-corrected countdown timer.
+     * Uses wall-clock time (System.currentTimeMillis) to avoid accumulating delay() drift.
+     * Always cancels any existing timer first (one global timer at a time).
+     *
+     * @param durationSecs countdown duration in seconds
+     * @param exerciseId the exercise card that should display the countdown
+     * @param context Android context for vibration/sound on completion
+     */
+    fun startTimer(durationSecs: Int, exerciseId: Long, context: Context) {
+        timerJob?.cancel()
+        _activeTimerExerciseId.value = exerciseId
+        timerJob = viewModelScope.launch {
+            val endMs = System.currentTimeMillis() + durationSecs * 1_000L
+            while (true) {
+                val remainingMs = endMs - System.currentTimeMillis()
+                if (remainingMs <= 0) break
+                val remainingSecs = ((remainingMs + 999) / 1000).toInt()
+                _timerState.value = TimerState.Running(remainingSecs, durationSecs)
+                delay(minOf(remainingMs, 200L))
+            }
+            _timerState.value = TimerState.Done
+            triggerCompletionFeedback(context)
+            delay(2_500L)
+            _timerState.value = TimerState.Idle
+            _activeTimerExerciseId.value = null
+        }
+    }
+
+    /** Dismiss/skip the running timer immediately. */
+    fun dismissTimer() {
+        timerJob?.cancel()
+        timerJob = null
+        _timerState.value = TimerState.Idle
+        _activeTimerExerciseId.value = null
+    }
+
+    /**
+     * Adjust the running timer by a delta (positive = add time, negative = subtract).
+     * No-op if no timer is running.
+     * This creates a new timer with adjusted remaining time, preserving wall-clock accuracy.
+     */
+    fun adjustTimer(deltaSecs: Int, context: Context) {
+        val current = _timerState.value
+        if (current !is TimerState.Running) return
+        val newRemaining = (current.remainingSecs + deltaSecs).coerceAtLeast(5)
+        val exerciseId = _activeTimerExerciseId.value ?: return
+        startTimer(newRemaining, exerciseId, context)
+    }
+
+    /**
+     * Trigger vibration and/or sound based on user's notification preference.
+     * Reads the preference synchronously via .first() (runs on IO already via viewModelScope).
+     */
+    private suspend fun triggerCompletionFeedback(context: Context) {
+        val notifType = try { prefsRepo.timerNotificationType.first() } catch (_: Exception) { "VIBRATION" }
+        withContext(Dispatchers.Main) {
+            when (notifType) {
+                "VIBRATION" -> vibrateDevice(context)
+                "SOUND" -> playNotificationSound(context)
+                "BOTH" -> {
+                    vibrateDevice(context)
+                    playNotificationSound(context)
+                }
+                // "NONE" — do nothing
+            }
+        }
+    }
+
+    private fun vibrateDevice(context: Context) {
+        try {
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+            vibrator.vibrate(VibrationEffect.createOneShot(400L, VibrationEffect.DEFAULT_AMPLITUDE))
+        } catch (_: Exception) { /* Best-effort */ }
+    }
+
+    private fun playNotificationSound(context: Context) {
+        try {
+            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            RingtoneManager.getRingtone(context, uri)?.play()
+        } catch (_: Exception) { /* Best-effort */ }
     }
 
     // -------------------------------------------------------------------------
