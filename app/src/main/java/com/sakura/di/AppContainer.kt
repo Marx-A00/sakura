@@ -8,18 +8,27 @@ import com.sakura.data.workout.WorkoutRepository
 import com.sakura.orgengine.OrgParser
 import com.sakura.orgengine.OrgWriter
 import com.sakura.preferences.AppPreferencesRepository
+import com.sakura.preferences.StorageMode
+import com.sakura.sync.LocalStorageBackend
 import com.sakura.sync.SyncBackend
 import com.sakura.sync.SyncthingFileBackend
 
 /**
- * Manual dependency injection container. Wired in SakuraApplication.onCreate().
+ * Manual dependency injection container.
+ * Constructed in MainActivity after storageMode is resolved from DataStore.
  * Single source of truth for all app-scoped dependencies.
+ *
+ * @param context     Application context.
+ * @param storageMode Determines which SyncBackend implementation is wired in.
  */
-class AppContainer(context: Context) {
+class AppContainer(context: Context, storageMode: StorageMode) {
 
     val prefsRepo = AppPreferencesRepository(context)
 
-    val syncBackend: SyncBackend = SyncthingFileBackend(prefsRepo)
+    val syncBackend: SyncBackend = when (storageMode) {
+        StorageMode.LOCAL -> LocalStorageBackend(context)
+        StorageMode.SYNCTHING -> SyncthingFileBackend(prefsRepo)
+    }
 
     /** OrgParser is an object (singleton) — referenced directly. */
     val orgParser = OrgParser

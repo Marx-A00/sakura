@@ -18,6 +18,12 @@ import java.io.IOException
 private val Context.appDataStore: DataStore<Preferences> by preferencesDataStore(name = "sakura_prefs")
 
 /**
+ * Storage mode selection: LOCAL = internal storage (no sync), SYNCTHING = external shared folder.
+ * Persisted to DataStore as a string (enum name). Null when the user has not yet selected a mode.
+ */
+enum class StorageMode { LOCAL, SYNCTHING }
+
+/**
  * Persists user preferences using Jetpack DataStore.
  * All reads are exposed as Flows; never blocks the calling coroutine.
  */
@@ -26,6 +32,7 @@ class AppPreferencesRepository(private val context: Context) {
     companion object {
         val SYNC_FOLDER_PATH = stringPreferencesKey("sync_folder_path")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
+        val STORAGE_MODE = stringPreferencesKey("storage_mode")
 
         // Macro targets — daily nutrition goals
         val MACRO_TARGET_CALORIES = intPreferencesKey("macro_target_calories")
@@ -63,6 +70,18 @@ class AppPreferencesRepository(private val context: Context) {
             }
         }
         .map { preferences -> preferences[ONBOARDING_COMPLETE] ?: false }
+
+    /**
+     * The selected storage mode, or null if the user has not yet chosen one.
+     * Null is the "not yet decided" sentinel used during onboarding.
+     */
+    val storageMode: Flow<StorageMode?> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { preferences ->
+            preferences[STORAGE_MODE]?.let { raw ->
+                runCatching { StorageMode.valueOf(raw) }.getOrNull()
+            }
+        }
 
     // -------------------------------------------------------------------------
     // Macro target flows (with sensible defaults)
@@ -119,6 +138,12 @@ class AppPreferencesRepository(private val context: Context) {
     suspend fun setOnboardingComplete() {
         context.appDataStore.edit { preferences ->
             preferences[ONBOARDING_COMPLETE] = true
+        }
+    }
+
+    suspend fun setStorageMode(mode: StorageMode) {
+        context.appDataStore.edit { preferences ->
+            preferences[STORAGE_MODE] = mode.name
         }
     }
 
