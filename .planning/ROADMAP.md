@@ -119,7 +119,11 @@ Plans:
   2. SetLog.isPr is set to true at write time when a PR is detected, and the PR badge renders when reading back from the org file
   3. WorkoutSession.templateName is derived from splitDay after cold start — dashboard and workout screen show correct template name
   4. E2E flows 4, 5, and 6 from the audit pass completely
-**Plans**: TBD
+**Plans**: 2 plans in 1 wave
+
+Plans:
+- [ ] 06-01-PLAN.md — Fix templateName cold-start derivation + verify/fix isPr round-trip persistence
+- [ ] 06-02-PLAN.md — Fix LOCAL->SYNCTHING migration data loss (copy org files to sync folder)
 
 ### Phase 7: Rest Timer
 **Goal**: Implement a workout rest timer (WORK-07) — the last unsatisfied v1 requirement. User can set a rest duration between sets and see a countdown timer during workouts.
@@ -145,5 +149,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Workout Logging | 3/3 | Complete | 2026-04-12 |
 | 4. Dashboard and Polish | 2/2 | Complete | 2026-04-12 |
 | 5. Local Storage Mode | 2/2 | Complete | 2026-04-13 |
-| 6. Fix Data Bugs | 0/? | Pending | — |
+| 6. Fix Data Bugs | 0/2 | Planned | — |
 | 7. Rest Timer | 0/? | Pending | — |
