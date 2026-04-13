@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 6 of 7 (Fix Data Bugs) — COMPLETE ✓
-Plan: 2 of 2 — all plans executed and verified
-Status: Phase 6 complete — goal verified, ready for Phase 7
-Last activity: 2026-04-13 — Phase 6 verified (7/7 must-haves passed)
+Phase: 7 of 7 (Rest Timer) — In progress
+Plan: 1 of 3 — 07-01 complete, 07-02 and 07-03 remain
+Status: In progress
+Last activity: 2026-04-13 — Completed 07-01-PLAN.md (rest timer foundation)
 
-Progress: [████████████░░] 92% (14/15 plans estimated)
+Progress: [█████████████░] 83% (15/18 plans estimated)
 
 ## Performance Metrics
 
@@ -30,10 +30,11 @@ Progress: [████████████░░] 92% (14/15 plans estimate
 - Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
 - Phase 5: 2 of 2 plans done, ~11 min total — COMPLETE
 - Phase 6: 2 of 2 plans done, ~2 min total — COMPLETE
+- Phase 7: 1 of 3 plans done, ~2 min so far — In progress
 
 **Recent Trend:**
-- Last 3 plans: 05-01 (~3 min), 05-02 (~8 min), 06-02 (~1 min)
-- Trend: stable
+- Last 3 plans: 05-02 (~8 min), 06-02 (~1 min), 07-01 (~2 min)
+- Trend: stable (fast)
 
 *Updated after each plan completion*
 
@@ -82,11 +83,15 @@ Recent decisions affecting current work:
 - [06-01]: templateName derived at parse time from splitDayParsed?.displayName — not persisted separately, single source of truth is splitDay label
 - [06-01]: isPr round-trip confirmed correct — PROPERTY_REGEX .+ anchor strips trailing whitespace; no parser fix needed
 - [06-02]: copyLocalOrgFilesToFolder() is unconditional — fresh installs are safe (empty listFiles is a no-op); overwrite=true ensures idempotency
+- [07-01]: TimerState hosted in WorkoutLogViewModel (not a separate ViewModel) — timer is tightly scoped to workout log screen
+- [07-01]: Context passed as parameter to startTimer/adjustTimer — avoids storing Application context as a ViewModel field
+- [07-01]: timerNotificationType defaults to "VIBRATION" — most reliable feedback in noisy gym environment
+- [07-01]: auto-start wiring (calling startTimer from addSet) deferred to Plan 02 alongside UI per plan spec
 
 ### Pending Todos
 
 - Document Samsung One UI Auto Blocker disable step in device setup notes
-- WORK-07 (rest timer) not implemented — deferred, not critical for v1
+- WORK-07 (rest timer) foundation done (07-01) — UI (07-02) and foreground service (07-03) remain
 - UI polish items noted by user during Phase 4 verification — to address after all phases
 
 ### Blockers/Concerns
@@ -98,6 +103,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-13 UTC
-Stopped at: Phase 6 verified — all data bugs fixed
+Stopped at: Completed 07-01-PLAN.md (rest timer foundation — TimerState, countdown, prefs, VIBRATE)
 Resume file: None
-Next action: Plan Phase 7 (Rest Timer)
+Next action: Execute 07-02-PLAN.md (rest timer UI)
