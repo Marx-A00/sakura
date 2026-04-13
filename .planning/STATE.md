@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 7 of 7 (Rest Timer) — In progress
-Plan: 1 of 3 — 07-01 complete, 07-02 and 07-03 remain
+Plan: 2 of 3 — 07-01 and 07-02 complete, 07-03 remains
 Status: In progress
-Last activity: 2026-04-13 — Completed 07-01-PLAN.md (rest timer foundation)
+Last activity: 2026-04-13 — Completed 07-02-PLAN.md (rest timer UI)
 
-Progress: [█████████████░] 83% (15/18 plans estimated)
+Progress: [██████████████░] 89% (16/18 plans estimated)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [█████████████░] 83% (15/18 plans estimate
 - Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
 - Phase 5: 2 of 2 plans done, ~11 min total — COMPLETE
 - Phase 6: 2 of 2 plans done, ~2 min total — COMPLETE
-- Phase 7: 1 of 3 plans done, ~2 min so far — In progress
+- Phase 7: 2 of 3 plans done, ~5 min so far — In progress
 
 **Recent Trend:**
 - Last 3 plans: 05-02 (~8 min), 06-02 (~1 min), 07-01 (~2 min)
@@ -87,11 +87,14 @@ Recent decisions affecting current work:
 - [07-01]: Context passed as parameter to startTimer/adjustTimer — avoids storing Application context as a ViewModel field
 - [07-01]: timerNotificationType defaults to "VIBRATION" — most reliable feedback in noisy gym environment
 - [07-01]: auto-start wiring (calling startTimer from addSet) deferred to Plan 02 alongside UI per plan spec
+- [07-02]: PendingTimerStart signal pattern — ViewModel emits nullable StateFlow, UI LaunchedEffect consumes with Context; keeps ViewModel Context-free
+- [07-02]: Countdown clickable on ExerciseCard is tap target for TimerAdjustSheet
+- [07-02]: Default rest duration field saves live on keystroke (not on blur) — simpler UX, DataStore writes are cheap
 
 ### Pending Todos
 
 - Document Samsung One UI Auto Blocker disable step in device setup notes
-- WORK-07 (rest timer) foundation done (07-01) — UI (07-02) and foreground service (07-03) remain
+- WORK-07 (rest timer) foundation (07-01) and UI (07-02) done — foreground service (07-03) remains
 - UI polish items noted by user during Phase 4 verification — to address after all phases
 
 ### Blockers/Concerns
@@ -103,6 +106,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-13 UTC
-Stopped at: Completed 07-01-PLAN.md (rest timer foundation — TimerState, countdown, prefs, VIBRATE)
+Stopped at: Completed 07-02-PLAN.md (rest timer UI — amber bar, countdown, TimerAdjustSheet, auto-start, settings)
 Resume file: None
-Next action: Execute 07-02-PLAN.md (rest timer UI)
+Next action: Execute 07-03-PLAN.md (rest timer foreground service / persistent notification)
