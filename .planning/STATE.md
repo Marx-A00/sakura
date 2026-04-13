@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 6 of 7 (Fix Data Bugs) — In progress
-Plan: 2 of 2 in current phase (06-02 complete)
-Status: Phase 6 complete — both data bug fix plans executed
-Last activity: 2026-04-13 — Completed 06-02-PLAN.md (LOCAL->SYNCTHING migration fix)
+Phase: 6 of 7 (Fix Data Bugs) — COMPLETE ✓
+Plan: 2 of 2 — all plans executed and verified
+Status: Phase 6 complete — goal verified, ready for Phase 7
+Last activity: 2026-04-13 — Phase 6 verified (7/7 must-haves passed)
 
 Progress: [████████████░░] 92% (14/15 plans estimated)
 
@@ -97,7 +97,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-13T17:09:30Z
-Stopped at: Completed 06-01-PLAN.md — templateName cold-start fix + isPr round-trip test
+Last session: 2026-04-13 UTC
+Stopped at: Phase 6 verified — all data bugs fixed
 Resume file: None
-Next action: Execute Phase 7 plans
+Next action: Plan Phase 7 (Rest Timer)

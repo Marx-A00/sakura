@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Workout Logging** - Complete workout tracking with templates and auto-fill
 - [x] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
 - [x] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
-- [ ] **Phase 6: Fix Data Bugs** - Migration data loss, PR badge persistence, templateName cold start
+- [x] **Phase 6: Fix Data Bugs** - Migration data loss, PR badge persistence, templateName cold start
 - [ ] **Phase 7: Rest Timer** - Workout rest timer between sets (WORK-07)
 
 ## Phase Details
@@ -149,5 +149,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Workout Logging | 3/3 | Complete | 2026-04-12 |
 | 4. Dashboard and Polish | 2/2 | Complete | 2026-04-12 |
 | 5. Local Storage Mode | 2/2 | Complete | 2026-04-13 |
-| 6. Fix Data Bugs | 0/2 | Planned | — |
+| 6. Fix Data Bugs | 2/2 | Complete | 2026-04-13 |
 | 7. Rest Timer | 0/? | Pending | — |
