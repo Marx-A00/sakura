@@ -99,6 +99,9 @@ class OnboardingViewModel(
     fun onFolderSelected(path: String) {
         viewModelScope.launch {
             prefsRepo.setSyncFolderPath(path)
+            // Copy any existing local .org files to the sync folder.
+            // Handles LOCAL->SYNCTHING migration; no-op for fresh installs (empty filesDir).
+            prefsRepo.copyLocalOrgFilesToFolder(path)
             prefsRepo.setOnboardingComplete()
             _uiState.value = OnboardingUiState.Complete
         }
