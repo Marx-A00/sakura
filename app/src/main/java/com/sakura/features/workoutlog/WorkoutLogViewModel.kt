@@ -79,6 +79,15 @@ class WorkoutLogViewModel(
 
     private var timerJob: Job? = null
 
+    /** Signal for the UI to start a timer (auto-start after addSet). */
+    data class PendingTimerStart(val durationSecs: Int, val exerciseId: Long)
+    private val _pendingTimerStart = MutableStateFlow<PendingTimerStart?>(null)
+    val pendingTimerStart: StateFlow<PendingTimerStart?> = _pendingTimerStart.asStateFlow()
+
+    fun consumePendingTimerStart() {
+        _pendingTimerStart.value = null
+    }
+
     // -------------------------------------------------------------------------
     // Main UI state — derived from selectedDate + reloadTrigger
     // -------------------------------------------------------------------------
@@ -230,6 +239,25 @@ class WorkoutLogViewModel(
 
             workoutRepo.addSet(date, exerciseId, setToWrite)
             _reloadTrigger.value++
+
+            // Auto-start rest timer after logging a set (Phase 7)
+            val timerEnabled = try { prefsRepo.timerEnabled.first() } catch (_: Exception) { true }
+            val autoStart = try { prefsRepo.timerAutoStart.first() } catch (_: Exception) { true }
+            if (timerEnabled && autoStart) {
+                // Determine rest duration: per-exercise override > global default
+                val exercise = (uiState.value as? WorkoutLogUiState.DayLoaded)
+                    ?.exercises?.find { it.exerciseLog.id == exerciseId }
+                val libraryExercise = exercise?.let {
+                    ExerciseLibrary.allExercises().find { lib ->
+                        lib.name.equals(it.exerciseLog.name, ignoreCase = true)
+                    }
+                }
+                val perExerciseRest = libraryExercise?.restSecs
+                val globalDefault = try { prefsRepo.defaultRestTimerSecs.first() } catch (_: Exception) { 90 }
+                val restDuration = perExerciseRest ?: globalDefault
+                // Signal UI to start timer (ViewModel has no Context for vibration)
+                _pendingTimerStart.value = PendingTimerStart(restDuration, exerciseId)
+            }
         }
     }
 

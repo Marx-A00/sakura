@@ -43,12 +43,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -94,6 +96,10 @@ fun WorkoutLogScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val prDetected by viewModel.prDetected.collectAsStateWithLifecycle()
     val calendarDays by viewModel.calendarDays.collectAsStateWithLifecycle()
+    val timerState by viewModel.timerState.collectAsStateWithLifecycle()
+    val activeTimerExerciseId by viewModel.activeTimerExerciseId.collectAsStateWithLifecycle()
+    val pendingTimer by viewModel.pendingTimerStart.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // Date picker
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -108,6 +114,18 @@ fun WorkoutLogScreen(
     // Set input sheet — tracks which exercise is being logged
     var setInputExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
     val setInputSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Timer adjust sheet
+    var showTimerAdjust by rememberSaveable { mutableStateOf(false) }
+    val timerAdjustSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Handle auto-start timer signal from addSet
+    LaunchedEffect(pendingTimer) {
+        pendingTimer?.let { pending ->
+            viewModel.startTimer(pending.durationSecs, pending.exerciseId, context)
+            viewModel.consumePendingTimerStart()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -146,7 +164,22 @@ fun WorkoutLogScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = when (timerState) {
+                        is TimerState.Running, is TimerState.Done -> Color(0xFFE65100)
+                        else -> MaterialTheme.colorScheme.surface
+                    },
+                    titleContentColor = when (timerState) {
+                        is TimerState.Running, is TimerState.Done -> Color.White
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                    actionIconContentColor = when (timerState) {
+                        is TimerState.Running, is TimerState.Done -> Color.White
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                    navigationIconContentColor = when (timerState) {
+                        is TimerState.Running, is TimerState.Done -> Color.White
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
                 )
             )
         },
@@ -224,10 +257,13 @@ fun WorkoutLogScreen(
                         ActiveDayContent(
                             state = state,
                             calendarDays = calendarDays,
+                            timerState = timerState,
+                            activeTimerExerciseId = activeTimerExerciseId,
                             onToggleComplete = { viewModel.toggleComplete() },
                             onAddSet = { exerciseId -> setInputExerciseId = exerciseId },
                             onAddExercise = { showExercisePicker = true },
-                            onRemoveExercise = { exerciseId -> viewModel.removeExercise(exerciseId) }
+                            onRemoveExercise = { exerciseId -> viewModel.removeExercise(exerciseId) },
+                            onTimerTap = { showTimerAdjust = true }
                         )
                     }
                 }
@@ -298,6 +334,28 @@ fun WorkoutLogScreen(
                     Text("Awesome!", color = CherryBlossomPink)
                 }
             }
+        )
+    }
+
+    // Timer adjust bottom sheet
+    if (showTimerAdjust) {
+        val currentRemaining = (timerState as? TimerState.Running)?.remainingSecs ?: 0
+        TimerAdjustSheet(
+            sheetState = timerAdjustSheetState,
+            currentRemainingSecs = currentRemaining,
+            onAdjust = { delta -> viewModel.adjustTimer(delta, context) },
+            onSetExact = { secs ->
+                val exerciseId = activeTimerExerciseId
+                if (exerciseId != null) {
+                    viewModel.startTimer(secs, exerciseId, context)
+                }
+                showTimerAdjust = false
+            },
+            onDismissTimer = {
+                viewModel.dismissTimer()
+                showTimerAdjust = false
+            },
+            onDismissSheet = { showTimerAdjust = false }
         )
     }
 
@@ -415,10 +473,13 @@ private fun EmptyDayContent(
 private fun ActiveDayContent(
     state: WorkoutLogUiState.DayLoaded,
     calendarDays: List<CalendarDay>,
+    timerState: TimerState,
+    activeTimerExerciseId: Long?,
     onToggleComplete: () -> Unit,
     onAddSet: (Long) -> Unit,
     onAddExercise: () -> Unit,
-    onRemoveExercise: (Long) -> Unit
+    onRemoveExercise: (Long) -> Unit,
+    onTimerTap: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -481,10 +542,15 @@ private fun ActiveDayContent(
 
         // Exercise cards
         items(state.exercises, key = { it.exerciseLog.id }) { dayExercise ->
+            val isTimerActiveForThis = dayExercise.exerciseLog.id == activeTimerExerciseId &&
+                timerState !is TimerState.Idle
             ExerciseCard(
                 dayExercise = dayExercise,
+                timerState = timerState,
+                isTimerActiveForThis = isTimerActiveForThis,
                 onAddSet = { onAddSet(dayExercise.exerciseLog.id) },
-                onRemoveExercise = { onRemoveExercise(dayExercise.exerciseLog.id) }
+                onRemoveExercise = { onRemoveExercise(dayExercise.exerciseLog.id) },
+                onTimerTap = onTimerTap
             )
         }
 
@@ -507,8 +573,11 @@ private fun ActiveDayContent(
 @Composable
 private fun ExerciseCard(
     dayExercise: DayExercise,
+    timerState: TimerState,
+    isTimerActiveForThis: Boolean,
     onAddSet: () -> Unit,
-    onRemoveExercise: () -> Unit
+    onRemoveExercise: () -> Unit,
+    onTimerTap: () -> Unit
 ) {
     val exerciseLog = dayExercise.exerciseLog
 
@@ -547,6 +616,30 @@ private fun ExerciseCard(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+
+                // Countdown display when timer is active for this exercise
+                if (isTimerActiveForThis) {
+                    val timerText = when (timerState) {
+                        is TimerState.Running -> {
+                            val mins = timerState.remainingSecs / 60
+                            val secs = timerState.remainingSecs % 60
+                            "%d:%02d".format(mins, secs)
+                        }
+                        is TimerState.Done -> "Done"
+                        else -> null
+                    }
+                    if (timerText != null) {
+                        Text(
+                            text = timerText,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE65100),
+                            modifier = Modifier
+                                .clickable { onTimerTap() }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 
