@@ -54,6 +54,7 @@ class AppPreferencesRepository(private val context: Context) {
         val TIMER_ENABLED = booleanPreferencesKey("rest_timer_enabled")
         val TIMER_AUTO_START = booleanPreferencesKey("rest_timer_auto_start")
         val TIMER_NOTIFICATION_TYPE = stringPreferencesKey("rest_timer_notif_type")
+        val TIMER_BG_NOTIFICATION = booleanPreferencesKey("rest_timer_bg_notif")
     }
 
     /** The user-configured Syncthing folder path, or null if not yet set. */
@@ -277,6 +278,15 @@ class AppPreferencesRepository(private val context: Context) {
 
     suspend fun setTimerNotificationType(type: String) {
         context.appDataStore.edit { it[TIMER_NOTIFICATION_TYPE] = type }
+    }
+
+    /** Background notification enabled. Defaults to false (off by default). */
+    val timerBgNotification: Flow<Boolean> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[TIMER_BG_NOTIFICATION] ?: false }
+
+    suspend fun setTimerBgNotification(enabled: Boolean) {
+        context.appDataStore.edit { it[TIMER_BG_NOTIFICATION] = enabled }
     }
 
     // -------------------------------------------------------------------------
