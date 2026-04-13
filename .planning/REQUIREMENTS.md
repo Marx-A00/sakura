@@ -34,7 +34,7 @@
 - [x] **WORK-04**: Exercise library (user's actual exercises)
 - [x] **WORK-05**: PR tracking (automatic new bests detection)
 - [x] **WORK-06**: Workout history view
-- [ ] **WORK-07**: Rest timer
+- [x] **WORK-07**: Rest timer
 - [x] **WORK-08**: Today's planned workout on home screen
 - [x] **WORK-09**: Volume tracking per session
 - [x] **WORK-10**: Training split awareness (knows current day in split)
@@ -133,7 +133,7 @@
 | WORK-04 | Phase 3 | Complete |
 | WORK-05 | Phase 3 | Complete |
 | WORK-06 | Phase 3 | Complete |
-| WORK-07 | Phase 3 | Pending |
+| WORK-07 | Phase 7 | Complete |
 | WORK-08 | Phase 4 | Complete |
 | WORK-09 | Phase 3 | Complete |
 | WORK-10 | Phase 3 | Complete |

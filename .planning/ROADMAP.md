@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Dashboard and Polish** - Unified home screen, history views, and analytics
 - [x] **Phase 5: Local Storage Mode** - Non-technical user support with zero-config local storage
 - [x] **Phase 6: Fix Data Bugs** - Migration data loss, PR badge persistence, templateName cold start
-- [ ] **Phase 7: Rest Timer** - Workout rest timer between sets (WORK-07)
+- [x] **Phase 7: Rest Timer** - Workout rest timer between sets (WORK-07)
 
 ## Phase Details
 
@@ -135,7 +135,12 @@ Plans:
   2. Timer counts down visually and notifies when rest period is complete
   3. Default rest duration is configurable per exercise or globally
   4. Timer does not block set logging — user can dismiss or skip the timer
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
+
+Plans:
+- [x] 07-01-PLAN.md — Timer data foundation: TimerState model, drift-corrected countdown, LibraryExercise.restSecs, DataStore prefs, VIBRATE permission
+- [x] 07-02-PLAN.md — Timer UI: amber app bar, countdown on exercise cards, TimerAdjustSheet, auto-start wiring, Rest Timer settings section
+- [x] 07-03-PLAN.md — Background notification: RestTimerService foreground service, RestTimerBridge singleton, settings toggle with POST_NOTIFICATIONS permission
 
 ## Progress
 
@@ -150,4 +155,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Dashboard and Polish | 2/2 | Complete | 2026-04-12 |
 | 5. Local Storage Mode | 2/2 | Complete | 2026-04-13 |
 | 6. Fix Data Bugs | 2/2 | Complete | 2026-04-13 |
-| 7. Rest Timer | 0/? | Pending | — |
+| 7. Rest Timer | 3/3 | Complete | 2026-04-13 |
