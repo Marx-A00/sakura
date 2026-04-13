@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import com.sakura.features.workoutlog.RestTimerBridge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
@@ -78,6 +79,10 @@ class WorkoutLogViewModel(
     val activeTimerExerciseId: StateFlow<Long?> = _activeTimerExerciseId.asStateFlow()
 
     private var timerJob: Job? = null
+
+    /** Background notification enabled — drives foreground service start/stop. */
+    val bgNotificationEnabled: StateFlow<Boolean> = prefsRepo.timerBgNotification
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** Signal for the UI to start a timer (auto-start after addSet). */
     data class PendingTimerStart(val durationSecs: Int, val exerciseId: Long)
@@ -340,12 +345,15 @@ class WorkoutLogViewModel(
                 if (remainingMs <= 0) break
                 val remainingSecs = ((remainingMs + 999) / 1000).toInt()
                 _timerState.value = TimerState.Running(remainingSecs, durationSecs)
+                RestTimerBridge.update(TimerState.Running(remainingSecs, durationSecs))
                 delay(minOf(remainingMs, 200L))
             }
             _timerState.value = TimerState.Done
+            RestTimerBridge.update(TimerState.Done)
             triggerCompletionFeedback(context)
             delay(2_500L)
             _timerState.value = TimerState.Idle
+            RestTimerBridge.update(TimerState.Idle)
             _activeTimerExerciseId.value = null
         }
     }
@@ -355,6 +363,7 @@ class WorkoutLogViewModel(
         timerJob?.cancel()
         timerJob = null
         _timerState.value = TimerState.Idle
+        RestTimerBridge.update(TimerState.Idle)
         _activeTimerExerciseId.value = null
     }
 

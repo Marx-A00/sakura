@@ -71,6 +71,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.sakura.features.workoutlog.RestTimerService
 
 /**
  * Day-based workout log screen.
@@ -99,6 +100,7 @@ fun WorkoutLogScreen(
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val activeTimerExerciseId by viewModel.activeTimerExerciseId.collectAsStateWithLifecycle()
     val pendingTimer by viewModel.pendingTimerStart.collectAsStateWithLifecycle()
+    val bgNotifEnabled by viewModel.bgNotificationEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Date picker
@@ -124,6 +126,15 @@ fun WorkoutLogScreen(
         pendingTimer?.let { pending ->
             viewModel.startTimer(pending.durationSecs, pending.exerciseId, context)
             viewModel.consumePendingTimerStart()
+        }
+    }
+
+    // Start/stop foreground service based on timer state + bg notification preference
+    LaunchedEffect(timerState, bgNotifEnabled) {
+        if (bgNotifEnabled && timerState is TimerState.Running) {
+            RestTimerService.startService(context)
+        } else if (timerState is TimerState.Idle) {
+            RestTimerService.stopService(context)
         }
     }
 

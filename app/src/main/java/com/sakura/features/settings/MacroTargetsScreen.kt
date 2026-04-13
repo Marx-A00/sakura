@@ -1,6 +1,11 @@
 package com.sakura.features.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -77,6 +82,7 @@ fun MacroTargetsScreen(
     val timerAutoStart by prefsRepo.timerAutoStart.collectAsStateWithLifecycle(initialValue = true)
     val defaultRestSecs by prefsRepo.defaultRestTimerSecs.collectAsStateWithLifecycle(initialValue = 90)
     val notifType by prefsRepo.timerNotificationType.collectAsStateWithLifecycle(initialValue = "VIBRATION")
+    val bgNotifEnabled by prefsRepo.timerBgNotification.collectAsStateWithLifecycle(initialValue = false)
     var defaultRestSecsInput by remember(defaultRestSecs) { mutableStateOf(defaultRestSecs.toString()) }
 
     Scaffold(
@@ -271,6 +277,53 @@ fun MacroTargetsScreen(
                             )
                         }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Background notification toggle (off by default, requires POST_NOTIFICATIONS on API 33+)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Background Notification",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = bgNotifEnabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                // On API 33+ check POST_NOTIFICATIONS permission before enabling
+                                val activity = context as? ComponentActivity
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && activity != null) {
+                                    val granted = ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                    if (!granted) {
+                                        ActivityCompat.requestPermissions(
+                                            activity,
+                                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                            7001
+                                        )
+                                        // Persist the enabled state — service will only show notification
+                                        // if permission is granted at runtime (Android enforces this)
+                                    }
+                                }
+                                scope.launch { prefsRepo.setTimerBgNotification(true) }
+                            } else {
+                                scope.launch { prefsRepo.setTimerBgNotification(false) }
+                            }
+                        }
+                    )
+                }
+                Text(
+                    text = "Shows timer in notification bar when app is backgrounded",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // ---------------------------------------------------------------
