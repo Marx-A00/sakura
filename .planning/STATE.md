@@ -79,6 +79,8 @@ Recent decisions affecting current work:
 - [05-02]: DisposableEffect for permission checking guarded behind Syncthing-path states only
 - [05-02]: clearOnboardingComplete() added for Local→Syncthing migration path
 - [05-02]: Migration uses ComponentActivity.recreate() for full container reconstruction
+- [06-01]: templateName derived at parse time from splitDayParsed?.displayName — not persisted separately, single source of truth is splitDay label
+- [06-01]: isPr round-trip confirmed correct — PROPERTY_REGEX .+ anchor strips trailing whitespace; no parser fix needed
 - [06-02]: copyLocalOrgFilesToFolder() is unconditional — fresh installs are safe (empty listFiles is a no-op); overwrite=true ensures idempotency
 
 ### Pending Todos
@@ -95,7 +97,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-13T17:09:57Z
-Stopped at: Completed 06-02-PLAN.md — LOCAL->SYNCTHING migration fix
+Last session: 2026-04-13T17:09:30Z
+Stopped at: Completed 06-01-PLAN.md — templateName cold-start fix + isPr round-trip test
 Resume file: None
 Next action: Execute Phase 7 plans
