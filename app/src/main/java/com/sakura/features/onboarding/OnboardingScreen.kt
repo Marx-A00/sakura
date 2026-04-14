@@ -2,19 +2,27 @@ package com.sakura.features.onboarding
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,14 +36,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.preferences.StorageMode
+import java.io.File
 
-private const val SUGGESTED_SYNC_PATH = "/storage/emulated/0/Syncthing/roaming/health/"
+private val STORAGE_ROOT = Environment.getExternalStorageDirectory()
 
 @Composable
 fun OnboardingScreen(
@@ -60,7 +70,9 @@ fun OnboardingScreen(
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars),
         color = MaterialTheme.colorScheme.background
     ) {
         when (uiState) {
@@ -286,56 +298,126 @@ private fun NeedsPermissionContent() {
 
 @Composable
 private fun NeedsFolderContent(onFolderConfirmed: (String) -> Unit) {
-    var folderPath by remember { mutableStateOf(SUGGESTED_SYNC_PATH) }
+    var currentDir by remember { mutableStateOf(STORAGE_ROOT) }
+    val directories by remember(currentDir) {
+        mutableStateOf(
+            (currentDir.listFiles() ?: emptyArray())
+                .filter { it.isDirectory && !it.name.startsWith(".") }
+                .sortedBy { it.name.lowercase() }
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         Text(
-            text = "Sakura",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.primary
+            text = "Choose Sync Folder",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Sync Folder",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
+            text = "Pick the folder where Sakura will read and write org files.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Current path breadcrumb
         Text(
-            text = "Enter the path to your Syncthing folder containing org health files.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            text = currentDir.absolutePath,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = folderPath,
-            onValueChange = { folderPath = it },
-            label = { Text("Folder path") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        HorizontalDivider()
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // Directory listing
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            // Up / parent directory
+            if (currentDir != STORAGE_ROOT) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { currentDir = currentDir.parentFile ?: STORAGE_ROOT }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "\uD83D\uDCC1",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "..",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    HorizontalDivider()
+                }
+            }
+
+            items(directories, key = { it.absolutePath }) { dir ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { currentDir = dir }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "\uD83D\uDCC2",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = dir.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                HorizontalDivider()
+            }
+
+            if (directories.isEmpty()) {
+                item {
+                    Text(
+                        text = "Empty folder",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         Button(
-            onClick = { onFolderConfirmed(folderPath.trimEnd('/') + "/") },
-            enabled = folderPath.isNotBlank(),
+            onClick = { onFolderConfirmed(currentDir.absolutePath.trimEnd('/') + "/") },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Confirm")
+            Text("Select this folder")
         }
     }
 }
