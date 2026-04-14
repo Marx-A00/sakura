@@ -182,7 +182,7 @@ class WorkoutLogViewModel(
                     category = def.category,
                     sets = emptyList()
                 )
-                workoutRepo.addExercise(date, exerciseLog)
+                workoutRepo.addExercise(date, exerciseLog, splitDay = splitDay.label)
                 // Small delay to ensure unique IDs when iterating rapidly
                 kotlinx.coroutines.delay(2)
             }

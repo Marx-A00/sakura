@@ -143,12 +143,13 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
-                    // Handles null splitDay — shows "Freestyle" when no template used
-                    Text(
-                        text = session.splitDay?.displayName ?: "Freestyle",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (session.splitDay != null) {
+                        Text(
+                            text = session.splitDay.displayName,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 Icon(
                     imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,

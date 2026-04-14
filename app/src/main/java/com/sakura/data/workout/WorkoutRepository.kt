@@ -49,7 +49,7 @@ interface WorkoutRepository {
      * Creates the date section and "** Workout" heading if they don't exist.
      * Writes immediately to workout-log.org.
      */
-    suspend fun addExercise(date: LocalDate, exercise: ExerciseLog): Result<Unit>
+    suspend fun addExercise(date: LocalDate, exercise: ExerciseLog, splitDay: String? = null): Result<Unit>
 
     /**
      * Remove an exercise and all its sets from a date's workout, by exercise id.

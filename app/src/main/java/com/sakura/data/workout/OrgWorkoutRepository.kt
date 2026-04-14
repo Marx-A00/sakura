@@ -163,14 +163,14 @@ class OrgWorkoutRepository(
     // Incremental write methods (day-based UX)
     // =========================================================================
 
-    override suspend fun addExercise(date: LocalDate, exercise: ExerciseLog): Result<Unit> {
+    override suspend fun addExercise(date: LocalDate, exercise: ExerciseLog, splitDay: String?): Result<Unit> {
         return fileMutex.withLock {
             withContext(ioDispatcher) {
                 try {
                     val content = readFile()
                     val orgFile = parseFile(content)
                     val orgExercise = exercise.toOrgExerciseLog()
-                    val updatedSections = upsertExercise(orgFile.sections, date, orgExercise)
+                    val updatedSections = upsertExercise(orgFile.sections, date, orgExercise, splitDay)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
                     Result.success(Unit)
                 } catch (e: Exception) {
@@ -330,7 +330,8 @@ class OrgWorkoutRepository(
     private fun upsertExercise(
         sections: List<OrgDateSection>,
         date: LocalDate,
-        exercise: OrgExerciseLog
+        exercise: OrgExerciseLog,
+        splitDay: String? = null
     ): List<OrgDateSection> {
         val mutableSections = sections.toMutableList()
         val sectionIndex = mutableSections.indexOfFirst { it.date == date }
@@ -340,7 +341,8 @@ class OrgWorkoutRepository(
                 date = date,
                 meals = emptyList(),
                 exercises = emptyList(),
-                exerciseLogs = listOf(exercise)
+                exerciseLogs = listOf(exercise),
+                splitDay = splitDay
             )
             val insertAt = mutableSections.indexOfFirst { it.date < date }.let {
                 if (it < 0) mutableSections.size else it
@@ -355,7 +357,10 @@ class OrgWorkoutRepository(
             } else {
                 section.exerciseLogs + exercise
             }
-            mutableSections[sectionIndex] = section.copy(exerciseLogs = updatedLogs)
+            mutableSections[sectionIndex] = section.copy(
+                exerciseLogs = updatedLogs,
+                splitDay = section.splitDay ?: splitDay
+            )
         }
         return mutableSections
     }
