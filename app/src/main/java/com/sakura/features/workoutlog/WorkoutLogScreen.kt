@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -32,15 +30,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,7 +63,6 @@ import com.sakura.ui.theme.WarmCream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import com.sakura.features.workoutlog.RestTimerService
 
 /**
@@ -138,145 +130,89 @@ fun WorkoutLogScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        IconButton(onClick = { viewModel.navigateDate(-1) }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Previous day"
-                            )
-                        }
-                        Text(
-                            text = formatWorkoutDate(selectedDate),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showDatePicker = true },
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        IconButton(onClick = { viewModel.navigateDate(1) }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = "Next day"
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToHistory) {
-                        Icon(Icons.Filled.DateRange, contentDescription = "History")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = when (timerState) {
-                        is TimerState.Running, is TimerState.Done -> Color(0xFFE65100)
-                        else -> MaterialTheme.colorScheme.surface
-                    },
-                    titleContentColor = when (timerState) {
-                        is TimerState.Running, is TimerState.Done -> Color.White
-                        else -> MaterialTheme.colorScheme.onSurface
-                    },
-                    actionIconContentColor = when (timerState) {
-                        is TimerState.Running, is TimerState.Done -> Color.White
-                        else -> MaterialTheme.colorScheme.onSurface
-                    },
-                    navigationIconContentColor = when (timerState) {
-                        is TimerState.Running, is TimerState.Done -> Color.White
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                )
-            )
-        },
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (val state = uiState) {
-                is WorkoutLogUiState.Loading -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(color = CherryBlossomPink)
-                    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is WorkoutLogUiState.Loading -> {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(color = CherryBlossomPink)
                 }
+            }
 
-                is WorkoutLogUiState.Error.FolderUnavailable -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "Sync folder unavailable",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Check your Syncthing folder in Settings",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            is WorkoutLogUiState.Error.FolderUnavailable -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Sync folder unavailable",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Check your Syncthing folder in Settings",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+            }
 
-                is WorkoutLogUiState.Error.Generic -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "Error loading workout",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            state.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            is WorkoutLogUiState.Error.Generic -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Error loading workout",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        state.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+            }
 
-                is WorkoutLogUiState.DayLoaded -> {
-                    if (state.exercises.isEmpty()) {
-                        // EMPTY STATE — matches 03-workout-empty-state.png
-                        EmptyDayContent(
-                            calendarDays = calendarDays,
-                            onStartFromTemplate = { showTemplatePicker = true },
-                            onAddExercise = { showExercisePicker = true }
-                        )
-                    } else {
-                        // ACTIVE STATE — matches 03-workout-active.png
-                        ActiveDayContent(
-                            state = state,
-                            calendarDays = calendarDays,
-                            timerState = timerState,
-                            activeTimerExerciseId = activeTimerExerciseId,
-                            onToggleComplete = { viewModel.toggleComplete() },
-                            onAddSet = { exerciseId -> setInputExerciseId = exerciseId },
-                            onAddExercise = { showExercisePicker = true },
-                            onRemoveExercise = { exerciseId -> viewModel.removeExercise(exerciseId) },
-                            onTimerTap = { showTimerAdjust = true }
-                        )
-                    }
+            is WorkoutLogUiState.DayLoaded -> {
+                if (state.exercises.isEmpty()) {
+                    EmptyDayContent(
+                        calendarDays = calendarDays,
+                        selectedDate = selectedDate,
+                        onDateSelected = { viewModel.navigateToDate(it) },
+                        onDateLabelClick = { showDatePicker = true },
+                        onNavigateToHistory = onNavigateToHistory,
+                        onStartFromTemplate = { showTemplatePicker = true },
+                        onAddExercise = { showExercisePicker = true }
+                    )
+                } else {
+                    ActiveDayContent(
+                        state = state,
+                        calendarDays = calendarDays,
+                        selectedDate = selectedDate,
+                        onDateSelected = { viewModel.navigateToDate(it) },
+                        onDateLabelClick = { showDatePicker = true },
+                        onNavigateToHistory = onNavigateToHistory,
+                        timerState = timerState,
+                        activeTimerExerciseId = activeTimerExerciseId,
+                        onToggleComplete = { viewModel.toggleComplete() },
+                        onAddSet = { exerciseId -> setInputExerciseId = exerciseId },
+                        onAddExercise = { showExercisePicker = true },
+                        onRemoveExercise = { exerciseId -> viewModel.removeExercise(exerciseId) },
+                        onTimerTap = { showTimerAdjust = true }
+                    )
                 }
             }
         }
@@ -407,6 +343,10 @@ fun WorkoutLogScreen(
 @Composable
 private fun EmptyDayContent(
     calendarDays: List<CalendarDay>,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
+    onDateLabelClick: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     onStartFromTemplate: () -> Unit,
     onAddExercise: () -> Unit
 ) {
@@ -421,7 +361,13 @@ private fun EmptyDayContent(
         // Calendar at top
         if (calendarDays.isNotEmpty()) {
             item {
-                SplitCalendar(days = calendarDays)
+                SplitCalendar(
+                    days = calendarDays,
+                    selectedDate = selectedDate,
+                    onDateSelected = onDateSelected,
+                    onDateLabelClick = onDateLabelClick,
+                    onHistoryClick = onNavigateToHistory
+                )
             }
         }
 
@@ -484,6 +430,10 @@ private fun EmptyDayContent(
 private fun ActiveDayContent(
     state: WorkoutLogUiState.DayLoaded,
     calendarDays: List<CalendarDay>,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
+    onDateLabelClick: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     timerState: TimerState,
     activeTimerExerciseId: Long?,
     onToggleComplete: () -> Unit,
@@ -503,7 +453,13 @@ private fun ActiveDayContent(
         // Training calendar at the top
         if (calendarDays.isNotEmpty()) {
             item {
-                SplitCalendar(days = calendarDays)
+                SplitCalendar(
+                    days = calendarDays,
+                    selectedDate = selectedDate,
+                    onDateSelected = onDateSelected,
+                    onDateLabelClick = onDateLabelClick,
+                    onHistoryClick = onNavigateToHistory
+                )
             }
         }
 
@@ -834,16 +790,6 @@ private fun TemplatePickerDialog(
 // ---------------------------------------------------------------------------
 // Helper functions
 // ---------------------------------------------------------------------------
-
-private fun formatWorkoutDate(date: LocalDate): String {
-    val today = LocalDate.now()
-    return when {
-        date == today -> "Today, ${date.format(DateTimeFormatter.ofPattern("MMM d"))}"
-        date == today.minusDays(1) -> "Yesterday, ${date.format(DateTimeFormatter.ofPattern("MMM d"))}"
-        date == today.plusDays(1) -> "Tomorrow, ${date.format(DateTimeFormatter.ofPattern("MMM d"))}"
-        else -> date.format(DateTimeFormatter.ofPattern("EEE, MMM d"))
-    }
-}
 
 private fun formatVolume(volume: Double): String {
     val rounded = volume.toInt()
