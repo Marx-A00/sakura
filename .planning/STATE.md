@@ -2,114 +2,36 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-09)
+See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** One cohesive system for food and workout tracking that the user fully controls, with data living in org files that flow into their existing Emacs workflow.
-**Current focus:** Gap closure phases 6-7 from milestone audit
+**Current focus:** v1.0 shipped — planning next milestone
 
 ## Current Position
 
-Phase: 7 of 7 (Rest Timer) — COMPLETE
-Plan: 3 of 3 — all plans complete
-Status: All phases complete — v1 milestone reached
-Last activity: 2026-04-13 — Completed 07-03-PLAN.md (rest timer foreground service)
+Phase: v1.0 complete (7 phases, 17 plans)
+Status: Milestone shipped and archived
+Last activity: 2026-04-13 — v1.0 milestone completion
 
-Progress: [███████████████] 100% (17/17 plans)
+## Milestone History
 
-## Performance Metrics
+- v1.0 MVP: Phases 1-7, shipped 2026-04-13 (see .planning/MILESTONES.md)
 
-**Velocity:**
-- Total plans completed: 14
-- Average duration: ~8 min
-- Total execution time: ~132 min
+## Pending Todos
 
-**By Phase:**
-- Phase 1: 3 of 3 plans done, ~39 min total — COMPLETE
-- Phase 2: 2 of 2 plans done — COMPLETE
-- Phase 3: 3 of 3 plans done, ~33 min total — COMPLETE
-- Phase 4: 2 of 2 plans done, ~17 min total — COMPLETE
-- Phase 5: 2 of 2 plans done, ~11 min total — COMPLETE
-- Phase 6: 2 of 2 plans done, ~2 min total — COMPLETE
-- Phase 7: 3 of 3 plans done, ~8 min total — COMPLETE
-
-**Recent Trend:**
-- Last 3 plans: 05-02 (~8 min), 06-02 (~1 min), 07-01 (~2 min)
-- Trend: stable (fast)
-
-*Updated after each plan completion*
-
-## Accumulated Context
-
-### Decisions
-
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Setup]: MANAGE_EXTERNAL_STORAGE (not SAF) for v1 — sideload-only removes Play Store policy concerns; isolate in SyncBackend for future migration
-- [Setup]: No Room database — org files are the data store; dual sources of truth would defeat the purpose
-- [Setup]: Custom OrgEngine (no JVM org library exists that is maintained)
-- [Setup]: Navigation Compose 2 (not Nav 3) — three-screen personal app does not justify Nav 3 API surface
-- [01-01]: kotlin-compose plugin (org.jetbrains.kotlin.plugin.compose 2.1.20) required with AGP 9.1.0 / Kotlin 2.x — apply alongside android.application in app/build.gradle.kts
-- [01-01]: JDK 17 installed to ~/.local/jdk/jdk-17.0.18+8/; all gradlew invocations need JAVA_HOME set explicitly
-- [01-01]: Android SDK bootstrapped to ~/Library/Android/sdk/; local.properties is gitignored; must be set manually on new machines
-- [01-02]: Property drawers chosen as the canonical org format for all structured data
-- [02-01]: OrgLibraryEntry separate from OrgFoodEntry — library items use UUID String ids; log entries use epoch millis Long ids
-- [02-01]: applyTemplate acquires fileMutex once for the full batch and calls addEntryInternal()
-- [02-02]: combine() over same-value reassignment for reload — _reloadTrigger counter pattern
-- [02-02]: ViewModel.factory() companion with CreationExtras.createSavedStateHandle()
-- [02-02]: invokeOnCompletion dismiss pattern for ModalBottomSheet
-- [03-01]: OrgExerciseLog + OrgSetEntry at org levels 3+4 (not flattened)
-- [03-01]: findPersonalBest returns null when no prior history
-- [03-02]: Incremental per-set write via fileMutex.withLock read-modify-write — mirrors OrgFoodRepository.addEntry
-- [03-02]: WorkoutSession.splitDay nullable — freestyle days are first-class
-- [03-02]: User exercise persistence via DataStore JSON in AppPreferencesRepository
-- [03-03]: NavigationBar replaces PrimaryTabRow — consistent 4-tab bottom nav (FOOD/WORKOUT/HOME/SETTINGS)
-- [03-03]: setInputExerciseId cleared immediately on log — prevents reload race
-- [03-03]: PR check runs before addSet so isPr=true is persisted to org file
-- [04-01]: compileSdk bumped to 36 (required by vico 3.1.0); targetSdk stays 35 — no runtime behavior change
-- [04-01]: gradle.properties created with Xmx2048m — default 512MiB OOMs during vico dex merge
-- [04-01]: MainScaffold pattern: single Scaffold at AppNavHost level with shared NavigationBar; isTabDestination() extension controls visibility
-- [04-01]: SyncStatus data class co-located in SyncBackend.kt with interface
-- [04-01]: Vico org.jetbrains.compose.material3 excluded in build.gradle.kts to prevent DatePicker NoSuchMethodError
-- [04-02]: Vico 3.1.0 API: Fill(SolidColor(color)) required, LineCartesianLayer.Line direct constructor, MergeMode.Grouped() instantiation
-- [04-02]: SplitCalendar uses Column/Row (not LazyVerticalGrid) to avoid nested scrollable containers
-- [05-01]: StorageMode enum co-located in AppPreferencesRepository.kt (file level, outside class)
-- [05-01]: storageMode Flow returns null for "not yet selected" — MainActivity falls back to LOCAL at runtime without persisting
-- [05-01]: AppContainer constructed in Composable via remember(resolvedMode) — SakuraApplication holds only prefsRepo
-- [05-01]: isLocalMode boolean on DashboardTodayState — ViewModel reads storageMode.first(), converts to bool for UI
-- [05-02]: DisposableEffect for permission checking guarded behind Syncthing-path states only
-- [05-02]: clearOnboardingComplete() added for Local→Syncthing migration path
-- [05-02]: Migration uses ComponentActivity.recreate() for full container reconstruction
-- [06-01]: templateName derived at parse time from splitDayParsed?.displayName — not persisted separately, single source of truth is splitDay label
-- [06-01]: isPr round-trip confirmed correct — PROPERTY_REGEX .+ anchor strips trailing whitespace; no parser fix needed
-- [06-02]: copyLocalOrgFilesToFolder() is unconditional — fresh installs are safe (empty listFiles is a no-op); overwrite=true ensures idempotency
-- [07-01]: TimerState hosted in WorkoutLogViewModel (not a separate ViewModel) — timer is tightly scoped to workout log screen
-- [07-01]: Context passed as parameter to startTimer/adjustTimer — avoids storing Application context as a ViewModel field
-- [07-01]: timerNotificationType defaults to "VIBRATION" — most reliable feedback in noisy gym environment
-- [07-01]: auto-start wiring (calling startTimer from addSet) deferred to Plan 02 alongside UI per plan spec
-- [07-02]: PendingTimerStart signal pattern — ViewModel emits nullable StateFlow, UI LaunchedEffect consumes with Context; keeps ViewModel Context-free
-- [07-02]: Countdown clickable on ExerciseCard is tap target for TimerAdjustSheet
-- [07-02]: Default rest duration field saves live on keystroke (not on blur) — simpler UX, DataStore writes are cheap
-- [07-03]: RestTimerBridge is a process-level singleton object (not injected) — same process guarantees no null reference
-- [07-03]: shortService type for foreground service — covers all realistic rest durations (~3 min max) without extra permissions
-- [07-03]: Service lifecycle managed from Composable LaunchedEffect (not ViewModel) — keeps ViewModel Context-free
-- [07-03]: bgNotifEnabled persisted regardless of permission grant — Android enforces permission at runtime
-
-### Pending Todos
-
+- Device testing on Galaxy S21 FE (8 human verification items from audit)
 - Document Samsung One UI Auto Blocker disable step in device setup notes
-- UI polish items noted by user during Phase 4 verification — to address after all phases
-- All v1 phases complete — ready for device testing and release prep
+- Register for free Android Developer Console limited distribution account before August 2026
 
-### Blockers/Concerns
+## Blockers/Concerns
 
-- [Phase 1]: Samsung One UI Auto Blocker must be disabled before first ADB install (Settings > Security and privacy > Auto Blocker > Off)
-- [General]: Developer verification requirement takes effect August 2026 — register for free Android Developer Console limited distribution account before then
 - [Build]: gradlew requires JAVA_HOME=/Users/marcosandrade/.local/jdk/jdk-17.0.18+8/Contents/Home — JDK 17 not on system PATH
+- [General]: Developer verification requirement takes effect August 2026
+- [Device]: Samsung One UI Auto Blocker must be disabled before first ADB install
 
 ## Session Continuity
 
 Last session: 2026-04-13 UTC
-Stopped at: Completed 07-03-PLAN.md (rest timer foreground service — RestTimerService, background notification toggle, permission request)
+Stopped at: v1.0 milestone completion — archived roadmap, requirements, and audit
 Resume file: None
-Next action: All v1 phases complete — device testing and release prep
+Next action: Device testing, then /gsd:new-milestone for v1.1
