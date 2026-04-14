@@ -515,13 +515,15 @@ private fun ActiveDayContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = state.templateName ?: "Freestyle",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    if (state.templateName != null) {
+                        Text(
+                            text = state.templateName,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     // Volume summary — WORK-09 (only shown when volume > 0)
                     if (state.totalVolume > 0) {
                         Text(

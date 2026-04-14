@@ -1,5 +1,6 @@
 package com.sakura.navigation
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -85,7 +86,9 @@ fun AppNavHost(
         NavHost(
             navController = navController,
             startDestination = if (startWithOnboarding) Onboarding else Home,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
         ) {
             composable<Onboarding> {
                 val onboardingViewModel = OnboardingViewModel(appContainer.prefsRepo)
