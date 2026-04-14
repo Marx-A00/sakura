@@ -223,6 +223,9 @@ private fun RadialMenuOverlay(
     val radiusPx = with(density) { 100.dp.toPx() }
     val optionSizePx = with(density) { 48.dp.toPx() }
     val optionSizeDp = 48.dp
+    val branchWidthPx = with(density) { 48.dp.toPx() }
+    val branchHeightPx = with(density) { 150.dp.toPx() }
+    val branchOffsetYPx = with(density) { 20.dp.toPx() }
 
     Box(
         modifier = Modifier
@@ -233,6 +236,22 @@ private fun RadialMenuOverlay(
                 interactionSource = null
             ) { onDismiss() }
     ) {
+        // White branch icon on top of scrim so it pops out
+        Icon(
+            painter = painterResource(R.drawable.ic_sakura_branch),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier
+                .offset {
+                    IntOffset(
+                        (anchorCenterPx.x - branchWidthPx / 2).roundToInt(),
+                        (anchorCenterPx.y - branchHeightPx / 2).roundToInt()
+                    )
+                }
+                .offset(y = 20.dp)
+                .size(width = 48.dp, height = 150.dp)
+        )
+
         RADIAL_OPTIONS.forEachIndexed { index, option ->
             val angleRad = option.angleDeg * PI.toFloat() / 180f
             // Position each item at absolute coordinates relative to the anchor
