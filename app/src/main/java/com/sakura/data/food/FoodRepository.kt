@@ -74,6 +74,16 @@ interface FoodRepository {
     suspend fun deleteTemplate(templateId: String): Result<Unit>
 
     // -------------------------------------------------------------------------
+    // Calendar helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Return the set of dates that have at least one food entry logged.
+     * Used by the food calendar to show a "logged" indicator dot.
+     */
+    suspend fun loadLoggedDates(): Set<LocalDate>
+
+    // -------------------------------------------------------------------------
     // Recent items
     // -------------------------------------------------------------------------
 

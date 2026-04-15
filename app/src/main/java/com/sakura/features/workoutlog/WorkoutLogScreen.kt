@@ -1,5 +1,8 @@
 package com.sakura.features.workoutlog
 
+import android.os.VibrationEffect
+import android.os.Vibrator
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,10 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -39,6 +48,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,14 +56,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.data.workout.ExerciseCategory
+import com.sakura.data.workout.ExerciseLog
 import com.sakura.data.workout.SetLog
 import com.sakura.data.workout.SplitDay
 import com.sakura.ui.theme.CherryBlossomPink
@@ -64,6 +77,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import com.sakura.features.workoutlog.RestTimerService
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
  * Day-based workout log screen.
@@ -105,9 +120,15 @@ fun WorkoutLogScreen(
     var showExercisePicker by rememberSaveable { mutableStateOf(false) }
     val exercisePickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // Change exercise — tracks which exercise is being replaced
+    var changeExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
+
     // Set input sheet — tracks which exercise is being logged
     var setInputExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
     val setInputSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Edit set state — when non-null, SetInputSheet is in edit mode for this set
+    var editingSet by remember { mutableStateOf<Pair<Long, SetLog>?>(null) }
 
     // Timer adjust sheet
     var showTimerAdjust by rememberSaveable { mutableStateOf(false) }
@@ -209,8 +230,12 @@ fun WorkoutLogScreen(
                         activeTimerExerciseId = activeTimerExerciseId,
                         onToggleComplete = { viewModel.toggleComplete() },
                         onAddSet = { exerciseId -> setInputExerciseId = exerciseId },
+                        onEditSet = { exerciseId, set -> editingSet = Pair(exerciseId, set) },
+                        onRemoveSet = { exerciseId, setNum -> viewModel.removeSet(exerciseId, setNum) },
                         onAddExercise = { showExercisePicker = true },
                         onRemoveExercise = { exerciseId -> viewModel.removeExercise(exerciseId) },
+                        onChangeExercise = { exerciseId -> changeExerciseId = exerciseId },
+                        onReorderExercises = { orderedIds -> viewModel.reorderExercises(orderedIds) },
                         onTimerTap = { showTimerAdjust = true }
                     )
                 }
@@ -229,17 +254,31 @@ fun WorkoutLogScreen(
         )
     }
 
-    // Exercise picker bottom sheet
-    if (showExercisePicker) {
+    // Exercise picker bottom sheet (shared for add + change exercise)
+    if (showExercisePicker || changeExerciseId != null) {
+        val replacingId = changeExerciseId
         ExercisePickerSheet(
             sheetState = exercisePickerSheetState,
             onAddExercise = { libraryExercise ->
-                viewModel.addExercise(libraryExercise)
+                if (replacingId != null) {
+                    viewModel.replaceExercise(replacingId, libraryExercise)
+                    changeExerciseId = null
+                } else {
+                    viewModel.addExercise(libraryExercise)
+                }
             },
             onCreateExercise = { name, category ->
-                viewModel.createAndAddExercise(name, category)
+                if (replacingId != null) {
+                    viewModel.createAndReplaceExercise(replacingId, name, category)
+                    changeExerciseId = null
+                } else {
+                    viewModel.createAndAddExercise(name, category)
+                }
             },
-            onDismiss = { showExercisePicker = false }
+            onDismiss = {
+                showExercisePicker = false
+                changeExerciseId = null
+            }
         )
     }
 
@@ -266,6 +305,30 @@ fun WorkoutLogScreen(
                     setInputExerciseId = null
                 },
                 onDismiss = { setInputExerciseId = null }
+            )
+        }
+    }
+
+    // Edit set sheet — re-opens SetInputSheet pre-filled with the existing set
+    val editData = editingSet
+    if (editData != null) {
+        val (editExerciseId, editSet) = editData
+        val dayState = uiState as? WorkoutLogUiState.DayLoaded
+        val dayExercise = dayState?.exercises?.find { it.exerciseLog.id == editExerciseId }
+        if (dayExercise != null) {
+            val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            SetInputSheet(
+                sheetState = editSheetState,
+                exerciseName = dayExercise.exerciseLog.name,
+                category = dayExercise.category,
+                setNumber = editSet.setNumber,
+                prefillSet = editSet,
+                previousSets = dayExercise.previousSets,
+                onLogSet = { updatedSet ->
+                    viewModel.updateSet(editExerciseId, editSet.setNumber, updatedSet)
+                    editingSet = null
+                },
+                onDismiss = { editingSet = null }
             )
         }
     }
@@ -438,11 +501,38 @@ private fun ActiveDayContent(
     activeTimerExerciseId: Long?,
     onToggleComplete: () -> Unit,
     onAddSet: (Long) -> Unit,
+    onEditSet: (Long, SetLog) -> Unit,
+    onRemoveSet: (Long, Int) -> Unit,
     onAddExercise: () -> Unit,
     onRemoveExercise: (Long) -> Unit,
+    onChangeExercise: (Long) -> Unit,
+    onReorderExercises: (List<Long>) -> Unit,
     onTimerTap: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // Local mutable exercise list for drag reorder — synced from state
+    val exercises = remember { mutableStateListOf<DayExercise>() }
+    LaunchedEffect(state.exercises) {
+        if (exercises.map { it.exerciseLog.id } != state.exercises.map { it.exerciseLog.id }) {
+            exercises.clear()
+            exercises.addAll(state.exercises)
+        }
+    }
+
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        val fromId = from.key as? Long ?: return@rememberReorderableLazyListState
+        val toId = to.key as? Long ?: return@rememberReorderableLazyListState
+        val fromIdx = exercises.indexOfFirst { it.exerciseLog.id == fromId }
+        val toIdx = exercises.indexOfFirst { it.exerciseLog.id == toId }
+        if (fromIdx >= 0 && toIdx >= 0) {
+            exercises.apply { add(toIdx, removeAt(fromIdx)) }
+        }
+    }
+
     LazyColumn(
+        state = lazyListState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             horizontal = 16.dp,
@@ -474,16 +564,16 @@ private fun ActiveDayContent(
                     if (state.templateName != null) {
                         Text(
                             text = state.templateName,
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                     // Volume summary — WORK-09 (only shown when volume > 0)
                     if (state.totalVolume > 0) {
                         Text(
-                            text = "Vol: ${formatVolume(state.totalVolume)} kg",
+                            text = "Vol: ${formatVolume(state.totalVolume)} ${state.volumeUnit}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -509,18 +599,39 @@ private fun ActiveDayContent(
             }
         }
 
-        // Exercise cards
-        items(state.exercises, key = { it.exerciseLog.id }) { dayExercise ->
-            val isTimerActiveForThis = dayExercise.exerciseLog.id == activeTimerExerciseId &&
-                timerState !is TimerState.Idle
-            ExerciseCard(
-                dayExercise = dayExercise,
-                timerState = timerState,
-                isTimerActiveForThis = isTimerActiveForThis,
-                onAddSet = { onAddSet(dayExercise.exerciseLog.id) },
-                onRemoveExercise = { onRemoveExercise(dayExercise.exerciseLog.id) },
-                onTimerTap = onTimerTap
-            )
+        // Exercise cards — drag-to-reorder via long press
+        items(exercises, key = { it.exerciseLog.id }) { dayExercise ->
+            ReorderableItem(reorderableLazyListState, key = dayExercise.exerciseLog.id) { isDragging ->
+                val elevation by animateDpAsState(
+                    if (isDragging) 8.dp else 1.dp,
+                    label = "dragElevation"
+                )
+                val isTimerActiveForThis = dayExercise.exerciseLog.id == activeTimerExerciseId &&
+                    timerState !is TimerState.Idle
+                ExerciseCard(
+                    modifier = Modifier.longPressDraggableHandle(
+                        onDragStarted = {
+                            val vibrator = context.getSystemService(Vibrator::class.java)
+                            vibrator?.vibrate(
+                                VibrationEffect.createOneShot(50L, VibrationEffect.DEFAULT_AMPLITUDE)
+                            )
+                        },
+                        onDragStopped = {
+                            onReorderExercises(exercises.map { it.exerciseLog.id })
+                        }
+                    ),
+                    elevation = elevation,
+                    dayExercise = dayExercise,
+                    timerState = timerState,
+                    isTimerActiveForThis = isTimerActiveForThis,
+                    onAddSet = { onAddSet(dayExercise.exerciseLog.id) },
+                    onEditSet = { set -> onEditSet(dayExercise.exerciseLog.id, set) },
+                    onRemoveSet = { setNum -> onRemoveSet(dayExercise.exerciseLog.id, setNum) },
+                    onRemoveExercise = { onRemoveExercise(dayExercise.exerciseLog.id) },
+                    onChangeExercise = { onChangeExercise(dayExercise.exerciseLog.id) },
+                    onTimerTap = onTimerTap
+                )
+            }
         }
 
         // "+ Add Exercise" at bottom of list
@@ -545,18 +656,25 @@ private fun ExerciseCard(
     timerState: TimerState,
     isTimerActiveForThis: Boolean,
     onAddSet: () -> Unit,
+    onEditSet: (SetLog) -> Unit,
+    onRemoveSet: (Int) -> Unit,
     onRemoveExercise: () -> Unit,
-    onTimerTap: () -> Unit
+    onChangeExercise: () -> Unit,
+    onTimerTap: () -> Unit,
+    modifier: Modifier = Modifier,
+    elevation: Dp = 1.dp
 ) {
     val exerciseLog = dayExercise.exerciseLog
+    var showMenu by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header row: name + category badge + target sets×reps (matches mockup)
+            // Header row: name + category badge + target + overflow menu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -610,21 +728,88 @@ private fun ExerciseCard(
                         )
                     }
                 }
+
+                // 3-dot overflow menu
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.MoreVert,
+                            contentDescription = "More options",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        if (exerciseLog.sets.isNotEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text(if (editing) "Done editing" else "Edit sets") },
+                                onClick = {
+                                    showMenu = false
+                                    editing = !editing
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("Change exercise") },
+                            onClick = {
+                                showMenu = false
+                                onChangeExercise()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove exercise") },
+                            onClick = {
+                                showMenu = false
+                                onRemoveExercise()
+                            }
+                        )
+                    }
+                }
             }
 
-            // Logged sets (with PR badge) — shown after divider
-            if (exerciseLog.sets.isNotEmpty()) {
+            // Sets section — logged sets + remaining target placeholders
+            val loggedCount = exerciseLog.sets.size
+            val targetCount = dayExercise.targetSets ?: 0
+            val hasContent = loggedCount > 0 || targetCount > 0
+
+            if (hasContent) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(8.dp))
+
+                // Logged sets (with PR badge, tappable + deletable in edit mode)
                 exerciseLog.sets.forEach { set ->
-                    SetRow(set = set, category = dayExercise.category)
+                    SetRow(
+                        set = set,
+                        category = dayExercise.category,
+                        editing = editing,
+                        onTap = { onEditSet(set) },
+                        onDelete = { onRemoveSet(set.setNumber) }
+                    )
+                }
+
+                // Remaining target placeholders
+                val remaining = (targetCount - loggedCount).coerceAtLeast(0)
+                for (i in 1..remaining) {
+                    val setNum = loggedCount + i
+                    TargetSetRow(
+                        setNumber = setNum,
+                        targetReps = dayExercise.targetReps,
+                        targetHoldSecs = dayExercise.targetHoldSecs,
+                        category = dayExercise.category
+                    )
                 }
             }
 
             Spacer(Modifier.height(10.dp))
 
-            // "+ Add Set" button (green text, centered — matches mockup)
+            // "+ Add Set" button (green text, centered)
             TextButton(
                 onClick = onAddSet,
                 modifier = Modifier.fillMaxWidth(),
@@ -637,7 +822,20 @@ private fun ExerciseCard(
                 )
             }
 
-            // Previous session reference ("Last: 80kgx5 · 80kgx5 · ...") — matches mockup
+            // Exercise volume summary (only when sets are logged)
+            if (exerciseLog.sets.isNotEmpty()) {
+                val volumeText = formatExerciseVolume(exerciseLog, dayExercise.category)
+                if (volumeText != null) {
+                    Text(
+                        text = volumeText,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Previous session reference ("Last: 80kgx5 · 80kgx5 · ...")
             if (dayExercise.previousSets.isNotEmpty()) {
                 Text(
                     text = "Last:  ${formatPreviousSets(dayExercise)}",
@@ -656,28 +854,34 @@ private fun ExerciseCard(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun SetRow(set: SetLog, category: ExerciseCategory) {
-    val label = when (category) {
-        ExerciseCategory.TIMED ->
-            "Set ${set.setNumber}    ${set.holdSecs}s hold"
-        ExerciseCategory.CARDIO ->
-            "Set ${set.setNumber}    ${set.durationMin ?: 0}min" +
-                (set.distanceKm?.let { " · ${it}km" } ?: "")
-        ExerciseCategory.STRETCH ->
-            "Set ${set.setNumber}    ${set.durationMin ?: 0}min"
-        ExerciseCategory.BODYWEIGHT ->
-            "Set ${set.setNumber}    ${set.reps} reps"
-        ExerciseCategory.WEIGHTED ->
-            "Set ${set.setNumber}    ${formatWeight(set.weight)}${set.unit} × ${set.reps}"
-    }
-
+private fun SetRow(
+    set: SetLog,
+    category: ExerciseCategory,
+    editing: Boolean = false,
+    onTap: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (editing) Modifier.clickable { onTap() } else Modifier)
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Delete icon in edit mode
+        if (editing) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Delete set",
+                modifier = Modifier
+                    .size(16.dp)
+                    .clickable { onDelete() },
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(Modifier.size(4.dp))
+        }
+
         Text(
             text = "Set ${set.setNumber}",
             fontSize = 13.sp,
@@ -706,6 +910,46 @@ private fun SetRow(set: SetLog, category: ExerciseCategory) {
                 PrBadge()
             }
         }
+    }
+}
+
+/**
+ * Placeholder row for a target set that hasn't been logged yet.
+ * Shown faded to distinguish from actual logged sets.
+ */
+@Composable
+private fun TargetSetRow(
+    setNumber: Int,
+    targetReps: Int?,
+    targetHoldSecs: Int?,
+    category: ExerciseCategory
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .alpha(0.4f),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Set $setNumber",
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(0.3f)
+        )
+        Text(
+            text = when {
+                targetHoldSecs != null && targetHoldSecs > 0 -> "${targetHoldSecs}s hold"
+                targetReps == -1 -> "max reps"
+                targetReps != null -> "$targetReps reps"
+                else -> "—"
+            },
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(0.7f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
     }
 }
 
@@ -821,6 +1065,34 @@ private fun formatPreviousSets(dayExercise: DayExercise): String {
             ExerciseCategory.STRETCH -> "${set.durationMin ?: 0}min"
             ExerciseCategory.BODYWEIGHT -> "${set.reps}reps"
             ExerciseCategory.WEIGHTED -> "${formatWeight(set.weight)}${set.unit}×${set.reps}"
+        }
+    }
+}
+
+private fun formatExerciseVolume(exerciseLog: ExerciseLog, category: ExerciseCategory): String? {
+    return when (category) {
+        ExerciseCategory.WEIGHTED -> {
+            val vol = exerciseLog.volume
+            if (vol > 0) {
+                val unit = exerciseLog.sets.firstOrNull { it.unit != "bw" }?.unit ?: "lbs"
+                "Vol: ${formatVolume(vol)} $unit"
+            } else null
+        }
+        ExerciseCategory.BODYWEIGHT -> {
+            val reps = exerciseLog.totalReps
+            if (reps > 0) "Total: $reps reps" else null
+        }
+        ExerciseCategory.TIMED -> {
+            val secs = exerciseLog.totalHoldSecs
+            if (secs > 0) "Total: ${secs}s" else null
+        }
+        ExerciseCategory.CARDIO -> {
+            val mins = exerciseLog.totalDurationMin
+            if (mins > 0) "Total: ${mins}min" else null
+        }
+        ExerciseCategory.STRETCH -> {
+            val mins = exerciseLog.totalDurationMin
+            if (mins > 0) "Total: ${mins}min" else null
         }
     }
 }

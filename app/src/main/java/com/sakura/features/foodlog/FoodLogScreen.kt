@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -30,7 +27,6 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -44,8 +40,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -73,15 +67,16 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodLogScreen(
-    viewModel: FoodLogViewModel
+    viewModel: FoodLogViewModel,
+    addEntryTrigger: Int = 0
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
+    val calendarDays by viewModel.calendarDays.collectAsStateWithLifecycle()
     val expandedMeals by viewModel.expandedMeals.collectAsStateWithLifecycle()
     val isEditMode by viewModel.isEditMode.collectAsStateWithLifecycle()
     val lastAddedEntry by viewModel.lastAddedEntry.collectAsStateWithLifecycle()
@@ -127,50 +122,16 @@ fun FoodLogScreen(
         }
     }
 
+    // Radial menu "Add Entry" trigger
+    LaunchedEffect(addEntryTrigger) {
+        if (addEntryTrigger > 0) {
+            editingEntry = null
+            saveToLibraryToggle = false
+            showEntrySheet = true
+        }
+    }
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        IconButton(onClick = { viewModel.navigatePrevDay() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous day")
-                        }
-                        Text(
-                            text = formatDate(selectedDate),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showDatePicker = true },
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        IconButton(onClick = { viewModel.navigateNextDay() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next day")
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        floatingActionButton = {
-            if (canEdit) {
-                FloatingActionButton(
-                    onClick = {
-                        editingEntry = null
-                        saveToLibraryToggle = false
-                        showEntrySheet = true
-                    },
-                    containerColor = CherryBlossomPink
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add food entry", tint = Color.White)
-                }
-            }
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
@@ -180,53 +141,88 @@ fun FoodLogScreen(
         ) {
             when (val state = uiState) {
                 is FoodLogUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = CherryBlossomPink
-                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (calendarDays.isNotEmpty()) {
+                            FoodCalendar(
+                                days = calendarDays,
+                                selectedDate = selectedDate,
+                                onDateSelected = { viewModel.navigateToDate(it) },
+                                onDateLabelClick = { showDatePicker = true },
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = CherryBlossomPink)
+                        }
+                    }
                 }
 
                 is FoodLogUiState.Error.FolderUnavailable -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "Sync folder unavailable",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Check your Syncthing folder in Settings",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (calendarDays.isNotEmpty()) {
+                            FoodCalendar(
+                                days = calendarDays,
+                                selectedDate = selectedDate,
+                                onDateSelected = { viewModel.navigateToDate(it) },
+                                onDateLabelClick = { showDatePicker = true },
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "Sync folder unavailable",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Check your Syncthing folder in Settings",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
                 is FoodLogUiState.Error.Generic -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "Error loading food log",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            state.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (calendarDays.isNotEmpty()) {
+                            FoodCalendar(
+                                days = calendarDays,
+                                selectedDate = selectedDate,
+                                onDateSelected = { viewModel.navigateToDate(it) },
+                                onDateLabelClick = { showDatePicker = true },
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "Error loading food log",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                state.message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
@@ -237,6 +233,19 @@ fun FoodLogScreen(
                             bottom = 88.dp
                         )
                     ) {
+                        // Food calendar at the top
+                        if (calendarDays.isNotEmpty()) {
+                            item {
+                                FoodCalendar(
+                                    days = calendarDays,
+                                    selectedDate = selectedDate,
+                                    onDateSelected = { viewModel.navigateToDate(it) },
+                                    onDateLabelClick = { showDatePicker = true },
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+
                         // Macro progress section
                         item {
                             MacroProgressSection(state = state)
@@ -593,26 +602,35 @@ private fun MealSectionHeader(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (canEdit) {
-                    var showTemplateMenu by remember { mutableStateOf(false) }
+                    var showMenu by remember { mutableStateOf(false) }
                     Box {
-                        TextButton(onClick = { showTemplateMenu = true }) {
-                            Text("Template", fontSize = 11.sp, color = CherryBlossomPink)
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = "More options",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                         DropdownMenu(
-                            expanded = showTemplateMenu,
-                            onDismissRequest = { showTemplateMenu = false }
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Save as template") },
-                                onClick = { showTemplateMenu = false; onSaveTemplate() }
+                                onClick = { showMenu = false; onSaveTemplate() }
                             )
                             DropdownMenuItem(
                                 text = { Text("Apply template") },
-                                onClick = { showTemplateMenu = false; onApplyTemplate() }
+                                onClick = { showMenu = false; onApplyTemplate() }
                             )
                         }
                     }
                 }
+                Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
@@ -699,12 +717,3 @@ private fun buildMacroSummary(entry: FoodEntry): String {
     return parts.joinToString("  ")
 }
 
-private fun formatDate(date: LocalDate): String {
-    val today = LocalDate.now()
-    return when (date) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
-        today.plusDays(1) -> "Tomorrow"
-        else -> date.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
-    }
-}

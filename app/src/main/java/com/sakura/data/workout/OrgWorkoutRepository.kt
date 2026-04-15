@@ -231,6 +231,44 @@ class OrgWorkoutRepository(
         }
     }
 
+    override suspend fun replaceExercise(date: LocalDate, oldExerciseId: Long, newExercise: ExerciseLog): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val content = readFile()
+                    if (content.isBlank()) return@withContext Result.failure(NoSuchElementException("No data"))
+                    val orgFile = parseFile(content)
+                    val orgExercise = newExercise.toOrgExerciseLog()
+                    val updatedSections = replaceExerciseInSection(orgFile.sections, date, oldExerciseId, orgExercise)
+                    syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
+    override suspend fun reorderExercises(date: LocalDate, orderedIds: List<Long>): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val content = readFile()
+                    if (content.isBlank()) return@withContext Result.success(Unit)
+                    val orgFile = parseFile(content)
+                    val updatedSections = reorderExerciseLogs(orgFile.sections, date, orderedIds)
+                    syncBackend.writeFile(
+                        WORKOUT_LOG_FILE,
+                        OrgWriter.write(orgFile.copy(sections = updatedSections))
+                    )
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
     override suspend fun markComplete(date: LocalDate, complete: Boolean): Result<Unit> {
         return fileMutex.withLock {
             withContext(ioDispatcher) {
@@ -363,6 +401,43 @@ class OrgWorkoutRepository(
             )
         }
         return mutableSections
+    }
+
+    /**
+     * Replace an exercise by id with a new one at the same position.
+     */
+    private fun replaceExerciseInSection(
+        sections: List<OrgDateSection>,
+        date: LocalDate,
+        oldExerciseId: Long,
+        newExercise: OrgExerciseLog
+    ): List<OrgDateSection> {
+        return sections.map { section ->
+            if (section.date != date) return@map section
+            val idx = section.exerciseLogs.indexOfFirst { it.id == oldExerciseId }
+            if (idx < 0) return@map section
+            val updatedLogs = section.exerciseLogs.toMutableList()
+            updatedLogs[idx] = newExercise
+            section.copy(exerciseLogs = updatedLogs)
+        }
+    }
+
+    /**
+     * Reorder exerciseLogs within the section for [date] to match [orderedIds].
+     * Any exercises not in orderedIds are appended at the end (defensive).
+     */
+    private fun reorderExerciseLogs(
+        sections: List<OrgDateSection>,
+        date: LocalDate,
+        orderedIds: List<Long>
+    ): List<OrgDateSection> {
+        return sections.map { section ->
+            if (section.date != date) return@map section
+            val idToExercise = section.exerciseLogs.associateBy { it.id }
+            val reordered = orderedIds.mapNotNull { id -> idToExercise[id] }
+            val remaining = section.exerciseLogs.filter { it.id !in orderedIds }
+            section.copy(exerciseLogs = reordered + remaining)
+        }
     }
 
     /**

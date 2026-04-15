@@ -78,6 +78,20 @@ interface WorkoutRepository {
     suspend fun markComplete(date: LocalDate, complete: Boolean): Result<Unit>
 
     /**
+     * Replace an exercise with a new one at the same position.
+     * The old exercise (by id) is swapped out; the new exercise takes its place.
+     * Sets are cleared on the replacement.
+     */
+    suspend fun replaceExercise(date: LocalDate, oldExerciseId: Long, newExercise: ExerciseLog): Result<Unit>
+
+    /**
+     * Reorder exercises for a given date.
+     * Accepts the list of exercise IDs in the desired new order.
+     * Rewrites the exerciseLogs list in that order within the org file.
+     */
+    suspend fun reorderExercises(date: LocalDate, orderedIds: List<Long>): Result<Unit>
+
+    /**
      * Load the previous session's sets for a specific exercise (by normalized name).
      * Returns empty list if no prior history.
      * Used for auto-fill in the set logging UI.

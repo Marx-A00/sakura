@@ -115,17 +115,23 @@ class WorkoutLogViewModel(
                         if (prev.isNotEmpty()) previousSetsMap[ex.name] = prev
                     }
 
+                    // Look up template definitions for target sets/reps
+                    val templateDefs = session?.splitDay?.let { day ->
+                        WorkoutTemplates.forDay(day).exercises.associateBy { it.name }
+                    } ?: emptyMap()
+
                     emit(
                         WorkoutLogUiState.DayLoaded(
                             date = date,
                             isToday = date == LocalDate.now(),
                             templateName = session?.templateName,
                             exercises = exercises.map { ex ->
+                                val def = templateDefs[ex.name]
                                 DayExercise(
                                     exerciseLog = ex,
-                                    targetSets = null,   // template targets not persisted per-exercise yet
-                                    targetReps = null,
-                                    targetHoldSecs = null,
+                                    targetSets = def?.targetSets,
+                                    targetReps = def?.targetReps,
+                                    targetHoldSecs = def?.targetHoldSecs,
                                     previousSets = previousSetsMap[ex.name] ?: emptyList(),
                                     category = ex.category
                                 )
@@ -277,12 +283,53 @@ class WorkoutLogViewModel(
     }
 
     // -------------------------------------------------------------------------
+    // Replace exercise (change exercise)
+    // -------------------------------------------------------------------------
+
+    fun replaceExercise(oldExerciseId: Long, libraryExercise: LibraryExercise) {
+        viewModelScope.launch {
+            val date = _selectedDate.value
+            val exerciseType = ExerciseType.fromLabel(libraryExercise.category.label)
+            val newExerciseLog = ExerciseLog(
+                id = System.currentTimeMillis(),
+                name = libraryExercise.name,
+                exerciseType = exerciseType,
+                category = libraryExercise.category,
+                sets = emptyList()
+            )
+            workoutRepo.replaceExercise(date, oldExerciseId, newExerciseLog)
+            _reloadTrigger.value++
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Reorder exercises (drag-to-reorder)
+    // -------------------------------------------------------------------------
+
+    fun reorderExercises(orderedIds: List<Long>) {
+        viewModelScope.launch {
+            workoutRepo.reorderExercises(_selectedDate.value, orderedIds)
+            _reloadTrigger.value++
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Remove a set from an exercise
     // -------------------------------------------------------------------------
 
     fun removeSet(exerciseId: Long, setNumber: Int) {
         viewModelScope.launch {
             workoutRepo.removeSet(_selectedDate.value, exerciseId, setNumber)
+            _reloadTrigger.value++
+        }
+    }
+
+    /** Replace a set by removing the old one and adding the updated one. */
+    fun updateSet(exerciseId: Long, oldSetNumber: Int, newSet: SetLog) {
+        viewModelScope.launch {
+            val date = _selectedDate.value
+            workoutRepo.removeSet(date, exerciseId, oldSetNumber)
+            workoutRepo.addSet(date, exerciseId, newSet)
             _reloadTrigger.value++
         }
     }
@@ -308,8 +355,16 @@ class WorkoutLogViewModel(
         ExerciseLibrary.addUserExercise(newExercise)
         viewModelScope.launch {
             workoutRepo.saveUserExercises(ExerciseLibrary.userExercises())
-            // Also add to today's workout immediately
             addExercise(newExercise)
+        }
+    }
+
+    fun createAndReplaceExercise(oldExerciseId: Long, name: String, category: ExerciseCategory) {
+        val newExercise = LibraryExercise(name = name, category = category, isBuiltIn = false)
+        ExerciseLibrary.addUserExercise(newExercise)
+        viewModelScope.launch {
+            workoutRepo.saveUserExercises(ExerciseLibrary.userExercises())
+            replaceExercise(oldExerciseId, newExercise)
         }
     }
 

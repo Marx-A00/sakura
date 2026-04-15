@@ -23,9 +23,15 @@ sealed interface WorkoutLogUiState {
         val templateName: String?,                     // e.g., "Monday — Lift" if loaded from template
         val exercises: List<DayExercise>,              // exercises for this day
         val isComplete: Boolean,                       // soft complete flag
-        val totalVolume: Double,                       // total volume in kg for the day (WORK-09)
+        val totalVolume: Double,                       // total volume for the day (WORK-09)
         val previousSetsMap: Map<String, List<SetLog>> // exercise name -> previous sets (for auto-fill)
-    ) : WorkoutLogUiState
+    ) : WorkoutLogUiState {
+        /** Derive volume unit from logged sets (defaults to lbs). */
+        val volumeUnit: String get() = exercises
+            .flatMap { it.exerciseLog.sets }
+            .firstOrNull { it.unit != "bw" }
+            ?.unit ?: "lbs"
+    }
 
     sealed interface Error : WorkoutLogUiState {
         data object FolderUnavailable : Error

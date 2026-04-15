@@ -290,6 +290,21 @@ class OrgFoodRepository(
     }
 
     // =========================================================================
+    // Calendar helpers
+    // =========================================================================
+
+    override suspend fun loadLoggedDates(): Set<LocalDate> {
+        return try {
+            val content = syncBackend.readFile(FOOD_LOG_FILE)
+            if (content.isBlank()) return emptySet()
+            val orgFile = OrgParser.parse(content, OrgParser.ParseMode.FOOD)
+            orgFile.sections.filter { it.meals.isNotEmpty() }.map { it.date }.toSet()
+        } catch (e: Exception) {
+            emptySet()
+        }
+    }
+
+    // =========================================================================
     // Recent items
     // =========================================================================
 

@@ -26,6 +26,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
@@ -67,6 +70,16 @@ fun AppNavHost(
 
     val showBottomBar = currentDestination.isTabDestination()
 
+    // Radial context — determines which options the radial menu shows
+    val radialContext = when {
+        currentDestination?.hasRoute<FoodLog>() == true -> RadialContext.FOOD
+        currentDestination?.hasRoute<WorkoutLog>() == true -> RadialContext.WORKOUT
+        else -> RadialContext.DEFAULT
+    }
+
+    // Trigger for page-specific radial actions (increment to fire)
+    var addFoodEntryTrigger by remember { mutableIntStateOf(0) }
+
     fun navigateToTab(route: Any) {
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) {
@@ -83,11 +96,21 @@ fun AppNavHost(
                 SakuraBottomBar(
                     currentDestination = currentDestination,
                     onNavigateTo = ::navigateToTab,
+                    radialContext = radialContext,
                     onRadialAction = { action ->
                         when (action) {
-                            RadialAction.ADD_FOOD -> navigateToTab(FoodLog)
-                            RadialAction.ADD_EXERCISE -> navigateToTab(WorkoutLog)
-                            RadialAction.LOG_WEIGHT -> navigateToTab(Settings)
+                            // Default navigation
+                            RadialAction.NAV_FOOD -> navigateToTab(FoodLog)
+                            RadialAction.NAV_EXERCISE -> navigateToTab(WorkoutLog)
+                            RadialAction.NAV_SETTINGS -> navigateToTab(Settings)
+                            // Food page actions
+                            RadialAction.FOOD_ADD_ENTRY -> addFoodEntryTrigger++
+                            RadialAction.FOOD_FROM_LIBRARY -> {} // placeholder
+                            RadialAction.FOOD_QUICK_ADD -> {} // placeholder
+                            // Workout page actions
+                            RadialAction.WORKOUT_ADD_EXERCISE -> {} // placeholder
+                            RadialAction.WORKOUT_FROM_TEMPLATE -> {} // placeholder
+                            RadialAction.WORKOUT_LOG_WEIGHT -> {} // placeholder
                         }
                     }
                 )
@@ -132,7 +155,10 @@ fun AppNavHost(
                         prefsRepo = appContainer.prefsRepo
                     )
                 )
-                FoodLogScreen(viewModel = foodLogViewModel)
+                FoodLogScreen(
+                    viewModel = foodLogViewModel,
+                    addEntryTrigger = addFoodEntryTrigger
+                )
             }
 
             composable<Settings> {
@@ -190,6 +216,7 @@ private fun NavDestination?.isTabDestination(): Boolean {
 private fun SakuraBottomBar(
     currentDestination: NavDestination?,
     onNavigateTo: (Any) -> Unit,
+    radialContext: RadialContext = RadialContext.DEFAULT,
     onRadialAction: (RadialAction) -> Unit
 ) {
     val barHeight = 64.dp
@@ -260,6 +287,7 @@ private fun SakuraBottomBar(
         CenterHomeButton(
             onHomeTap = { onNavigateTo(Home) },
             onRadialAction = onRadialAction,
+            radialContext = radialContext,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }

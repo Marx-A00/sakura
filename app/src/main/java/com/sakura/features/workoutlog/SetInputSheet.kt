@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -15,12 +17,14 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
@@ -29,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakura.data.workout.ExerciseCategory
@@ -84,7 +90,7 @@ fun SetInputSheet(
         )
     }
     var unit by remember {
-        mutableStateOf(prefillSet?.unit?.takeIf { it != "bw" } ?: "kg")
+        mutableStateOf(prefillSet?.unit?.takeIf { it != "bw" } ?: "lbs")
     }
     var repsText by remember {
         mutableStateOf(
@@ -93,6 +99,14 @@ fun SetInputSheet(
             } else ""
         )
     }
+    var repsValue by remember {
+        mutableIntStateOf(
+            if (prefillSet != null && (category == ExerciseCategory.WEIGHTED || category == ExerciseCategory.BODYWEIGHT)) {
+                prefillSet.reps.coerceIn(1, 99)
+            } else 10
+        )
+    }
+    var repsManualEntry by remember { mutableStateOf(false) }
     var holdSecsText by remember {
         mutableStateOf(
             if (prefillSet != null && category == ExerciseCategory.TIMED) {
@@ -115,6 +129,7 @@ fun SetInputSheet(
         )
     }
     var selectedRpe by remember { mutableIntStateOf(prefillSet?.rpe ?: 0) }
+    var showPlateCalc by remember { mutableStateOf(false) }
 
     fun dismiss() {
         scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -122,17 +137,19 @@ fun SetInputSheet(
         }
     }
 
+    fun resolvedReps(): Int = if (repsManualEntry) repsText.toIntOrNull() ?: 0 else repsValue
+
     fun buildSet(): SetLog = when (category) {
         ExerciseCategory.WEIGHTED -> SetLog(
             setNumber = setNumber,
-            reps = repsText.toIntOrNull() ?: 0,
+            reps = resolvedReps(),
             weight = weightText.toDoubleOrNull() ?: 0.0,
             unit = unit,
             rpe = selectedRpe.takeIf { it > 0 }
         )
         ExerciseCategory.BODYWEIGHT -> SetLog(
             setNumber = setNumber,
-            reps = repsText.toIntOrNull() ?: 0,
+            reps = resolvedReps(),
             weight = 0.0,
             unit = "bw",
             rpe = selectedRpe.takeIf { it > 0 }
@@ -197,30 +214,17 @@ fun SetInputSheet(
             // Input fields — adapt by category
             when (category) {
                 ExerciseCategory.WEIGHTED -> {
-                    // Weight + unit toggle
+                    // Weight label + unit toggle + plate calc toggle
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.Top
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Weight", style = MaterialTheme.typography.labelMedium)
-                            Spacer(Modifier.height(4.dp))
-                            OutlinedTextField(
-                                value = weightText,
-                                onValueChange = { weightText = it.filter { c -> c.isDigit() || c == '.' } },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                        }
-                        Column(modifier = Modifier.padding(top = 20.dp)) {
-                            Text("Unit", style = MaterialTheme.typography.labelMedium)
-                            Spacer(Modifier.height(4.dp))
+                        Text("Weight", style = MaterialTheme.typography.labelMedium)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 FilterChip(
                                     selected = unit == "kg",
@@ -233,16 +237,27 @@ fun SetInputSheet(
                                     label = { Text("lbs") }
                                 )
                             }
+                            TextButton(onClick = { showPlateCalc = !showPlateCalc }) {
+                                Text(
+                                    text = if (showPlateCalc) "type it" else "plates",
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
-                    // Reps field
-                    Column {
-                        Text("Reps", style = MaterialTheme.typography.labelMedium)
-                        Spacer(Modifier.height(4.dp))
+
+                    if (showPlateCalc) {
+                        PlateCalculator(
+                            unit = unit,
+                            onTotalChanged = { total ->
+                                weightText = formatPrefillWeight(total)
+                            }
+                        )
+                    } else {
                         OutlinedTextField(
-                            value = repsText,
-                            onValueChange = { repsText = it.filter { c -> c.isDigit() } },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            value = weightText,
+                            onValueChange = { weightText = it.filter { c -> c.isDigit() || c == '.' } },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -251,30 +266,39 @@ fun SetInputSheet(
                             )
                         )
                     }
-                    // Pre-fill info line (matches mockup)
+                    // Reps — wheel picker or manual text entry
+                    RepsInput(
+                        repsValue = repsValue,
+                        repsText = repsText,
+                        isManualEntry = repsManualEntry,
+                        onWheelChange = { repsValue = it },
+                        onTextChange = { repsText = it },
+                        onToggleMode = {
+                            repsManualEntry = !repsManualEntry
+                            if (repsManualEntry) repsText = repsValue.toString()
+                            else repsValue = repsText.toIntOrNull()?.coerceIn(1, 99) ?: 10
+                        }
+                    )
+                    // Pre-fill info line
                     if (prefillSet != null) {
                         PreFillInfoRow(prefillSet = prefillSet, category = category)
                     }
                 }
 
                 ExerciseCategory.BODYWEIGHT -> {
-                    // Reps only
-                    Column {
-                        Text("Reps", style = MaterialTheme.typography.labelMedium)
-                        Spacer(Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = repsText,
-                            onValueChange = { repsText = it.filter { c -> c.isDigit() } },
-                            placeholder = { Text("reps") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
+                    // Reps — wheel picker or manual text entry
+                    RepsInput(
+                        repsValue = repsValue,
+                        repsText = repsText,
+                        isManualEntry = repsManualEntry,
+                        onWheelChange = { repsValue = it },
+                        onTextChange = { repsText = it },
+                        onToggleMode = {
+                            repsManualEntry = !repsManualEntry
+                            if (repsManualEntry) repsText = repsValue.toString()
+                            else repsValue = repsText.toIntOrNull()?.coerceIn(1, 99) ?: 10
+                        }
+                    )
                     if (prefillSet != null) {
                         PreFillInfoRow(prefillSet = prefillSet, category = category)
                     }
@@ -388,7 +412,7 @@ fun SetInputSheet(
 private fun PreFillInfoRow(prefillSet: SetLog, category: ExerciseCategory) {
     val text = when (category) {
         ExerciseCategory.WEIGHTED ->
-            "Pre-filled from last session: ${formatPrefillWeight(prefillSet.weight)}kg × ${prefillSet.reps}"
+            "Pre-filled from last session: ${formatPrefillWeight(prefillSet.weight)}${prefillSet.unit} × ${prefillSet.reps}"
         ExerciseCategory.BODYWEIGHT ->
             "Pre-filled from last session: ${prefillSet.reps} reps"
         ExerciseCategory.TIMED ->
@@ -458,6 +482,167 @@ private fun RpeSelector(
                     )
                 )
             }
+        }
+    }
+}
+
+/**
+ * Reps input that toggles between a scroll wheel picker and manual text entry.
+ * Tap the "type it" / "use wheel" link to switch modes.
+ */
+@Composable
+private fun RepsInput(
+    repsValue: Int,
+    repsText: String,
+    isManualEntry: Boolean,
+    onWheelChange: (Int) -> Unit,
+    onTextChange: (String) -> Unit,
+    onToggleMode: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Reps", style = MaterialTheme.typography.labelMedium)
+            TextButton(onClick = onToggleMode) {
+                Text(
+                    text = if (isManualEntry) "use wheel" else "type it",
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        if (isManualEntry) {
+            OutlinedTextField(
+                value = repsText,
+                onValueChange = { onTextChange(it.filter { c -> c.isDigit() }) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+        } else {
+            ScrollWheelPicker(
+                range = 1..99,
+                selectedValue = repsValue,
+                onValueChange = onWheelChange,
+                modifier = Modifier.fillMaxWidth(),
+                visibleCount = 3,
+                label = "reps"
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Plate calculator — tap plates to build up bar weight, no mental math
+// ---------------------------------------------------------------------------
+
+private val LBS_PLATES = listOf(45.0, 25.0, 10.0, 5.0, 2.5)
+private val KG_PLATES = listOf(20.0, 10.0, 5.0, 2.5, 1.25)
+private const val LBS_BAR = 45.0
+private const val KG_BAR = 20.0
+
+@Composable
+private fun PlateCalculator(
+    unit: String,
+    onTotalChanged: (Double) -> Unit
+) {
+    val plates = if (unit == "kg") KG_PLATES else LBS_PLATES
+    val barWeight = if (unit == "kg") KG_BAR else LBS_BAR
+    val plateCounts = remember { mutableStateMapOf<Double, Int>() }
+
+    fun total(): Double {
+        return barWeight + plateCounts.entries.sumOf { (plate, count) -> plate * count * 2 }
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Bar weight label
+            Text(
+                text = "Bar: ${formatPrefillWeight(barWeight)} $unit",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Plate rows
+            plates.forEach { plate ->
+                val count = plateCounts[plate] ?: 0
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Minus button
+                    OutlinedButton(
+                        onClick = {
+                            if (count > 0) {
+                                plateCounts[plate] = count - 1
+                                onTotalChanged(total())
+                            }
+                        },
+                        modifier = Modifier.size(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        enabled = count > 0
+                    ) {
+                        Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Plate label + count
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = formatPrefillWeight(plate),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (count > 0) {
+                            Text(
+                                text = "×$count each side",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Plus button
+                    FilledTonalButton(
+                        onClick = {
+                            plateCounts[plate] = count + 1
+                            onTotalChanged(total())
+                        },
+                        modifier = Modifier.size(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                    ) {
+                        Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Total display
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Total: ${formatPrefillWeight(total())} $unit",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = CherryBlossomPink
+            )
         }
     }
 }

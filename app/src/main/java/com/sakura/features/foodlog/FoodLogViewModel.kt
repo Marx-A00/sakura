@@ -23,8 +23,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.temporal.TemporalAdjusters
 
 class FoodLogViewModel(
     private val foodRepo: FoodRepository,
@@ -40,6 +42,38 @@ class FoodLogViewModel(
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
     private val _reloadTrigger = MutableStateFlow(0)
+
+    // -------------------------------------------------------------------------
+    // Calendar — 4-week rolling grid with food-logged indicators
+    // -------------------------------------------------------------------------
+
+    private val _calendarDays = MutableStateFlow<List<FoodCalendarDay>>(emptyList())
+    val calendarDays: StateFlow<List<FoodCalendarDay>> = _calendarDays.asStateFlow()
+
+    private fun loadCalendar() {
+        viewModelScope.launch {
+            try {
+                val today = LocalDate.now()
+                // Start from Monday 3 weeks ago → 28 days total
+                val startDate = today.minusWeeks(3)
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+                val loggedDates = foodRepo.loadLoggedDates()
+
+                _calendarDays.value = (0 until 28).map { offset ->
+                    val date = startDate.plusDays(offset.toLong())
+                    FoodCalendarDay(
+                        date = date,
+                        hasEntries = date in loggedDates,
+                        isPast = date.isBefore(today),
+                        isToday = date == today
+                    )
+                }
+            } catch (_: Exception) {
+                // Calendar is non-critical; leave empty on error
+            }
+        }
+    }
 
     // -------------------------------------------------------------------------
     // UI state — combines selected date + macro targets into Success/Error
@@ -218,6 +252,7 @@ class FoodLogViewModel(
 
     private fun reloadDay() {
         _reloadTrigger.value++
+        loadCalendar()
     }
 
     // -------------------------------------------------------------------------
@@ -325,6 +360,7 @@ class FoodLogViewModel(
 
     init {
         loadLibraryData()
+        loadCalendar()
     }
 
     // -------------------------------------------------------------------------

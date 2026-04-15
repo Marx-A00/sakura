@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Restaurant
@@ -63,8 +65,16 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 enum class RadialAction {
-    ADD_FOOD, ADD_EXERCISE, LOG_WEIGHT
+    // Default navigation actions
+    NAV_FOOD, NAV_EXERCISE, NAV_SETTINGS,
+    // Food page actions
+    FOOD_ADD_ENTRY, FOOD_FROM_LIBRARY, FOOD_QUICK_ADD,
+    // Workout page actions
+    WORKOUT_ADD_EXERCISE, WORKOUT_FROM_TEMPLATE, WORKOUT_LOG_WEIGHT,
 }
+
+/** Identifies which page is active, so radial menu can show relevant actions. */
+enum class RadialContext { DEFAULT, FOOD, WORKOUT }
 
 private data class RadialOption(
     val action: RadialAction,
@@ -73,11 +83,29 @@ private data class RadialOption(
     val angleDeg: Float // angle from 12 o'clock, clockwise positive
 )
 
-private val RADIAL_OPTIONS = listOf(
-    RadialOption(RadialAction.ADD_FOOD, "Add Food", Icons.Filled.Restaurant, -40f),
-    RadialOption(RadialAction.ADD_EXERCISE, "Add Exercise", Icons.Filled.FitnessCenter, 0f),
-    RadialOption(RadialAction.LOG_WEIGHT, "Log Weight", Icons.Filled.MonitorWeight, 40f),
+private val DEFAULT_OPTIONS = listOf(
+    RadialOption(RadialAction.NAV_FOOD, "Add Food", Icons.Filled.Restaurant, -40f),
+    RadialOption(RadialAction.NAV_EXERCISE, "Add Exercise", Icons.Filled.FitnessCenter, 0f),
+    RadialOption(RadialAction.NAV_SETTINGS, "Log Weight", Icons.Filled.MonitorWeight, 40f),
 )
+
+private val FOOD_OPTIONS = listOf(
+    RadialOption(RadialAction.FOOD_ADD_ENTRY, "Add Entry", Icons.Filled.Add, -40f),
+    RadialOption(RadialAction.FOOD_FROM_LIBRARY, "From Library", Icons.Filled.Restaurant, 0f),
+    RadialOption(RadialAction.FOOD_QUICK_ADD, "Quick Add", Icons.Filled.FitnessCenter, 40f),
+)
+
+private val WORKOUT_OPTIONS = listOf(
+    RadialOption(RadialAction.WORKOUT_ADD_EXERCISE, "Add Exercise", Icons.Filled.FitnessCenter, -40f),
+    RadialOption(RadialAction.WORKOUT_FROM_TEMPLATE, "From Template", Icons.Filled.DateRange, 0f),
+    RadialOption(RadialAction.WORKOUT_LOG_WEIGHT, "Log Weight", Icons.Filled.MonitorWeight, 40f),
+)
+
+private fun optionsForContext(context: RadialContext): List<RadialOption> = when (context) {
+    RadialContext.FOOD -> FOOD_OPTIONS
+    RadialContext.WORKOUT -> WORKOUT_OPTIONS
+    RadialContext.DEFAULT -> DEFAULT_OPTIONS
+}
 
 private val OptionBg = Color(0xFF2B2930)
 
@@ -120,6 +148,7 @@ private fun FullScreenPortal(content: @Composable () -> Unit) {
 fun CenterHomeButton(
     onHomeTap: () -> Unit,
     onRadialAction: (RadialAction) -> Unit,
+    radialContext: RadialContext = RadialContext.DEFAULT,
     modifier: Modifier = Modifier
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -131,6 +160,7 @@ fun CenterHomeButton(
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
     val minDragPx = with(density) { 40.dp.toPx() }
+    val options = optionsForContext(radialContext)
 
     Box(
         modifier = modifier
@@ -145,7 +175,7 @@ fun CenterHomeButton(
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { onHomeTap() })
             }
-            .pointerInput(Unit) {
+            .pointerInput(radialContext) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = {
                         menuOpen = true
@@ -162,13 +192,13 @@ fun CenterHomeButton(
                         highlightedIndex = if (dist < minDragPx) {
                             -1
                         } else {
-                            findClosestOption(dragOffset)
+                            findClosestOption(dragOffset, options)
                         }
                     },
                     onDragEnd = {
-                        if (highlightedIndex in RADIAL_OPTIONS.indices) {
+                        if (highlightedIndex in options.indices) {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onRadialAction(RADIAL_OPTIONS[highlightedIndex].action)
+                            onRadialAction(options[highlightedIndex].action)
                         }
                         menuOpen = false
                         dragOffset = Offset.Zero
@@ -199,6 +229,7 @@ fun CenterHomeButton(
             RadialMenuOverlay(
                 anchorCenterPx = buttonCenterPx,
                 highlightedIndex = highlightedIndex,
+                options = options,
                 onDismiss = {
                     menuOpen = false
                     dragOffset = Offset.Zero
@@ -217,6 +248,7 @@ fun CenterHomeButton(
 private fun RadialMenuOverlay(
     anchorCenterPx: Offset,
     highlightedIndex: Int,
+    options: List<RadialOption>,
     onDismiss: () -> Unit
 ) {
     val density = LocalDensity.current
@@ -252,7 +284,7 @@ private fun RadialMenuOverlay(
                 .size(width = 48.dp, height = 150.dp)
         )
 
-        RADIAL_OPTIONS.forEachIndexed { index, option ->
+        options.forEachIndexed { index, option ->
             val angleRad = option.angleDeg * PI.toFloat() / 180f
             // Position each item at absolute coordinates relative to the anchor
             val itemCenterX = anchorCenterPx.x + radiusPx * sin(angleRad)
@@ -332,13 +364,13 @@ private fun RadialMenuOverlay(
  * Find the closest radial option index based on drag offset from center.
  * Uses angle from 12 o'clock (straight up), clockwise positive.
  */
-private fun findClosestOption(dragOffset: Offset): Int {
+private fun findClosestOption(dragOffset: Offset, options: List<RadialOption>): Int {
     val dragAngleRad = atan2(dragOffset.x, -dragOffset.y)
     val dragAngleDeg = dragAngleRad * 180f / PI.toFloat()
 
     var closestIndex = -1
     var closestDist = Float.MAX_VALUE
-    RADIAL_OPTIONS.forEachIndexed { index, option ->
+    options.forEachIndexed { index, option ->
         var diff = dragAngleDeg - option.angleDeg
         while (diff > 180f) diff -= 360f
         while (diff < -180f) diff += 360f

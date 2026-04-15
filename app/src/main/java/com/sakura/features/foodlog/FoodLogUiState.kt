@@ -2,6 +2,7 @@ package com.sakura.features.foodlog
 
 import com.sakura.data.food.MealGroup
 import com.sakura.preferences.MacroTargets
+import java.time.LocalDate
 
 /**
  * UI state for the Food Log screen.
@@ -26,3 +27,14 @@ sealed interface FoodLogUiState {
         data class Generic(val message: String) : Error
     }
 }
+
+/**
+ * A single day in the 4-week rolling calendar grid for the food log.
+ * Simpler than the workout CalendarDay — just tracks whether food was logged.
+ */
+data class FoodCalendarDay(
+    val date: LocalDate,
+    val hasEntries: Boolean = false,
+    val isPast: Boolean = true,
+    val isToday: Boolean = false
+)
