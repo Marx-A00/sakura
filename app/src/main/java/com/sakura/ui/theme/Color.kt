@@ -17,11 +17,17 @@ val DarkSurfaceVariant = Color(0xFF2E2E2E) // SurfaceVariant
 val NearWhite = Color(0xFFF5F5F5)     // OnBackground and OnSurface — primary text
 val MediumGray = Color(0xFFAAAAAA)    // OnSurfaceVariant — secondary text
 
+// Light surface palette
+val LightOnBackground = Color(0xFF2C2C2C)     // Primary text on light background
+val LightOnSurfaceVariant = Color(0xFF6B6B6B)  // Secondary text on light background
+val LightSurfaceVariant = Color(0xFFEDE8EB)    // Subtle containers on light background
+
 // Sakura food logging palette (Phase 2)
 val CherryBlossomPink = Color(0xFFC9758B)   // Primary accent — buttons, active tab, save
 val PaleSakura = Color(0xFFF5DDE5)           // Light accent — auto-calc highlight, badges
 val DeepRose = Color(0xFFA25670)             // Text on pink backgrounds
 val WarmBrown = Color(0xFFB8A089)            // Secondary — carbs bar
 val ForestGreen = Color(0xFF3B5D44)          // Protein bar, positive indicators (sparingly)
+val WorkoutBlue = Color(0xFF5B8FA8)          // Workout ring on Progress screen
 val WarmCream = Color(0xFFF5F4F1)            // Base background
 val WhiteCard = Color(0xFFFFFFFF)            // Card surfaces

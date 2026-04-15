@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -45,6 +46,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -122,9 +124,12 @@ fun FoodLogScreen(
         }
     }
 
-    // Radial menu "Add Entry" trigger
+    // Radial menu "Add Entry" trigger — track last-handled value so
+    // re-entering composition (navigating back to this tab) doesn't re-fire.
+    var lastHandledTrigger by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(addEntryTrigger) {
-        if (addEntryTrigger > 0) {
+        if (addEntryTrigger > lastHandledTrigger) {
+            lastHandledTrigger = addEntryTrigger
             editingEntry = null
             saveToLibraryToggle = false
             showEntrySheet = true
@@ -318,6 +323,24 @@ fun FoodLogScreen(
                                             onDelete = { viewModel.deleteEntry(mealLabel, entry.id) },
                                             onSaveToLibrary = { viewModel.saveToLibrary(entry) }
                                         )
+                                    }
+                                }
+
+                                if (canEdit) {
+                                    item(key = "add_food_$mealLabel") {
+                                        TextButton(
+                                            onClick = {
+                                                viewModel.updateDraftMealLabel(mealLabel)
+                                                editingEntry = null
+                                                saveToLibraryToggle = false
+                                                showEntrySheet = true
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp)
+                                        ) {
+                                            Text("+ Add Food", color = CherryBlossomPink)
+                                        }
                                     }
                                 }
                             }

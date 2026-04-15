@@ -25,7 +25,10 @@ class MainActivity : ComponentActivity() {
         val prefsRepo = (application as SakuraApplication).prefsRepo
 
         setContent {
-            SakuraTheme {
+            val themeMode by prefsRepo.themeMode
+                .collectAsStateWithLifecycle(initialValue = "DARK")
+
+            SakuraTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // Use initialValue = null to represent "still loading from DataStore".
                     // This prevents a flash where NavHost renders with the wrong start destination.

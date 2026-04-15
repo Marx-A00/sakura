@@ -29,6 +29,14 @@ object WorkoutHistory
 @Serializable
 object Progress
 
+/** Type-safe navigation route for the macro targets sub-screen. */
+@Serializable
+object MacroTargets
+
+/** Type-safe navigation route for the food library screen. */
+@Serializable
+object FoodLibrary
+
 /** Type-safe navigation route for the home/dashboard screen (Phase 4). */
 @Serializable
 object Home

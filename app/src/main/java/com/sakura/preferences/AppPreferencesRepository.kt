@@ -50,6 +50,9 @@ class AppPreferencesRepository(private val context: Context) {
         // User-created exercise library (Phase 3 plan 02)
         val USER_EXERCISES_JSON = stringPreferencesKey("user_exercises_json")
 
+        // Theme
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+
         // Rest timer settings (Phase 7)
         val TIMER_ENABLED = booleanPreferencesKey("rest_timer_enabled")
         val TIMER_AUTO_START = booleanPreferencesKey("rest_timer_auto_start")
@@ -194,6 +197,19 @@ class AppPreferencesRepository(private val context: Context) {
             preferences[MACRO_TARGET_CARBS] = targets.carbs
             preferences[MACRO_TARGET_FAT] = targets.fat
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Theme
+    // -------------------------------------------------------------------------
+
+    /** Theme mode: DARK, LIGHT, or SYSTEM. Defaults to SYSTEM. */
+    val themeMode: Flow<String> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[THEME_MODE] ?: "DARK" }
+
+    suspend fun setThemeMode(mode: String) {
+        context.appDataStore.edit { it[THEME_MODE] = mode }
     }
 
     // -------------------------------------------------------------------------

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,12 +50,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sakura.di.AppContainer
 import com.sakura.features.dashboard.DashboardScreen
 import com.sakura.features.dashboard.DashboardViewModel
+import com.sakura.features.foodlibrary.FoodLibraryScreen
+import com.sakura.features.foodlibrary.FoodLibraryViewModel
 import com.sakura.features.foodlog.FoodLogScreen
 import com.sakura.features.foodlog.FoodLogViewModel
 import com.sakura.features.onboarding.OnboardingScreen
 import com.sakura.features.progress.ProgressScreen
+import com.sakura.features.progress.ProgressViewModel
 import com.sakura.features.onboarding.OnboardingViewModel
 import com.sakura.features.settings.MacroTargetsScreen
+import com.sakura.features.settings.SettingsScreen
 import com.sakura.features.workoutlog.WorkoutHistoryScreen
 import com.sakura.features.workoutlog.WorkoutLogScreen
 import com.sakura.features.workoutlog.WorkoutLogViewModel
@@ -106,7 +112,7 @@ fun AppNavHost(
                             // Food page actions
                             RadialAction.FOOD_ADD_ENTRY -> addFoodEntryTrigger++
                             RadialAction.FOOD_FROM_LIBRARY -> {} // placeholder
-                            RadialAction.FOOD_QUICK_ADD -> {} // placeholder
+                            RadialAction.FOOD_LIBRARY -> navController.navigate(FoodLibrary)
                             // Workout page actions
                             RadialAction.WORKOUT_ADD_EXERCISE -> {} // placeholder
                             RadialAction.WORKOUT_FROM_TEMPLATE -> {} // placeholder
@@ -162,8 +168,28 @@ fun AppNavHost(
             }
 
             composable<Settings> {
+                SettingsScreen(
+                    prefsRepo = appContainer.prefsRepo,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToMacros = { navController.navigate(MacroTargets) }
+                )
+            }
+
+            composable<MacroTargets> {
                 MacroTargetsScreen(
                     prefsRepo = appContainer.prefsRepo,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable<FoodLibrary> {
+                val foodLibraryViewModel: FoodLibraryViewModel = viewModel(
+                    factory = FoodLibraryViewModel.factory(
+                        foodRepo = appContainer.foodRepository
+                    )
+                )
+                FoodLibraryScreen(
+                    viewModel = foodLibraryViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -184,7 +210,14 @@ fun AppNavHost(
             }
 
             composable<Progress> {
-                ProgressScreen()
+                val progressViewModel: ProgressViewModel = viewModel(
+                    factory = ProgressViewModel.factory(
+                        foodRepo = appContainer.foodRepository,
+                        workoutRepo = appContainer.workoutRepository,
+                        prefsRepo = appContainer.prefsRepo
+                    )
+                )
+                ProgressScreen(viewModel = progressViewModel)
             }
 
             composable<WorkoutHistory> {
@@ -220,15 +253,35 @@ private fun SakuraBottomBar(
     onRadialAction: (RadialAction) -> Unit
 ) {
     val barHeight = 64.dp
-    val branchOverflow = 86.dp // branch is 150dp, bar is 64dp → 86dp overflow
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .height(barHeight + branchOverflow)
+            // Render at full height (bar + branch) so the branch is tappable,
+            // but report only the bar height to the Scaffold so content isn't
+            // pushed up by the branch overflow.
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(
+                    constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+                )
+                val reportedHeight = barHeight.roundToPx()
+                layout(placeable.width, reportedHeight) {
+                    // Anchor the bottom of the full-height content to the bottom
+                    // of the reported area — the branch overflows upward.
+                    placeable.place(0, reportedHeight - placeable.height)
+                }
+            }
     ) {
-        // Gray bar background — only the bottom portion
+        // Flat fill behind the rounded corners so the background can't peek through
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(barHeight - 20.dp)
+                .align(Alignment.BottomCenter)
+                .background(color = MaterialTheme.colorScheme.surfaceContainer)
+        )
+        // Rounded bar overlay on top
         Box(
             modifier = Modifier
                 .fillMaxWidth()

@@ -1,8 +1,11 @@
 package com.sakura.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+
 
 private val SakuraDarkColorScheme = darkColorScheme(
     primary = Rose400,
@@ -19,15 +22,40 @@ private val SakuraDarkColorScheme = darkColorScheme(
     onSurfaceVariant = MediumGray,
 )
 
+private val SakuraLightColorScheme = lightColorScheme(
+    primary = Rose400,
+    onPrimary = WhiteCard,
+    primaryContainer = PaleSakura,
+    onPrimaryContainer = DeepRose,
+    secondary = CherryBlossomPink,
+    onSecondary = WhiteCard,
+    background = WarmCream,
+    onBackground = LightOnBackground,
+    surface = WhiteCard,
+    onSurface = LightOnBackground,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    surfaceContainer = LightSurfaceVariant,
+)
+
 /**
- * Sakura app theme. Dark theme only for v1 — warm pink/rose identity on dark backgrounds.
+ * Sakura app theme. Supports dark, light, and system-follow modes.
+ *
+ * @param themeMode one of "DARK", "LIGHT", or "SYSTEM"
  */
 @Composable
 fun SakuraTheme(
+    themeMode: String = "DARK",
     content: @Composable () -> Unit
 ) {
+    val useDark = when (themeMode) {
+        "LIGHT" -> false
+        "SYSTEM" -> isSystemInDarkTheme()
+        else -> true
+    }
+
     MaterialTheme(
-        colorScheme = SakuraDarkColorScheme,
+        colorScheme = if (useDark) SakuraDarkColorScheme else SakuraLightColorScheme,
         typography = Typography,
         content = content
     )

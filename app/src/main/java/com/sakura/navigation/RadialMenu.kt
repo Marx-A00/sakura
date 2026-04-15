@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Icon
@@ -68,7 +69,7 @@ enum class RadialAction {
     // Default navigation actions
     NAV_FOOD, NAV_EXERCISE, NAV_SETTINGS,
     // Food page actions
-    FOOD_ADD_ENTRY, FOOD_FROM_LIBRARY, FOOD_QUICK_ADD,
+    FOOD_ADD_ENTRY, FOOD_FROM_LIBRARY, FOOD_LIBRARY,
     // Workout page actions
     WORKOUT_ADD_EXERCISE, WORKOUT_FROM_TEMPLATE, WORKOUT_LOG_WEIGHT,
 }
@@ -92,7 +93,7 @@ private val DEFAULT_OPTIONS = listOf(
 private val FOOD_OPTIONS = listOf(
     RadialOption(RadialAction.FOOD_ADD_ENTRY, "Add Entry", Icons.Filled.Add, -40f),
     RadialOption(RadialAction.FOOD_FROM_LIBRARY, "From Library", Icons.Filled.Restaurant, 0f),
-    RadialOption(RadialAction.FOOD_QUICK_ADD, "Quick Add", Icons.Filled.FitnessCenter, 40f),
+    RadialOption(RadialAction.FOOD_LIBRARY, "Food Library", Icons.Filled.MenuBook, 40f),
 )
 
 private val WORKOUT_OPTIONS = listOf(
