@@ -51,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -120,9 +121,14 @@ fun WorkoutLogScreen(
     var showTemplatePicker by rememberSaveable { mutableStateOf(false) }
     val templatePickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Open template picker when radial menu triggers it
+    // Open template picker when radial menu triggers it — track last-handled
+    // value so re-entering composition (navigating back) doesn't re-fire.
+    var lastHandledTrigger by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(fromTemplateTrigger) {
-        if (fromTemplateTrigger > 0) showTemplatePicker = true
+        if (fromTemplateTrigger > lastHandledTrigger) {
+            lastHandledTrigger = fromTemplateTrigger
+            showTemplatePicker = true
+        }
     }
 
     // Exercise picker sheet
