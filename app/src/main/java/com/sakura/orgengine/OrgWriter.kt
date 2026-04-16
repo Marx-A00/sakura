@@ -151,4 +151,37 @@ object OrgWriter {
         if (templates.templates.isNotEmpty()) sb.append("\n")
         return sb.toString()
     }
+
+    /**
+     * Serialize a complete [OrgWorkoutTemplateFile] to org-mode text.
+     * Writes the "* Workout Templates" heading followed by each template as level-2,
+     * with exercises as level-3. File ends with a single newline.
+     */
+    fun writeWorkoutTemplates(templates: OrgWorkoutTemplateFile): String {
+        val sb = StringBuilder()
+        sb.append(OrgSchema.WORKOUT_TEMPLATES_HEADING)
+        templates.templates.forEach { template ->
+            sb.append("\n")
+            sb.append(OrgSchema.formatWorkoutTemplateHeading(
+                com.sakura.data.workout.UserWorkoutTemplate(
+                    id = template.id,
+                    name = template.name,
+                    exercises = emptyList() // only need id + name for heading
+                )
+            ))
+            template.exercises.forEach { exercise ->
+                sb.append("\n")
+                sb.append(OrgSchema.formatWorkoutTemplateExercise(
+                    name = exercise.name,
+                    categoryLabel = exercise.categoryLabel,
+                    muscleGroups = exercise.muscleGroups,
+                    targetSets = exercise.targetSets,
+                    targetReps = exercise.targetReps,
+                    targetHoldSecs = exercise.targetHoldSecs
+                ))
+            }
+        }
+        if (templates.templates.isNotEmpty()) sb.append("\n")
+        return sb.toString()
+    }
 }

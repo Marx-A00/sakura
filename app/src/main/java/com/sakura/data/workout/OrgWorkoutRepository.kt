@@ -65,6 +65,7 @@ class OrgWorkoutRepository(
 
     companion object {
         const val WORKOUT_LOG_FILE = "workout-log.org"
+        const val WORKOUT_TEMPLATES_FILE = "workout-templates.org"
     }
 
     // =========================================================================
@@ -324,6 +325,66 @@ class OrgWorkoutRepository(
             serializable.map { it.toLibraryExercise() }
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    // =========================================================================
+    // User workout template persistence (workout-templates.org)
+    // =========================================================================
+
+    override suspend fun loadWorkoutTemplates(): List<UserWorkoutTemplate> {
+        return try {
+            val content = syncBackend.readFile(WORKOUT_TEMPLATES_FILE)
+            if (content.isBlank()) return emptyList()
+            OrgParser.parseWorkoutTemplates(content).templates.map { it.toUserWorkoutTemplate() }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    override suspend fun saveWorkoutTemplate(template: UserWorkoutTemplate): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val content = try { syncBackend.readFile(WORKOUT_TEMPLATES_FILE) } catch (_: Exception) { "" }
+                    val templateFile = if (content.isBlank()) {
+                        com.sakura.orgengine.OrgWorkoutTemplateFile(emptyList())
+                    } else {
+                        OrgParser.parseWorkoutTemplates(content)
+                    }
+                    val newOrg = template.toOrgWorkoutTemplate()
+                    val existingIndex = templateFile.templates.indexOfFirst { it.id == template.id }
+                    val updatedTemplates = templateFile.templates.toMutableList()
+                    if (existingIndex >= 0) {
+                        updatedTemplates[existingIndex] = newOrg
+                    } else {
+                        updatedTemplates.add(newOrg)
+                    }
+                    val updatedFile = com.sakura.orgengine.OrgWorkoutTemplateFile(updatedTemplates)
+                    syncBackend.writeFile(WORKOUT_TEMPLATES_FILE, OrgWriter.writeWorkoutTemplates(updatedFile))
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
+    override suspend fun deleteWorkoutTemplate(templateId: String): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val content = try { syncBackend.readFile(WORKOUT_TEMPLATES_FILE) } catch (_: Exception) { "" }
+                    if (content.isBlank()) return@withContext Result.success(Unit)
+                    val templateFile = OrgParser.parseWorkoutTemplates(content)
+                    val updatedTemplates = templateFile.templates.filter { it.id != templateId }
+                    val updatedFile = com.sakura.orgengine.OrgWorkoutTemplateFile(updatedTemplates)
+                    syncBackend.writeFile(WORKOUT_TEMPLATES_FILE, OrgWriter.writeWorkoutTemplates(updatedFile))
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
         }
     }
 
@@ -658,3 +719,40 @@ private fun OrgSetEntry.toSetLog(): SetLog = SetLog(
     durationMin = this.durationMin,
     distanceKm = this.distanceKm
 )
+
+// =============================================================================
+// User workout template conversion
+// =============================================================================
+
+private fun UserWorkoutTemplate.toOrgWorkoutTemplate(): com.sakura.orgengine.OrgWorkoutTemplate =
+    com.sakura.orgengine.OrgWorkoutTemplate(
+        id = this.id,
+        name = this.name,
+        exercises = this.exercises.map { ex ->
+            com.sakura.orgengine.OrgWorkoutTemplateExercise(
+                name = ex.name,
+                categoryLabel = ex.category.label,
+                muscleGroups = ex.muscleGroups.joinToString(", "),
+                targetSets = ex.targetSets,
+                targetReps = ex.targetReps,
+                targetHoldSecs = ex.targetHoldSecs
+            )
+        }
+    )
+
+private fun com.sakura.orgengine.OrgWorkoutTemplate.toUserWorkoutTemplate(): UserWorkoutTemplate =
+    UserWorkoutTemplate(
+        id = this.id,
+        name = this.name,
+        exercises = this.exercises.map { ex ->
+            TemplateExercise(
+                name = ex.name,
+                category = ExerciseCategory.fromLabel(ex.categoryLabel),
+                muscleGroups = if (ex.muscleGroups.isBlank()) emptyList()
+                    else ex.muscleGroups.split(", ").map { it.trim() },
+                targetSets = ex.targetSets,
+                targetReps = ex.targetReps,
+                targetHoldSecs = ex.targetHoldSecs
+            )
+        }
+    )

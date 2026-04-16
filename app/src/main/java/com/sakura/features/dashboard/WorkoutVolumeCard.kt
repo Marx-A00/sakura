@@ -40,6 +40,8 @@ import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesian
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import com.sakura.ui.theme.CherryBlossomPink
 import com.sakura.ui.theme.ForestGreen
 import java.time.format.TextStyle
@@ -216,9 +218,11 @@ private fun VolumeChart(
         bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = valueFormatter)
     )
 
-    CartesianChartHost(
-        chart = chart,
-        modelProducer = modelProducer,
-        modifier = modifier
-    )
+    ProvideVicoTheme(rememberM3VicoTheme()) {
+        CartesianChartHost(
+            chart = chart,
+            modelProducer = modelProducer,
+            modifier = modifier
+        )
+    }
 }

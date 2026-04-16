@@ -513,4 +513,105 @@ object OrgParser {
 
         return OrgTemplateFile(templates = templates)
     }
+
+    // -------------------------------------------------------------------------
+    // Workout templates (workout-templates.org)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Parse workout-templates.org content into an [OrgWorkoutTemplateFile].
+     * Structure mirrors [parseTemplates] — level-2 templates with :id: drawer,
+     * level-3 exercise items with :category: and :muscle_groups: drawers.
+     */
+    fun parseWorkoutTemplates(content: String): OrgWorkoutTemplateFile {
+        if (content.isBlank()) return OrgWorkoutTemplateFile(templates = emptyList())
+
+        val templates = mutableListOf<OrgWorkoutTemplate>()
+
+        var currentTemplateId: String? = null
+        var currentTemplateName: String? = null
+        var currentExercises = mutableListOf<OrgWorkoutTemplateExercise>()
+
+        var currentItemName: String? = null
+        var inPropertyDrawer = false
+        var drawerProperties = mutableMapOf<String, String>()
+        var inTemplateDrawer = false
+
+        fun flushCurrentTemplate() {
+            val id = currentTemplateId
+            val name = currentTemplateName
+            if (id != null && name != null) {
+                templates.add(OrgWorkoutTemplate(id = id, name = name, exercises = currentExercises.toList()))
+            }
+            currentTemplateId = null
+            currentTemplateName = null
+            currentExercises = mutableListOf()
+        }
+
+        for (line in content.lines()) {
+            when {
+                // Level-1 heading — skip
+                line.startsWith("* ") && !line.startsWith("** ") -> { /* skip */ }
+
+                // Level-2 template heading
+                OrgSchema.TEMPLATE_HEADING_REGEX.matches(line) -> {
+                    flushCurrentTemplate()
+                    val match = OrgSchema.TEMPLATE_HEADING_REGEX.find(line)!!
+                    currentTemplateName = match.groupValues[1]
+                    currentItemName = null
+                    drawerProperties = mutableMapOf()
+                    inTemplateDrawer = false
+                }
+
+                // Level-3 exercise heading
+                OrgSchema.TEMPLATE_ITEM_HEADING_REGEX.matches(line) -> {
+                    val match = OrgSchema.TEMPLATE_ITEM_HEADING_REGEX.find(line)!!
+                    currentItemName = match.groupValues[1]
+                    drawerProperties = mutableMapOf()
+                    inTemplateDrawer = false
+                }
+
+                // Property drawer open
+                line.trim() == OrgSchema.PROPERTIES_START -> {
+                    inPropertyDrawer = true
+                    inTemplateDrawer = (currentItemName == null && currentTemplateName != null && currentTemplateId == null)
+                }
+
+                // Property drawer close
+                line.trim() == OrgSchema.PROPERTIES_END && inPropertyDrawer -> {
+                    inPropertyDrawer = false
+                    if (inTemplateDrawer) {
+                        currentTemplateId = drawerProperties[OrgSchema.PROP_ID]
+                        inTemplateDrawer = false
+                    } else {
+                        val itemName = currentItemName
+                        if (itemName != null) {
+                            val exercise = OrgWorkoutTemplateExercise(
+                                name = itemName,
+                                categoryLabel = drawerProperties[OrgSchema.PROP_CATEGORY] ?: "weighted",
+                                muscleGroups = drawerProperties[OrgSchema.PROP_MUSCLE_GROUPS] ?: "",
+                                targetSets = drawerProperties[OrgSchema.PROP_TARGET_SETS]?.toIntOrNull() ?: 0,
+                                targetReps = drawerProperties[OrgSchema.PROP_TARGET_REPS]?.toIntOrNull() ?: 0,
+                                targetHoldSecs = drawerProperties[OrgSchema.PROP_TARGET_HOLD_SECS]?.toIntOrNull() ?: 0
+                            )
+                            currentExercises.add(exercise)
+                        }
+                        currentItemName = null
+                    }
+                    drawerProperties = mutableMapOf()
+                }
+
+                // Property key-value
+                inPropertyDrawer && OrgSchema.PROPERTY_REGEX.matches(line) -> {
+                    val match = OrgSchema.PROPERTY_REGEX.find(line)!!
+                    drawerProperties[match.groupValues[1]] = match.groupValues[2]
+                }
+
+                else -> { /* skip */ }
+            }
+        }
+
+        flushCurrentTemplate()
+        return OrgWorkoutTemplateFile(templates = templates)
+    }
 }

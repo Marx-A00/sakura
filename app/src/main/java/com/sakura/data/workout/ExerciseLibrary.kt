@@ -111,6 +111,21 @@ object ExerciseLibrary {
         _userExercises.addAll(exercises)
     }
 
+    /** Remove a user-created exercise by name. No-op if not found or if built-in. */
+    @Synchronized
+    fun deleteUserExercise(name: String) {
+        _userExercises.removeAll { it.name == name }
+    }
+
+    /** Replace a user-created exercise by old name. No-op if not found. */
+    @Synchronized
+    fun updateUserExercise(oldName: String, updated: LibraryExercise) {
+        val index = _userExercises.indexOfFirst { it.name == oldName }
+        if (index >= 0) {
+            _userExercises[index] = updated.copy(isBuiltIn = false)
+        }
+    }
+
     /** Snapshot of user exercises (returns a copy to avoid mutation by caller). */
     fun userExercises(): List<LibraryExercise> = _userExercises.toList()
 }

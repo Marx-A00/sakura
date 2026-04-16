@@ -71,7 +71,7 @@ enum class RadialAction {
     // Food page actions
     FOOD_ADD_ENTRY, FOOD_FROM_LIBRARY, FOOD_LIBRARY,
     // Workout page actions
-    WORKOUT_ADD_EXERCISE, WORKOUT_FROM_TEMPLATE, WORKOUT_LOG_WEIGHT,
+    WORKOUT_ADD_EXERCISE, WORKOUT_FROM_TEMPLATE, WORKOUT_LIBRARY,
 }
 
 /** Identifies which page is active, so radial menu can show relevant actions. */
@@ -98,8 +98,8 @@ private val FOOD_OPTIONS = listOf(
 
 private val WORKOUT_OPTIONS = listOf(
     RadialOption(RadialAction.WORKOUT_ADD_EXERCISE, "Add Exercise", Icons.Filled.FitnessCenter, -40f),
-    RadialOption(RadialAction.WORKOUT_FROM_TEMPLATE, "From Template", Icons.Filled.DateRange, 0f),
-    RadialOption(RadialAction.WORKOUT_LOG_WEIGHT, "Log Weight", Icons.Filled.MonitorWeight, 40f),
+    RadialOption(RadialAction.WORKOUT_FROM_TEMPLATE, "Saved Workouts", Icons.Filled.DateRange, 0f),
+    RadialOption(RadialAction.WORKOUT_LIBRARY, "Exercise Library", Icons.Filled.MenuBook, 40f),
 )
 
 private fun optionsForContext(context: RadialContext): List<RadialOption> = when (context) {

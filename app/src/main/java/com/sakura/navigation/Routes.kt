@@ -37,6 +37,14 @@ object MacroTargets
 @Serializable
 object FoodLibrary
 
+/** Type-safe navigation route for the exercise library screen. */
+@Serializable
+object ExerciseLibrary
+
 /** Type-safe navigation route for the home/dashboard screen (Phase 4). */
 @Serializable
 object Home
+
+/** Type-safe navigation route for the workout template creator/editor. */
+@Serializable
+data class WorkoutTemplateCreator(val templateId: String? = null)

@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Sakura" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- NumberPicker text color that adapts to ?android:attr/textColorPrimary -->
+    <style name="ThemedNumberPicker">
+        <item name="android:textColorPrimary">?android:attr/colorForeground</item>
+    </style>
 </resources>

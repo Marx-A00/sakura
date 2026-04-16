@@ -50,6 +50,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sakura.di.AppContainer
 import com.sakura.features.dashboard.DashboardScreen
 import com.sakura.features.dashboard.DashboardViewModel
+import com.sakura.features.exerciselibrary.ExerciseLibraryScreen
+import com.sakura.features.exerciselibrary.ExerciseLibraryViewModel
 import com.sakura.features.foodlibrary.FoodLibraryScreen
 import com.sakura.features.foodlibrary.FoodLibraryViewModel
 import com.sakura.features.foodlog.FoodLogScreen
@@ -63,6 +65,9 @@ import com.sakura.features.settings.SettingsScreen
 import com.sakura.features.workoutlog.WorkoutHistoryScreen
 import com.sakura.features.workoutlog.WorkoutLogScreen
 import com.sakura.features.workoutlog.WorkoutLogViewModel
+import com.sakura.features.templatecreator.WorkoutTemplateCreatorScreen
+import com.sakura.features.templatecreator.WorkoutTemplateCreatorViewModel
+import androidx.navigation.toRoute
 import com.sakura.ui.theme.CherryBlossomPink
 
 @Composable
@@ -83,8 +88,9 @@ fun AppNavHost(
         else -> RadialContext.DEFAULT
     }
 
-    // Trigger for page-specific radial actions (increment to fire)
+    // Triggers for page-specific radial actions (increment to fire)
     var addFoodEntryTrigger by remember { mutableIntStateOf(0) }
+    var fromTemplateTrigger by remember { mutableIntStateOf(0) }
 
     fun navigateToTab(route: Any) {
         navController.navigate(route) {
@@ -115,8 +121,8 @@ fun AppNavHost(
                             RadialAction.FOOD_LIBRARY -> navController.navigate(FoodLibrary)
                             // Workout page actions
                             RadialAction.WORKOUT_ADD_EXERCISE -> {} // placeholder
-                            RadialAction.WORKOUT_FROM_TEMPLATE -> {} // placeholder
-                            RadialAction.WORKOUT_LOG_WEIGHT -> {} // placeholder
+                            RadialAction.WORKOUT_FROM_TEMPLATE -> fromTemplateTrigger++
+                            RadialAction.WORKOUT_LIBRARY -> navController.navigate(ExerciseLibrary)
                         }
                     }
                 )
@@ -194,6 +200,35 @@ fun AppNavHost(
                 )
             }
 
+            composable<ExerciseLibrary> {
+                val exerciseLibraryViewModel: ExerciseLibraryViewModel = viewModel(
+                    factory = ExerciseLibraryViewModel.factory(
+                        workoutRepo = appContainer.workoutRepository
+                    )
+                )
+                ExerciseLibraryScreen(
+                    viewModel = exerciseLibraryViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToTemplateCreator = { templateId ->
+                        navController.navigate(WorkoutTemplateCreator(templateId = templateId))
+                    }
+                )
+            }
+
+            composable<WorkoutTemplateCreator> { backStackEntry ->
+                val route = backStackEntry.toRoute<WorkoutTemplateCreator>()
+                val creatorViewModel: WorkoutTemplateCreatorViewModel = viewModel(
+                    factory = WorkoutTemplateCreatorViewModel.factory(
+                        workoutRepo = appContainer.workoutRepository,
+                        templateId = route.templateId
+                    )
+                )
+                WorkoutTemplateCreatorScreen(
+                    viewModel = creatorViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
             composable<WorkoutLog> {
                 val workoutLogViewModel: WorkoutLogViewModel = viewModel(
                     factory = WorkoutLogViewModel.factory(
@@ -205,7 +240,8 @@ fun AppNavHost(
                     viewModel = workoutLogViewModel,
                     onNavigateToHistory = {
                         navController.navigate(WorkoutHistory)
-                    }
+                    },
+                    fromTemplateTrigger = fromTemplateTrigger
                 )
             }
 

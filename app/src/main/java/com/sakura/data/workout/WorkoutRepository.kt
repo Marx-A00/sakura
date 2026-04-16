@@ -107,4 +107,17 @@ interface WorkoutRepository {
 
     /** Load user exercises from persistent storage (DataStore JSON). */
     suspend fun loadUserExercises(): List<LibraryExercise>
+
+    // -------------------------------------------------------------------------
+    // User workout template persistence
+    // -------------------------------------------------------------------------
+
+    /** Load all user-created workout templates from workout-templates.org. */
+    suspend fun loadWorkoutTemplates(): List<UserWorkoutTemplate>
+
+    /** Save a new template (or replace if id matches). */
+    suspend fun saveWorkoutTemplate(template: UserWorkoutTemplate): Result<Unit>
+
+    /** Delete a template by its UUID id. */
+    suspend fun deleteWorkoutTemplate(templateId: String): Result<Unit>
 }

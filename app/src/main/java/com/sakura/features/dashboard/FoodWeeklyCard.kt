@@ -38,6 +38,8 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import com.sakura.ui.theme.CherryBlossomPink
 import com.sakura.ui.theme.ForestGreen
 import com.sakura.ui.theme.WarmBrown
@@ -218,11 +220,13 @@ private fun MacroChart(
         bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = valueFormatter)
     )
 
-    CartesianChartHost(
-        chart = chart,
-        modelProducer = modelProducer,
-        modifier = modifier
-    )
+    ProvideVicoTheme(rememberM3VicoTheme()) {
+        CartesianChartHost(
+            chart = chart,
+            modelProducer = modelProducer,
+            modifier = modifier
+        )
+    }
 }
 
 @Composable

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +70,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.ExerciseLog
 import com.sakura.data.workout.SetLog
-import com.sakura.data.workout.SplitDay
 import com.sakura.ui.theme.CherryBlossomPink
 import com.sakura.ui.theme.DeepRose
 import com.sakura.ui.theme.ForestGreen
@@ -98,7 +99,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun WorkoutLogScreen(
     viewModel: WorkoutLogViewModel,
-    onNavigateToHistory: () -> Unit
+    onNavigateToHistory: () -> Unit,
+    fromTemplateTrigger: Int = 0
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -108,13 +110,20 @@ fun WorkoutLogScreen(
     val activeTimerExerciseId by viewModel.activeTimerExerciseId.collectAsStateWithLifecycle()
     val pendingTimer by viewModel.pendingTimerStart.collectAsStateWithLifecycle()
     val bgNotifEnabled by viewModel.bgNotificationEnabled.collectAsStateWithLifecycle()
+    val userTemplates by viewModel.userTemplates.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Date picker
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
-    // Template picker dialog
+    // Template picker sheet
     var showTemplatePicker by rememberSaveable { mutableStateOf(false) }
+    val templatePickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Open template picker when radial menu triggers it
+    LaunchedEffect(fromTemplateTrigger) {
+        if (fromTemplateTrigger > 0) showTemplatePicker = true
+    }
 
     // Exercise picker sheet
     var showExercisePicker by rememberSaveable { mutableStateOf(false) }
@@ -243,12 +252,18 @@ fun WorkoutLogScreen(
         }
     }
 
-    // Template picker dialog
+    // Template picker sheet
     if (showTemplatePicker) {
-        TemplatePickerDialog(
-            onSelect = { splitDay ->
+        TemplatePickerSheet(
+            sheetState = templatePickerSheetState,
+            userTemplates = userTemplates,
+            onSelectBuiltIn = { splitDay ->
                 showTemplatePicker = false
                 viewModel.loadTemplate(splitDay)
+            },
+            onSelectUserTemplate = { template ->
+                showTemplatePicker = false
+                viewModel.loadUserTemplate(template)
             },
             onDismiss = { showTemplatePicker = false }
         )
@@ -456,20 +471,20 @@ private fun EmptyDayContent(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Pick a template to get started, or add exercises one at a time.",
+                    "Pick a saved workout to get started, or add exercises one at a time.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Spacer(Modifier.height(32.dp))
 
-                // Start from Template — green filled button (matches mockup)
+                // Start from Saved Workouts — green filled button (matches mockup)
                 Button(
                     onClick = onStartFromTemplate,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
                 ) {
-                    Text("Start from Template", color = Color.White)
+                    Text("Start from Saved Workouts", color = Color.White)
                 }
                 Spacer(Modifier.height(12.dp))
 
@@ -690,7 +705,8 @@ private fun ExerciseCard(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     CategoryBadge(category = dayExercise.category)
                 }
@@ -809,17 +825,34 @@ private fun ExerciseCard(
 
             Spacer(Modifier.height(10.dp))
 
-            // "+ Add Set" button (green text, centered)
-            TextButton(
-                onClick = onAddSet,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(contentColor = ForestGreen)
-            ) {
-                Text(
-                    "+ Add Set",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
+            if (editing) {
+                // Edit mode action bar
+                FilledTonalButton(
+                    onClick = { editing = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("Done Editing", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                }
+            } else {
+                // "+ Add Set" button (green text, centered)
+                TextButton(
+                    onClick = onAddSet,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = ForestGreen)
+                ) {
+                    Text(
+                        "+ Log Set",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                }
             }
 
             // Exercise volume summary (only when sets are logged)
@@ -994,41 +1027,6 @@ private fun CategoryBadge(category: ExerciseCategory) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-}
-
-// ---------------------------------------------------------------------------
-// Template picker dialog — lists all 4 split days
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun TemplatePickerDialog(
-    onSelect: (SplitDay) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Start from Template") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SplitDay.entries.forEach { splitDay ->
-                    TextButton(
-                        onClick = { onSelect(splitDay) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = splitDay.displayName,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Start
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
 }
 
 // ---------------------------------------------------------------------------

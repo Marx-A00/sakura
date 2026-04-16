@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -85,6 +86,10 @@ fun FoodLogScreen(
     val recentItems by viewModel.recentItems.collectAsStateWithLifecycle()
     val libraryItems by viewModel.libraryItems.collectAsStateWithLifecycle()
     val templates by viewModel.templates.collectAsStateWithLifecycle()
+
+    val libraryNames = remember(libraryItems) {
+        libraryItems.map { it.name.trim().lowercase() }.toSet()
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -315,6 +320,7 @@ fun FoodLogScreen(
                                         FoodEntryRow(
                                             entry = entry,
                                             canEdit = canEdit,
+                                            isInLibrary = entry.name.trim().lowercase() in libraryNames,
                                             onEdit = {
                                                 editingEntry = entry
                                                 saveToLibraryToggle = false
@@ -672,6 +678,7 @@ private fun MealSectionHeader(
 private fun FoodEntryRow(
     entry: FoodEntry,
     canEdit: Boolean,
+    isInLibrary: Boolean = false,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onSaveToLibrary: () -> Unit
@@ -721,10 +728,30 @@ private fun FoodEntryRow(
                         leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
                         onClick = { showMenu = false; onDelete() }
                     )
-                    DropdownMenuItem(
-                        text = { Text("Save to Library") },
-                        onClick = { showMenu = false; onSaveToLibrary() }
-                    )
+                    if (isInLibrary) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "In Library",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4CAF50)
+                                )
+                            },
+                            enabled = false,
+                            onClick = {}
+                        )
+                    } else {
+                        DropdownMenuItem(
+                            text = { Text("Save to Library") },
+                            onClick = { showMenu = false; onSaveToLibrary() }
+                        )
+                    }
                 }
             }
         }

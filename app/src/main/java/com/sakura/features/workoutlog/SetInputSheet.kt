@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -221,29 +223,31 @@ fun SetInputSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Weight", style = MaterialTheme.typography.labelMedium)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                FilterChip(
-                                    selected = unit == "kg",
-                                    onClick = { unit = "kg" },
-                                    label = { Text("kg") }
-                                )
-                                FilterChip(
-                                    selected = unit == "lbs",
-                                    onClick = { unit = "lbs" },
-                                    label = { Text("lbs") }
-                                )
-                            }
-                            TextButton(onClick = { showPlateCalc = !showPlateCalc }) {
-                                Text(
-                                    text = if (showPlateCalc) "type it" else "plates",
-                                    fontSize = 12.sp
-                                )
-                            }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilterChip(
+                                selected = unit == "kg",
+                                onClick = { unit = "kg" },
+                                label = { Text("kg") }
+                            )
+                            FilterChip(
+                                selected = unit == "lbs",
+                                onClick = { unit = "lbs" },
+                                label = { Text("lbs") }
+                            )
                         }
+                    }
+
+                    IconButton(
+                        onClick = { showPlateCalc = !showPlateCalc },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.FitnessCenter,
+                            contentDescription = if (showPlateCalc) "Type weight" else "Plate calculator",
+                            tint = if (showPlateCalc) CherryBlossomPink
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
 
                     if (showPlateCalc) {
@@ -251,7 +255,8 @@ fun SetInputSheet(
                             unit = unit,
                             onTotalChanged = { total ->
                                 weightText = formatPrefillWeight(total)
-                            }
+                            },
+                            onConfirm = { showPlateCalc = false }
                         )
                     } else {
                         OutlinedTextField(
@@ -551,7 +556,8 @@ private const val KG_BAR = 20.0
 @Composable
 private fun PlateCalculator(
     unit: String,
-    onTotalChanged: (Double) -> Unit
+    onTotalChanged: (Double) -> Unit,
+    onConfirm: () -> Unit
 ) {
     val plates = if (unit == "kg") KG_PLATES else LBS_PLATES
     val barWeight = if (unit == "kg") KG_BAR else LBS_BAR
@@ -633,16 +639,32 @@ private fun PlateCalculator(
                 }
             }
 
-            // Total display
+            // Total display + confirm
             Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Total: ${formatPrefillWeight(total())} $unit",
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = CherryBlossomPink
-            )
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Total: ${formatPrefillWeight(total())} $unit",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CherryBlossomPink
+                )
+                Spacer(Modifier.width(12.dp))
+                IconButton(
+                    onClick = onConfirm,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Check,
+                        contentDescription = "Confirm weight",
+                        tint = ForestGreen,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }

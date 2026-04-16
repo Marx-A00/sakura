@@ -2,6 +2,7 @@ package com.sakura.orgengine
 
 import com.sakura.data.food.FoodLibraryItem
 import com.sakura.data.food.MealTemplate
+import com.sakura.data.workout.UserWorkoutTemplate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -293,6 +294,67 @@ object OrgSchema {
         sb.append(":$PROP_CALORIES: ${item.calories}\n")
         item.servingSize?.let { sb.append(":$PROP_SERVING_SIZE: $it\n") }
         item.servingUnit?.let { sb.append(":$PROP_SERVING_UNIT: $it\n") }
+        sb.append(PROPERTIES_END)
+        return sb.toString()
+    }
+
+    // -------------------------------------------------------------------------
+    // User workout templates (workout-templates.org)
+    // -------------------------------------------------------------------------
+
+    /** Level-1 heading for the workout templates file. */
+    const val WORKOUT_TEMPLATES_HEADING = "* Workout Templates"
+
+    /** Property key for muscle groups (comma-separated). */
+    const val PROP_MUSCLE_GROUPS = "muscle_groups"
+
+    /** Workout template exercise target property keys. */
+    const val PROP_TARGET_SETS = "target_sets"
+    const val PROP_TARGET_REPS = "target_reps"
+    const val PROP_TARGET_HOLD_SECS = "target_hold_secs"
+
+    /**
+     * Serializes a workout template level-2 heading with its :id: property drawer.
+     *
+     * Example output:
+     *   ** Push Day
+     *   :PROPERTIES:
+     *   :id: abc-123
+     *   :END:
+     */
+    fun formatWorkoutTemplateHeading(template: UserWorkoutTemplate): String =
+        "** ${template.name}\n" +
+        "$PROPERTIES_START\n" +
+        ":$PROP_ID: ${template.id}\n" +
+        PROPERTIES_END
+
+    /**
+     * Serializes a workout template exercise to level-3 heading + property drawer.
+     * Only writes :muscle_groups: when non-empty.
+     *
+     * Example output:
+     *   *** Bench Press
+     *   :PROPERTIES:
+     *   :category: weighted
+     *   :muscle_groups: Chest, Triceps
+     *   :END:
+     */
+    fun formatWorkoutTemplateExercise(
+        name: String,
+        categoryLabel: String,
+        muscleGroups: String,
+        targetSets: Int = 0,
+        targetReps: Int = 0,
+        targetHoldSecs: Int = 0
+    ): String {
+        val sb = StringBuilder()
+        sb.append("*** $name\n")
+        sb.append("$PROPERTIES_START\n")
+        sb.append(":$PROP_CATEGORY: $categoryLabel\n")
+        if (muscleGroups.isNotBlank()) sb.append(":$PROP_MUSCLE_GROUPS: $muscleGroups\n")
+        if (targetSets > 0) sb.append(":$PROP_TARGET_SETS: $targetSets\n")
+        if (targetReps != 0) sb.append(":$PROP_TARGET_REPS: $targetReps\n")
+        if (targetHoldSecs > 0) sb.append(":$PROP_TARGET_HOLD_SECS: $targetHoldSecs\n")
         sb.append(PROPERTIES_END)
         return sb.toString()
     }

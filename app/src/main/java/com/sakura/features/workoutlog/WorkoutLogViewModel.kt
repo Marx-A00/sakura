@@ -17,6 +17,7 @@ import com.sakura.data.workout.ExerciseType
 import com.sakura.data.workout.LibraryExercise
 import com.sakura.data.workout.SetLog
 import com.sakura.data.workout.SplitDay
+import com.sakura.data.workout.UserWorkoutTemplate
 import com.sakura.data.workout.WorkoutRepository
 import com.sakura.data.workout.WorkoutSession
 import com.sakura.data.workout.WorkoutTemplates
@@ -47,6 +48,19 @@ class WorkoutLogViewModel(
     private val prefsRepo: AppPreferencesRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    // -------------------------------------------------------------------------
+    // User templates — loaded once for the template picker
+    // -------------------------------------------------------------------------
+
+    private val _userTemplates = MutableStateFlow<List<UserWorkoutTemplate>>(emptyList())
+    val userTemplates: StateFlow<List<UserWorkoutTemplate>> = _userTemplates.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _userTemplates.value = workoutRepo.loadWorkoutTemplates()
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Date navigation — mirrors FoodLogViewModel pattern
@@ -191,6 +205,25 @@ class WorkoutLogViewModel(
                 workoutRepo.addExercise(date, exerciseLog, splitDay = splitDay.label)
                 // Small delay to ensure unique IDs when iterating rapidly
                 kotlinx.coroutines.delay(2)
+            }
+            _reloadTrigger.value++
+        }
+    }
+
+    fun loadUserTemplate(template: UserWorkoutTemplate) {
+        viewModelScope.launch {
+            val date = _selectedDate.value
+            template.exercises.forEachIndexed { idx, templateEx ->
+                val exerciseType = ExerciseType.fromLabel(templateEx.category.label)
+                val exerciseLog = ExerciseLog(
+                    id = System.currentTimeMillis() + idx,
+                    name = templateEx.name,
+                    exerciseType = exerciseType,
+                    category = templateEx.category,
+                    sets = emptyList()
+                )
+                workoutRepo.addExercise(date, exerciseLog)
+                delay(2)
             }
             _reloadTrigger.value++
         }

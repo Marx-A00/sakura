@@ -145,3 +145,36 @@ data class OrgMealTemplate(
     val name: String,                   // e.g., "Weekday Breakfast"
     val items: List<OrgLibraryEntry>    // items use the same OrgLibraryEntry model
 )
+
+// -------------------------------------------------------------------------
+// User workout template containers
+// -------------------------------------------------------------------------
+
+/**
+ * Top-level container for a parsed workout-templates.org file.
+ * The file has a single "* Workout Templates" heading with templates as level-2 headings.
+ */
+data class OrgWorkoutTemplateFile(val templates: List<OrgWorkoutTemplate>)
+
+/**
+ * A single user workout template with a stable UUID id and a list of exercises.
+ * Template exercises are level-3 headings under the level-2 template heading.
+ */
+data class OrgWorkoutTemplate(
+    val id: String,
+    val name: String,
+    val exercises: List<OrgWorkoutTemplateExercise>
+)
+
+/**
+ * An exercise entry within a user workout template.
+ * Stores category label and muscle groups as org-serializable strings.
+ */
+data class OrgWorkoutTemplateExercise(
+    val name: String,
+    val categoryLabel: String,          // e.g., "weighted", "bodyweight"
+    val muscleGroups: String,           // comma-separated, e.g., "Chest, Triceps"
+    val targetSets: Int = 0,
+    val targetReps: Int = 0,
+    val targetHoldSecs: Int = 0
+)
