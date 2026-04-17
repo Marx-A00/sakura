@@ -32,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -62,10 +61,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.data.food.FoodEntry
 import com.sakura.data.food.MealTemplate
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.DeepRose
-import com.sakura.ui.theme.ForestGreen
-import com.sakura.ui.theme.WarmBrown
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -75,7 +71,8 @@ import java.time.ZoneId
 @Composable
 fun FoodLogScreen(
     viewModel: FoodLogViewModel,
-    addEntryTrigger: Int = 0
+    addEntryTrigger: Int = 0,
+    saveDayTemplateTrigger: Int = 0
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
@@ -111,6 +108,10 @@ fun FoodLogScreen(
     var applyTemplateDialogMeal by remember { mutableStateOf<String?>(null) }
     var templateNameInput by remember { mutableStateOf("") }
 
+    // Day template dialog (triggered by radial menu "Save Day")
+    var showSaveDayTemplateDialog by remember { mutableStateOf(false) }
+    var dayTemplateNameInput by remember { mutableStateOf("") }
+
     val isToday = selectedDate == LocalDate.now()
     val isPast = selectedDate.isBefore(LocalDate.now())
     val canEdit = isToday || isEditMode
@@ -141,6 +142,15 @@ fun FoodLogScreen(
         }
     }
 
+    // Radial menu "Save Day" trigger
+    var lastHandledSaveDayTrigger by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(saveDayTemplateTrigger) {
+        if (saveDayTemplateTrigger > lastHandledSaveDayTrigger) {
+            lastHandledSaveDayTrigger = saveDayTemplateTrigger
+            showSaveDayTemplateDialog = true
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -165,7 +175,7 @@ fun FoodLogScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = CherryBlossomPink)
+                            CircularProgressIndicator(color = SakuraTheme.colors.brand)
                         }
                     }
                 }
@@ -273,7 +283,7 @@ fun FoodLogScreen(
                                     TextButton(onClick = { viewModel.toggleEditMode() }) {
                                         Text(
                                             text = if (isEditMode) "Done Editing" else "Edit Day",
-                                            color = CherryBlossomPink
+                                            color = SakuraTheme.colors.brand
                                         )
                                     }
                                 }
@@ -345,7 +355,7 @@ fun FoodLogScreen(
                                                 .fillMaxWidth()
                                                 .padding(horizontal = 16.dp)
                                         ) {
-                                            Text("+ Add Food", color = CherryBlossomPink)
+                                            Text("+ Add Food", color = SakuraTheme.colors.brand)
                                         }
                                     }
                                 }
@@ -449,12 +459,12 @@ fun FoodLogScreen(
     templateDialogMeal?.let { mealLabel ->
         AlertDialog(
             onDismissRequest = { templateDialogMeal = null; templateNameInput = "" },
-            title = { Text("Save as Template") },
+            title = { Text("Save Meal") },
             text = {
                 OutlinedTextField(
                     value = templateNameInput,
                     onValueChange = { templateNameInput = it },
-                    label = { Text("Template name") },
+                    label = { Text("Meal name") },
                     singleLine = true
                 )
             },
@@ -481,10 +491,10 @@ fun FoodLogScreen(
     applyTemplateDialogMeal?.let { mealLabel ->
         AlertDialog(
             onDismissRequest = { applyTemplateDialogMeal = null },
-            title = { Text("Apply Template") },
+            title = { Text("Load Saved Meal") },
             text = {
                 if (templates.isEmpty()) {
-                    Text("No templates saved yet.")
+                    Text("No saved meals yet.")
                 } else {
                     Column {
                         templates.forEach { template ->
@@ -507,6 +517,40 @@ fun FoodLogScreen(
             }
         )
     }
+
+    // Save day as template dialog
+    if (showSaveDayTemplateDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveDayTemplateDialog = false; dayTemplateNameInput = "" },
+            title = { Text("Save Day as Template") },
+            text = {
+                OutlinedTextField(
+                    value = dayTemplateNameInput,
+                    onValueChange = { dayTemplateNameInput = it },
+                    label = { Text("Template name") },
+                    placeholder = { Text("e.g. Standard Weekday") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (dayTemplateNameInput.isNotBlank()) {
+                            viewModel.saveDayAsTemplate(dayTemplateNameInput)
+                        }
+                        showSaveDayTemplateDialog = false
+                        dayTemplateNameInput = ""
+                    }
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveDayTemplateDialog = false; dayTemplateNameInput = "" }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 }
 
 // -------------------------------------------------------------------------
@@ -530,28 +574,28 @@ private fun MacroProgressSection(state: FoodLogUiState.Success) {
                 label = "Calories",
                 logged = state.totalCalories,
                 target = state.targets.calories,
-                color = CherryBlossomPink,
+                color = SakuraTheme.colors.calorieBar,
                 unit = "kcal"
             )
             MacroBar(
                 label = "Protein",
                 logged = state.totalProtein,
                 target = state.targets.protein,
-                color = ForestGreen,
+                color = SakuraTheme.colors.proteinBar,
                 unit = "g"
             )
             MacroBar(
                 label = "Carbs",
                 logged = state.totalCarbs,
                 target = state.targets.carbs,
-                color = WarmBrown,
+                color = SakuraTheme.colors.carbsBar,
                 unit = "g"
             )
             MacroBar(
                 label = "Fat",
                 logged = state.totalFat,
                 target = state.targets.fat,
-                color = DeepRose,
+                color = SakuraTheme.colors.fatBar,
                 unit = "g"
             )
         }
@@ -649,11 +693,11 @@ private fun MealSectionHeader(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Save as template") },
+                                text = { Text("Save meal") },
                                 onClick = { showMenu = false; onSaveTemplate() }
                             )
                             DropdownMenuItem(
-                                text = { Text("Apply template") },
+                                text = { Text("Load saved meal") },
                                 onClick = { showMenu = false; onApplyTemplate() }
                             )
                         }
@@ -740,7 +784,7 @@ private fun FoodEntryRow(
                                 Icon(
                                     Icons.Filled.Check,
                                     contentDescription = null,
-                                    tint = Color(0xFF4CAF50)
+                                    tint = SakuraTheme.colors.accent
                                 )
                             },
                             enabled = false,
@@ -766,4 +810,5 @@ private fun buildMacroSummary(entry: FoodEntry): String {
     if (entry.fat > 0) parts.add("F: ${entry.fat}g")
     return parts.joinToString("  ")
 }
+
 

@@ -57,8 +57,7 @@ import com.sakura.data.workout.ExerciseLibrary
 import com.sakura.data.workout.TemplateExercise
 import com.sakura.data.workout.toTemplateExercise
 import com.sakura.features.workoutlog.ExercisePickerSheet
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.ForestGreen
+import com.sakura.ui.theme.SakuraTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -116,7 +115,7 @@ fun WorkoutTemplateCreatorScreen(
                     ) {
                         Text(
                             "Save",
-                            color = if (canSave) CherryBlossomPink
+                            color = if (canSave) SakuraTheme.colors.brand
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -132,7 +131,7 @@ fun WorkoutTemplateCreatorScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = CherryBlossomPink)
+                CircularProgressIndicator(color = SakuraTheme.colors.brand)
             }
             return@Scaffold
         }
@@ -194,7 +193,7 @@ fun WorkoutTemplateCreatorScreen(
                     onClick = { showExercisePicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("+ Add Exercise", color = ForestGreen)
+                    Text("+ Add Exercise", color = SakuraTheme.colors.accent)
                 }
             }
         }

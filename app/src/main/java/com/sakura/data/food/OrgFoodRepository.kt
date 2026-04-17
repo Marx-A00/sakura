@@ -41,6 +41,7 @@ class OrgFoodRepository(
         const val FOOD_LOG_FILE = "food-log.org"
         const val LIBRARY_FILE = "food-library.org"
         const val TEMPLATES_FILE = "meal-templates.org"
+        const val DAY_TEMPLATES_FILE = "day-templates.json"
     }
 
     // =========================================================================
@@ -281,6 +282,81 @@ class OrgFoodRepository(
                     val updatedTemplates = templateFile.templates.filter { it.id != templateId }
                     val updatedFile = templateFile.copy(templates = updatedTemplates)
                     syncBackend.writeFile(TEMPLATES_FILE, OrgWriter.writeTemplates(updatedFile))
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Day templates (full day of eating)
+    // =========================================================================
+
+    override suspend fun loadDayTemplates(): List<DayTemplate> {
+        return try {
+            val content = syncBackend.readFile(DAY_TEMPLATES_FILE)
+            DayTemplate.listFromJson(content)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    override suspend fun saveDayTemplate(template: DayTemplate): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val content = try { syncBackend.readFile(DAY_TEMPLATES_FILE) } catch (_: Exception) { "" }
+                    val existing = DayTemplate.listFromJson(content).toMutableList()
+                    val idx = existing.indexOfFirst { it.id == template.id }
+                    if (idx >= 0) existing[idx] = template else existing.add(template)
+                    syncBackend.writeFile(DAY_TEMPLATES_FILE, DayTemplate.listToJson(existing))
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
+    override suspend fun applyDayTemplate(date: LocalDate, template: DayTemplate): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val baseTime = System.currentTimeMillis()
+                    var offset = 0
+                    for (meal in template.meals) {
+                        for (item in meal.items) {
+                            val entry = FoodEntry(
+                                id = baseTime + offset++,
+                                name = item.name,
+                                protein = item.protein,
+                                carbs = item.carbs,
+                                fat = item.fat,
+                                calories = item.calories,
+                                servingSize = item.servingSize,
+                                servingUnit = item.servingUnit,
+                                notes = null
+                            )
+                            addEntryInternal(date, meal.label, entry)
+                        }
+                    }
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
+    override suspend fun deleteDayTemplate(templateId: String): Result<Unit> {
+        return fileMutex.withLock {
+            withContext(ioDispatcher) {
+                try {
+                    val content = try { syncBackend.readFile(DAY_TEMPLATES_FILE) } catch (_: Exception) { "" }
+                    val existing = DayTemplate.listFromJson(content).filter { it.id != templateId }
+                    syncBackend.writeFile(DAY_TEMPLATES_FILE, DayTemplate.listToJson(existing))
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)

@@ -120,4 +120,11 @@ interface WorkoutRepository {
 
     /** Delete a template by its UUID id. */
     suspend fun deleteWorkoutTemplate(templateId: String): Result<Unit>
+
+    /**
+     * Seed the 4 built-in templates as editable UserWorkoutTemplates.
+     * Returns the list of seeded templates (with their assigned UUIDs).
+     * No-op if templates with matching names already exist.
+     */
+    suspend fun seedBuiltinTemplates(): List<UserWorkoutTemplate>
 }

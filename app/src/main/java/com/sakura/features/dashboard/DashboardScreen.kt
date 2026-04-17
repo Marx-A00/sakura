@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -31,9 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -61,7 +59,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = CherryBlossomPink)
+            CircularProgressIndicator(color = SakuraTheme.colors.brand)
         }
         return
     }
@@ -184,7 +182,7 @@ private fun DashboardPagerCard(
                             .padding(horizontal = 3.dp)
                             .size(if (isSelected) 8.dp else 6.dp),
                         shape = CircleShape,
-                        color = if (isSelected) CherryBlossomPink
+                        color = if (isSelected) SakuraTheme.colors.brand
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                     ) {}
                 }

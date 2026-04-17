@@ -40,8 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.data.food.FoodEntry
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.PaleSakura
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 
 private val MEAL_LABELS = listOf("Breakfast", "Lunch", "Dinner", "Snacks")
@@ -191,7 +190,7 @@ fun FoodEntryBottomSheet(
                         },
                         label = { Text(label, fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CherryBlossomPink,
+                            selectedContainerColor = SakuraTheme.colors.brand,
                             selectedLabelColor = Color.White
                         )
                     )
@@ -205,7 +204,7 @@ fun FoodEntryBottomSheet(
                 onClick = onOpenLibrary,
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Text("From Library", color = CherryBlossomPink)
+                Text("From Library", color = SakuraTheme.colors.brand)
             }
 
             // Name field
@@ -286,7 +285,7 @@ fun FoodEntryBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = if (!caloriesOverridden) PaleSakura else Color.Transparent,
+                        color = if (!caloriesOverridden) SakuraTheme.colors.brandLight else Color.Transparent,
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
                     )
             ) {
@@ -298,7 +297,7 @@ fun FoodEntryBottomSheet(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = if (!caloriesOverridden) {
-                        { Text("Auto-calculated", color = com.sakura.ui.theme.DeepRose, fontSize = 11.sp) }
+                        { Text("Auto-calculated", color = SakuraTheme.colors.brandDark, fontSize = 11.sp) }
                     } else null
                 )
             }
@@ -327,7 +326,7 @@ fun FoodEntryBottomSheet(
                 Switch(
                     checked = saveToLibrary,
                     onCheckedChange = onSaveToLibraryChanged,
-                    colors = SwitchDefaults.colors(checkedThumbColor = CherryBlossomPink)
+                    colors = SwitchDefaults.colors(checkedThumbColor = SakuraTheme.colors.brand)
                 )
             }
 
@@ -355,7 +354,7 @@ fun FoodEntryBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CherryBlossomPink)
+                colors = ButtonDefaults.buttonColors(containerColor = SakuraTheme.colors.brand)
             ) {
                 Text(
                     text = if (isEditing) "Update" else "Save",

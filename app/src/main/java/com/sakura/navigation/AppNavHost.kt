@@ -68,7 +68,7 @@ import com.sakura.features.workoutlog.WorkoutLogViewModel
 import com.sakura.features.templatecreator.WorkoutTemplateCreatorScreen
 import com.sakura.features.templatecreator.WorkoutTemplateCreatorViewModel
 import androidx.navigation.toRoute
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.SakuraTheme
 
 @Composable
 fun AppNavHost(
@@ -90,6 +90,7 @@ fun AppNavHost(
 
     // Triggers for page-specific radial actions (increment to fire)
     var addFoodEntryTrigger by remember { mutableIntStateOf(0) }
+    var saveDayTemplateTrigger by remember { mutableIntStateOf(0) }
     var fromTemplateTrigger by remember { mutableIntStateOf(0) }
 
     fun navigateToTab(route: Any) {
@@ -117,7 +118,7 @@ fun AppNavHost(
                             RadialAction.NAV_SETTINGS -> navigateToTab(Settings)
                             // Food page actions
                             RadialAction.FOOD_ADD_ENTRY -> addFoodEntryTrigger++
-                            RadialAction.FOOD_FROM_LIBRARY -> {} // placeholder
+                            RadialAction.FOOD_SAVE_DAY -> saveDayTemplateTrigger++
                             RadialAction.FOOD_LIBRARY -> navController.navigate(FoodLibrary)
                             // Workout page actions
                             RadialAction.WORKOUT_ADD_EXERCISE -> {} // placeholder
@@ -169,7 +170,8 @@ fun AppNavHost(
                 )
                 FoodLogScreen(
                     viewModel = foodLogViewModel,
-                    addEntryTrigger = addFoodEntryTrigger
+                    addEntryTrigger = addFoodEntryTrigger,
+                    saveDayTemplateTrigger = saveDayTemplateTrigger
                 )
             }
 
@@ -203,7 +205,8 @@ fun AppNavHost(
             composable<ExerciseLibrary> {
                 val exerciseLibraryViewModel: ExerciseLibraryViewModel = viewModel(
                     factory = ExerciseLibraryViewModel.factory(
-                        workoutRepo = appContainer.workoutRepository
+                        workoutRepo = appContainer.workoutRepository,
+                        prefsRepo = appContainer.prefsRepo
                     )
                 )
                 ExerciseLibraryScreen(
@@ -390,7 +393,7 @@ private fun NavTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val contentColor = if (selected) CherryBlossomPink else MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = if (selected) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier

@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -49,8 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.SetLog
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.ForestGreen
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 
 /**
@@ -187,6 +189,8 @@ fun SetInputSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -227,12 +231,20 @@ fun SetInputSheet(
                             FilterChip(
                                 selected = unit == "kg",
                                 onClick = { unit = "kg" },
-                                label = { Text("kg") }
+                                label = { Text("kg") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             )
                             FilterChip(
                                 selected = unit == "lbs",
                                 onClick = { unit = "lbs" },
-                                label = { Text("lbs") }
+                                label = { Text("lbs") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             )
                         }
                     }
@@ -244,7 +256,7 @@ fun SetInputSheet(
                         Icon(
                             Icons.Filled.FitnessCenter,
                             contentDescription = if (showPlateCalc) "Type weight" else "Plate calculator",
-                            tint = if (showPlateCalc) CherryBlossomPink
+                            tint = if (showPlateCalc) SakuraTheme.colors.brand
                                    else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
@@ -271,7 +283,8 @@ fun SetInputSheet(
                             )
                         )
                     }
-                    // Reps — wheel picker or manual text entry
+                    // Reps — hidden during plate calculator
+                    if (!showPlateCalc)
                     RepsInput(
                         repsValue = repsValue,
                         repsText = repsText,
@@ -399,7 +412,7 @@ fun SetInputSheet(
                     dismiss()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = SakuraTheme.colors.accent)
             ) {
                 Text("Log Set", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.SemiBold)
             }
@@ -482,7 +495,7 @@ private fun RpeSelector(
                     },
                     label = { Text(rpe.toString()) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = CherryBlossomPink,
+                        selectedContainerColor = SakuraTheme.colors.brand,
                         selectedLabelColor = androidx.compose.ui.graphics.Color.White
                     )
                 )
@@ -505,19 +518,7 @@ private fun RepsInput(
     onToggleMode: () -> Unit
 ) {
     Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Reps", style = MaterialTheme.typography.labelMedium)
-            TextButton(onClick = onToggleMode) {
-                Text(
-                    text = if (isManualEntry) "use wheel" else "type it",
-                    fontSize = 12.sp
-                )
-            }
-        }
+        Text("Reps", style = MaterialTheme.typography.labelMedium)
 
         if (isManualEntry) {
             OutlinedTextField(
@@ -643,26 +644,32 @@ private fun PlateCalculator(
             Spacer(Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Total: ${formatPrefillWeight(total())} $unit",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = CherryBlossomPink
+                    color = SakuraTheme.colors.brand
                 )
-                Spacer(Modifier.width(12.dp))
-                IconButton(
+                Button(
                     onClick = onConfirm,
-                    modifier = Modifier.size(32.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SakuraTheme.colors.accent
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 12.dp, vertical = 4.dp
+                    )
                 ) {
                     Icon(
                         Icons.Filled.Check,
                         contentDescription = "Confirm weight",
-                        tint = ForestGreen,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(18.dp)
                     )
+                    Spacer(Modifier.width(4.dp))
+                    Text("Done", fontSize = 13.sp)
                 }
             }
         }

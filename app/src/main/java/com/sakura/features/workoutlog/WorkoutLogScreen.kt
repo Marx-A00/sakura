@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.DropdownMenu
@@ -71,10 +72,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.ExerciseLog
 import com.sakura.data.workout.SetLog
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.DeepRose
-import com.sakura.ui.theme.ForestGreen
-import com.sakura.ui.theme.WarmCream
+import com.sakura.data.workout.UserWorkoutTemplate
+import com.sakura.ui.theme.SakuraTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -112,6 +111,7 @@ fun WorkoutLogScreen(
     val pendingTimer by viewModel.pendingTimerStart.collectAsStateWithLifecycle()
     val bgNotifEnabled by viewModel.bgNotificationEnabled.collectAsStateWithLifecycle()
     val userTemplates by viewModel.userTemplates.collectAsStateWithLifecycle()
+    val scheduledWorkout by viewModel.scheduledWorkout.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Date picker
@@ -174,7 +174,7 @@ fun WorkoutLogScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    CircularProgressIndicator(color = CherryBlossomPink)
+                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
                 }
             }
 
@@ -227,11 +227,14 @@ fun WorkoutLogScreen(
                     EmptyDayContent(
                         calendarDays = calendarDays,
                         selectedDate = selectedDate,
+                        scheduledWorkout = scheduledWorkout,
                         onDateSelected = { viewModel.navigateToDate(it) },
                         onDateLabelClick = { showDatePicker = true },
                         onNavigateToHistory = onNavigateToHistory,
-                        onStartFromTemplate = { showTemplatePicker = true },
-                        onAddExercise = { showExercisePicker = true }
+                        onStartScheduled = {
+                            scheduledWorkout?.let { viewModel.loadUserTemplate(it) }
+                        },
+                        onGoOffScript = { showExercisePicker = true }
                     )
                 } else {
                     ActiveDayContent(
@@ -362,7 +365,7 @@ fun WorkoutLogScreen(
             text = { Text("You just set a new ${pr.prType} PR on ${pr.exerciseName}!") },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissPrNotification() }) {
-                    Text("Awesome!", color = CherryBlossomPink)
+                    Text("Awesome!", color = SakuraTheme.colors.brand)
                 }
             }
         )
@@ -428,11 +431,12 @@ fun WorkoutLogScreen(
 private fun EmptyDayContent(
     calendarDays: List<CalendarDay>,
     selectedDate: LocalDate,
+    scheduledWorkout: UserWorkoutTemplate?,
     onDateSelected: (LocalDate) -> Unit,
     onDateLabelClick: () -> Unit,
     onNavigateToHistory: () -> Unit,
-    onStartFromTemplate: () -> Unit,
-    onAddExercise: () -> Unit
+    onStartScheduled: () -> Unit,
+    onGoOffScript: () -> Unit
 ) {
     androidx.compose.foundation.lazy.LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -455,7 +459,7 @@ private fun EmptyDayContent(
             }
         }
 
-        // Empty state body
+        // Empty state body — adapts based on schedule
         item {
             Column(
                 modifier = Modifier
@@ -463,43 +467,70 @@ private fun EmptyDayContent(
                     .padding(horizontal = 16.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "No workout logged",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Pick a saved workout to get started, or add exercises one at a time.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Spacer(Modifier.height(32.dp))
+                if (scheduledWorkout != null) {
+                    // Scheduled workout day
+                    Icon(
+                        imageVector = Icons.Filled.FitnessCenter,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = SakuraTheme.colors.accent.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        scheduledWorkout.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${scheduledWorkout.exercises.size} exercises",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(32.dp))
 
-                // Start from Saved Workouts — green filled button (matches mockup)
-                Button(
-                    onClick = onStartFromTemplate,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
-                ) {
-                    Text("Start from Saved Workouts", color = Color.White)
-                }
-                Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = onStartScheduled,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SakuraTheme.colors.accent)
+                    ) {
+                        Text("Start ${scheduledWorkout.name}", color = Color.White)
+                    }
+                    Spacer(Modifier.height(12.dp))
 
-                // Add Exercise — outlined button (matches mockup)
-                OutlinedButton(
-                    onClick = onAddExercise,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("+ Add Exercise")
+                    OutlinedButton(
+                        onClick = onGoOffScript,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Go off script")
+                    }
+                } else {
+                    // Rest day
+                    Text(
+                        "\uD83C\uDF38",
+                        fontSize = 48.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Rest day",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "No workout scheduled. Rest up and recover.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(Modifier.height(32.dp))
+
+                    OutlinedButton(
+                        onClick = onGoOffScript,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Work out anyway")
+                    }
                 }
             }
         }
@@ -604,7 +635,7 @@ private fun ActiveDayContent(
                 OutlinedButton(
                     onClick = onToggleComplete,
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (state.isComplete) ForestGreen else MaterialTheme.colorScheme.onSurface
+                        contentColor = if (state.isComplete) SakuraTheme.colors.accent else MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     if (state.isComplete) {
@@ -851,7 +882,7 @@ private fun ExerciseCard(
                 TextButton(
                     onClick = onAddSet,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(contentColor = ForestGreen)
+                    colors = ButtonDefaults.textButtonColors(contentColor = SakuraTheme.colors.accent)
                 ) {
                     Text(
                         "+ Log Set",

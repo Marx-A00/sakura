@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 
 
 private val SakuraDarkColorScheme = darkColorScheme(
@@ -14,6 +15,8 @@ private val SakuraDarkColorScheme = darkColorScheme(
     onPrimaryContainer = Rose200,
     secondary = Rose200,
     onSecondary = RoseOnPrimary,
+    secondaryContainer = Rose900,
+    onSecondaryContainer = Rose200,
     background = DarkBackground,
     onBackground = NearWhite,
     surface = DarkSurface,
@@ -27,25 +30,33 @@ private val SakuraLightColorScheme = lightColorScheme(
     onPrimary = WhiteCard,
     primaryContainer = PaleSakura,
     onPrimaryContainer = DeepRose,
-    secondary = CherryBlossomPink,
+    secondary = MutedSage,
     onSecondary = WhiteCard,
+    secondaryContainer = PaleSakura,
+    onSecondaryContainer = DeepRose,
     background = WarmCream,
     onBackground = LightOnBackground,
-    surface = WhiteCard,
+    surface = WarmCream,
     onSurface = LightOnBackground,
-    surfaceVariant = LightSurfaceVariant,
+    surfaceVariant = CreamVariant,
     onSurfaceVariant = LightOnSurfaceVariant,
-    surfaceContainer = LightSurfaceVariant,
+    surfaceContainer = WarmCream,
+    surfaceContainerLow = WarmCream,
+    surfaceContainerHigh = CreamVariant,
+    surfaceContainerHighest = CreamVariant,
 )
 
 /**
  * Sakura app theme. Supports dark, light, and system-follow modes.
+ * Provides [SakuraTheme.colors] via [LocalSakuraColors] for semantic color access.
  *
- * @param themeMode one of "DARK", "LIGHT", or "SYSTEM"
+ * @param themeMode  one of "DARK", "LIGHT", or "SYSTEM"
+ * @param palette    the active [SakuraPalette] (defaults to [ClassicPalette])
  */
 @Composable
 fun SakuraTheme(
     themeMode: String = "DARK",
+    palette: SakuraPalette = ClassicPalette,
     content: @Composable () -> Unit
 ) {
     val useDark = when (themeMode) {
@@ -54,9 +65,13 @@ fun SakuraTheme(
         else -> true
     }
 
-    MaterialTheme(
-        colorScheme = if (useDark) SakuraDarkColorScheme else SakuraLightColorScheme,
-        typography = Typography,
-        content = content
-    )
+    val sakuraColors = if (useDark) palette.dark else palette.light
+
+    CompositionLocalProvider(LocalSakuraColors provides sakuraColors) {
+        MaterialTheme(
+            colorScheme = if (useDark) SakuraDarkColorScheme else SakuraLightColorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

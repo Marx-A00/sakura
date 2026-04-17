@@ -40,10 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.R
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.DeepRose
-import com.sakura.ui.theme.ForestGreen
-import com.sakura.ui.theme.WorkoutBlue
+import com.sakura.ui.theme.SakuraTheme
 
 @Composable
 fun ProgressScreen(viewModel: ProgressViewModel) {
@@ -51,7 +48,7 @@ fun ProgressScreen(viewModel: ProgressViewModel) {
 
     if (state.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = CherryBlossomPink)
+            CircularProgressIndicator(color = SakuraTheme.colors.brand)
         }
         return
     }
@@ -78,7 +75,7 @@ private fun StreakHeroSection(state: ProgressUiState) {
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        DeepRose.copy(alpha = 0.3f),
+                        SakuraTheme.colors.brandDark.copy(alpha = 0.3f),
                         Color.Transparent
                     ),
                     radius = 400f
@@ -120,13 +117,13 @@ private fun StreakHeroSection(state: ProgressUiState) {
                         modifier = Modifier
                             .size(10.dp)
                             .background(
-                                color = if (logged) CherryBlossomPink
+                                color = if (logged) SakuraTheme.colors.brand
                                 else Color.Transparent,
                                 shape = CircleShape
                             )
                             .border(
                                 width = 1.5.dp,
-                                color = if (logged) CherryBlossomPink
+                                color = if (logged) SakuraTheme.colors.brand
                                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                 shape = CircleShape
                             )
@@ -161,21 +158,21 @@ private fun WeeklyConsistencySection(state: ProgressUiState) {
                 value = state.foodDaysCount,
                 total = 7,
                 label = "Food\nLogged",
-                color = CherryBlossomPink,
+                color = SakuraTheme.colors.brand,
                 modifier = Modifier.weight(1f)
             )
             ConsistencyCard(
                 value = state.workoutDaysCount,
                 total = 7,
                 label = "Workouts",
-                color = WorkoutBlue,
+                color = SakuraTheme.colors.workoutRing,
                 modifier = Modifier.weight(1f)
             )
             ConsistencyCard(
                 value = state.macrosHitDaysCount,
                 total = 7,
                 label = "Macros\nHit",
-                color = ForestGreen,
+                color = SakuraTheme.colors.accent,
                 modifier = Modifier.weight(1f)
             )
         }

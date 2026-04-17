@@ -63,11 +63,6 @@ class OrgWorkoutRepository(
 
     private val fileMutex = Mutex()
 
-    companion object {
-        const val WORKOUT_LOG_FILE = "workout-log.org"
-        const val WORKOUT_TEMPLATES_FILE = "workout-templates.org"
-    }
-
     // =========================================================================
     // Atomic session operations (legacy / batch)
     // =========================================================================
@@ -386,6 +381,88 @@ class OrgWorkoutRepository(
                 }
             }
         }
+    }
+
+    // =========================================================================
+    // Seed built-in templates as editable UserWorkoutTemplates
+    // =========================================================================
+
+    override suspend fun seedBuiltinTemplates(): List<UserWorkoutTemplate> {
+        val existing = loadWorkoutTemplates()
+        val existingNames = existing.map { it.name.lowercase().trim() }.toSet()
+
+        val seeded = mutableListOf<UserWorkoutTemplate>()
+
+        // Built-in split templates converted from hardcoded WorkoutTemplates
+        val builtInMapping = listOf(
+            "Monday — Heavy Compounds" to WorkoutTemplates.MONDAY_LIFT,
+            "Tuesday — Calisthenics" to WorkoutTemplates.TUESDAY_CALISTHENICS,
+            "Thursday — Upper Hypertrophy" to WorkoutTemplates.THURSDAY_LIFT,
+            "Friday — Calisthenics" to WorkoutTemplates.FRIDAY_CALISTHENICS
+        )
+
+        for ((name, template) in builtInMapping) {
+            if (name.lowercase().trim() in existingNames) continue
+            val userTemplate = UserWorkoutTemplate(
+                id = java.util.UUID.randomUUID().toString(),
+                name = name,
+                exercises = template.exercises.map { def ->
+                    TemplateExercise(
+                        name = def.name,
+                        category = def.exerciseType.toCategory(),
+                        muscleGroups = def.muscleGroups,
+                        targetSets = def.targetSets,
+                        targetReps = def.targetReps,
+                        targetHoldSecs = def.targetHoldSecs
+                    )
+                }
+            )
+            saveWorkoutTemplate(userTemplate)
+            seeded.add(userTemplate)
+        }
+
+        // Additional user-defined starter workouts
+        for (template in EXTRA_SEED_TEMPLATES) {
+            if (template.name.lowercase().trim() in existingNames) continue
+            saveWorkoutTemplate(template)
+            seeded.add(template)
+        }
+
+        return seeded
+    }
+
+    companion object {
+        const val WORKOUT_LOG_FILE = "workout-log.org"
+        const val WORKOUT_TEMPLATES_FILE = "workout-templates.org"
+
+        /** Current seed version — bump when adding new templates so re-seed is triggered. */
+        const val SEED_VERSION = 3
+
+        private val EXTRA_SEED_TEMPLATES = listOf(
+            UserWorkoutTemplate(
+                id = "seed-workout-a",
+                name = "Workout A",
+                exercises = listOf(
+                    TemplateExercise("Goblet Squat", ExerciseCategory.WEIGHTED, listOf("Quads", "Core"), targetSets = 5, targetReps = 5),
+                    TemplateExercise("SL DB Glute Bridge", ExerciseCategory.WEIGHTED, listOf("Glutes"), targetSets = 3, targetReps = 10),
+                    TemplateExercise("Pallof Press", ExerciseCategory.WEIGHTED, listOf("Core"), targetSets = 3, targetReps = 20),
+                    TemplateExercise("Suitcase Carry", ExerciseCategory.TIMED, listOf("Core", "Grip"), targetSets = 3, targetHoldSecs = 30),
+                    TemplateExercise("Floor-to-Stand", ExerciseCategory.BODYWEIGHT, listOf("Mobility"), targetSets = 1, targetReps = 5),
+                    TemplateExercise("Russian Twists", ExerciseCategory.BODYWEIGHT, listOf("Core"), targetSets = 3, targetReps = 15)
+                )
+            ),
+            UserWorkoutTemplate(
+                id = "seed-workout-b",
+                name = "Workout B",
+                exercises = listOf(
+                    TemplateExercise("Lunges", ExerciseCategory.BODYWEIGHT, listOf("Quads", "Glutes"), targetSets = 3, targetReps = 10),
+                    TemplateExercise("Assisted Push Ups", ExerciseCategory.BODYWEIGHT, listOf("Chest", "Triceps"), targetSets = 3, targetReps = 10),
+                    TemplateExercise("DB Curls", ExerciseCategory.WEIGHTED, listOf("Biceps"), targetSets = 3, targetReps = 10),
+                    TemplateExercise("Bench Dips", ExerciseCategory.BODYWEIGHT, listOf("Triceps"), targetSets = 3, targetReps = 8),
+                    TemplateExercise("Hollow Body Hold", ExerciseCategory.TIMED, listOf("Core"), targetSets = 3, targetHoldSecs = 25)
+                )
+            )
+        )
     }
 
     // =========================================================================

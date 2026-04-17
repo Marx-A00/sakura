@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -37,6 +39,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,8 +68,10 @@ import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.ExerciseLibrary
 import com.sakura.data.workout.LibraryExercise
 import com.sakura.data.workout.UserWorkoutTemplate
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.data.workout.WorkoutSchedule
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 
 private val LIBRARY_TABS = listOf("Exercises", "Workouts")
 
@@ -80,9 +85,11 @@ fun ExerciseLibraryScreen(
     val exercises by viewModel.filteredExercises.collectAsStateWithLifecycle()
     val allExercises by viewModel.allExercises.collectAsStateWithLifecycle()
     val templates by viewModel.filteredTemplates.collectAsStateWithLifecycle()
+    val allTemplates by viewModel.allTemplates.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val schedule by viewModel.schedule.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = 0) { LIBRARY_TABS.size }
@@ -91,6 +98,7 @@ fun ExerciseLibraryScreen(
     var editingExercise by remember { mutableStateOf<LibraryExercise?>(null) }
     var deleteConfirmExercise by remember { mutableStateOf<LibraryExercise?>(null) }
     var deleteConfirmTemplate by remember { mutableStateOf<UserWorkoutTemplate?>(null) }
+    var showScheduleDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -102,6 +110,12 @@ fun ExerciseLibraryScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showScheduleDialog = true }) {
+                        Icon(
+                            Icons.Filled.CalendarMonth,
+                            contentDescription = "Weekly schedule"
+                        )
+                    }
                     IconButton(onClick = {
                         if (pagerState.currentPage == 0) showCreateExerciseDialog = true
                         else onNavigateToTemplateCreator(null)
@@ -161,7 +175,7 @@ fun ExerciseLibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = CherryBlossomPink)
+                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
                 }
             } else {
                 HorizontalPager(
@@ -256,6 +270,16 @@ fun ExerciseLibraryScreen(
             }
         )
     }
+
+    // Weekly schedule dialog
+    if (showScheduleDialog) {
+        WeeklyScheduleDialog(
+            schedule = schedule,
+            templates = allTemplates,
+            onAssign = { day, templateId -> viewModel.assignTemplateToDay(day, templateId) },
+            onDismiss = { showScheduleDialog = false }
+        )
+    }
 }
 
 // =============================================================================
@@ -283,13 +307,21 @@ private fun ExercisesTab(
             FilterChip(
                 selected = selectedCategory == null,
                 onClick = { onCategorySelected(null) },
-                label = { Text("All") }
+                label = { Text("All") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
             ExerciseCategory.entries.forEach { category ->
                 FilterChip(
                     selected = selectedCategory == category,
                     onClick = { onCategorySelected(category) },
-                    label = { Text(category.displayName) }
+                    label = { Text(category.displayName) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 )
             }
         }
@@ -616,7 +648,7 @@ private fun ExerciseDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save", color = if (name.isNotBlank()) CherryBlossomPink else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {
@@ -625,5 +657,116 @@ private fun ExerciseDialog(
             }
         }
     )
+}
+
+// =============================================================================
+// Weekly Schedule Dialog
+// =============================================================================
+
+private val DAY_LABELS = listOf(
+    DayOfWeek.MONDAY to "Mon",
+    DayOfWeek.TUESDAY to "Tue",
+    DayOfWeek.WEDNESDAY to "Wed",
+    DayOfWeek.THURSDAY to "Thu",
+    DayOfWeek.FRIDAY to "Fri",
+    DayOfWeek.SATURDAY to "Sat",
+    DayOfWeek.SUNDAY to "Sun"
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WeeklyScheduleDialog(
+    schedule: WorkoutSchedule,
+    templates: List<UserWorkoutTemplate>,
+    onAssign: (DayOfWeek, String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Weekly Schedule") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                DAY_LABELS.forEach { (day, label) ->
+                    ScheduleDayRow(
+                        dayLabel = label,
+                        assignedTemplateId = schedule.templateIdFor(day),
+                        templates = templates,
+                        onAssign = { templateId -> onAssign(day, templateId) }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScheduleDayRow(
+    dayLabel: String,
+    assignedTemplateId: String?,
+    templates: List<UserWorkoutTemplate>,
+    onAssign: (String?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val assignedTemplate = templates.find { it.id == assignedTemplateId }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = dayLabel,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp,
+            modifier = Modifier.width(40.dp)
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.weight(1f)
+        ) {
+            OutlinedTextField(
+                value = assignedTemplate?.name ?: "Rest",
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodySmall,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Rest", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    onClick = {
+                        onAssign(null)
+                        expanded = false
+                    }
+                )
+                templates.forEach { template ->
+                    DropdownMenuItem(
+                        text = { Text(template.name) },
+                        onClick = {
+                            onAssign(template.id)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
 

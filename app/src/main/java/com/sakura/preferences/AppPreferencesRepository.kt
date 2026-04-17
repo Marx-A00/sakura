@@ -58,6 +58,17 @@ class AppPreferencesRepository(private val context: Context) {
         val TIMER_AUTO_START = booleanPreferencesKey("rest_timer_auto_start")
         val TIMER_NOTIFICATION_TYPE = stringPreferencesKey("rest_timer_notif_type")
         val TIMER_BG_NOTIFICATION = booleanPreferencesKey("rest_timer_bg_notif")
+
+        // Workout schedule — JSON map of DayOfWeek ordinal → template UUID
+        val WORKOUT_SCHEDULE_JSON = stringPreferencesKey("workout_schedule_json")
+
+        // Version of seeded templates — bump when adding new starter templates
+        val SEED_TEMPLATES_VERSION = intPreferencesKey("seed_templates_version")
+
+        // Color palette — preset ID ("CLASSIC", "SAGE", etc.) or "CUSTOM"
+        val COLOR_PALETTE = stringPreferencesKey("color_palette")
+        // Custom accent hex — only used when COLOR_PALETTE == "CUSTOM"
+        val CUSTOM_ACCENT_HEX = stringPreferencesKey("custom_accent_hex")
     }
 
     /** The user-configured Syncthing folder path, or null if not yet set. */
@@ -303,6 +314,54 @@ class AppPreferencesRepository(private val context: Context) {
 
     suspend fun setTimerBgNotification(enabled: Boolean) {
         context.appDataStore.edit { it[TIMER_BG_NOTIFICATION] = enabled }
+    }
+
+    // -------------------------------------------------------------------------
+    // Workout schedule (DayOfWeek → template UUID)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Raw JSON string for the workout schedule.
+     * Format: {"1":"uuid-1","4":"uuid-2"} where keys are DayOfWeek ordinal (1=Mon..7=Sun).
+     * Empty/missing days are rest days.
+     */
+    val workoutScheduleJson: Flow<String> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[WORKOUT_SCHEDULE_JSON] ?: "" }
+
+    suspend fun saveWorkoutScheduleJson(json: String) {
+        context.appDataStore.edit { it[WORKOUT_SCHEDULE_JSON] = json }
+    }
+
+    /** Version of seeded templates. 0 = never seeded. */
+    val seedTemplatesVersion: Flow<Int> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[SEED_TEMPLATES_VERSION] ?: 0 }
+
+    suspend fun setSeedTemplatesVersion(version: Int) {
+        context.appDataStore.edit { it[SEED_TEMPLATES_VERSION] = version }
+    }
+
+    // -------------------------------------------------------------------------
+    // Color palette
+    // -------------------------------------------------------------------------
+
+    /** Active palette ID. Defaults to "SAGE". */
+    val colorPalette: Flow<String> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[COLOR_PALETTE] ?: "SAGE" }
+
+    /** Custom accent hex (e.g. "#7A8B6F"). Only used when palette == "CUSTOM". */
+    val customAccentHex: Flow<String> = context.appDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[CUSTOM_ACCENT_HEX] ?: "#7A8B6F" }
+
+    suspend fun setColorPalette(paletteId: String) {
+        context.appDataStore.edit { it[COLOR_PALETTE] = paletteId }
+    }
+
+    suspend fun setCustomAccentHex(hex: String) {
+        context.appDataStore.edit { it[CUSTOM_ACCENT_HEX] = hex }
     }
 
     // -------------------------------------------------------------------------

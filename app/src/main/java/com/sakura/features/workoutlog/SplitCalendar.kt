@@ -42,11 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakura.data.workout.SplitDay
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.DeepRose
-import com.sakura.ui.theme.ForestGreen
 import com.sakura.ui.theme.MediumGray
-import com.sakura.ui.theme.WarmBrown
+import com.sakura.ui.theme.SakuraTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -241,7 +238,7 @@ private fun CalendarCell(
                 imageVector = Icons.Filled.Check,
                 contentDescription = "Complete",
                 modifier = Modifier.size(10.dp),
-                tint = ForestGreen
+                tint = SakuraTheme.colors.accent
             )
         } else {
             Spacer(Modifier.height(10.dp))
@@ -274,14 +271,15 @@ private fun splitShortLabel(label: String): String {
 }
 
 /** Color coding by split type. */
+@Composable
 private fun splitColor(splitDay: SplitDay?): Color {
     return when {
         splitDay == null -> MediumGray
-        splitDay.label.contains("lift") -> CherryBlossomPink
-        splitDay.label.contains("calisthenics") -> ForestGreen
-        splitDay.label.contains("push") -> CherryBlossomPink
-        splitDay.label.contains("pull") -> ForestGreen
-        splitDay.label.contains("leg") -> WarmBrown
-        else -> DeepRose
+        splitDay.label.contains("lift") -> SakuraTheme.colors.splitA
+        splitDay.label.contains("calisthenics") -> SakuraTheme.colors.splitB
+        splitDay.label.contains("push") -> SakuraTheme.colors.splitA
+        splitDay.label.contains("pull") -> SakuraTheme.colors.splitB
+        splitDay.label.contains("leg") -> SakuraTheme.colors.splitC
+        else -> SakuraTheme.colors.splitDefault
     }
 }

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.sakura.data.food.DayTemplate
+import com.sakura.data.food.DayTemplateMeal
 import com.sakura.data.food.FoodEntry
 import com.sakura.data.food.FoodLibraryItem
 import com.sakura.data.food.FoodRepository
@@ -153,6 +155,9 @@ class FoodLogViewModel(
 
     private val _templates = MutableStateFlow<List<MealTemplate>>(emptyList())
     val templates: StateFlow<List<MealTemplate>> = _templates.asStateFlow()
+
+    private val _dayTemplates = MutableStateFlow<List<DayTemplate>>(emptyList())
+    val dayTemplates: StateFlow<List<DayTemplate>> = _dayTemplates.asStateFlow()
 
     // -------------------------------------------------------------------------
     // Draft fields backed by SavedStateHandle (SYNC-05 draft persistence)
@@ -313,6 +318,7 @@ class FoodLogViewModel(
             _recentItems.value = foodRepo.loadRecentItems()
             _libraryItems.value = foodRepo.loadLibrary()
             _templates.value = foodRepo.loadTemplates()
+            _dayTemplates.value = foodRepo.loadDayTemplates()
         }
     }
 
@@ -351,6 +357,56 @@ class FoodLogViewModel(
         viewModelScope.launch {
             foodRepo.applyTemplate(_selectedDate.value, mealLabel, template)
             reloadDay()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Day template operations
+    // -------------------------------------------------------------------------
+
+    fun saveDayAsTemplate(templateName: String) {
+        viewModelScope.launch {
+            val currentState = uiState.value
+            if (currentState !is FoodLogUiState.Success) return@launch
+            val meals = currentState.meals.filter { it.entries.isNotEmpty() }
+            if (meals.isEmpty()) return@launch
+            val template = DayTemplate(
+                id = java.util.UUID.randomUUID().toString(),
+                name = templateName,
+                meals = meals.map { meal ->
+                    DayTemplateMeal(
+                        label = meal.label,
+                        items = meal.entries.map { entry ->
+                            FoodLibraryItem(
+                                id = "",
+                                name = entry.name,
+                                protein = entry.protein,
+                                carbs = entry.carbs,
+                                fat = entry.fat,
+                                calories = entry.calories,
+                                servingSize = entry.servingSize,
+                                servingUnit = entry.servingUnit
+                            )
+                        }
+                    )
+                }
+            )
+            foodRepo.saveDayTemplate(template)
+            loadLibraryData()
+        }
+    }
+
+    fun applyDayTemplate(template: DayTemplate) {
+        viewModelScope.launch {
+            foodRepo.applyDayTemplate(_selectedDate.value, template)
+            reloadDay()
+        }
+    }
+
+    fun deleteDayTemplate(templateId: String) {
+        viewModelScope.launch {
+            foodRepo.deleteDayTemplate(templateId)
+            loadLibraryData()
         }
     }
 

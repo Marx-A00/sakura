@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.sakura.data.food.DayTemplate
 import com.sakura.data.food.FoodLibraryItem
 import com.sakura.data.food.FoodRepository
 import com.sakura.data.food.MealTemplate
@@ -22,6 +23,7 @@ class FoodLibraryViewModel(
     private val _allItems = MutableStateFlow<List<FoodLibraryItem>>(emptyList())
     val allItems: StateFlow<List<FoodLibraryItem>> = _allItems.asStateFlow()
     private val _allTemplates = MutableStateFlow<List<MealTemplate>>(emptyList())
+    private val _allDayTemplates = MutableStateFlow<List<DayTemplate>>(emptyList())
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -39,6 +41,16 @@ class FoodLibraryViewModel(
         else templates.filter { t ->
             t.name.contains(query, ignoreCase = true) ||
                 t.entries.any { it.name.contains(query, ignoreCase = true) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val filteredDayTemplates: StateFlow<List<DayTemplate>> = combine(
+        _allDayTemplates, _searchQuery
+    ) { templates, query ->
+        if (query.isBlank()) templates
+        else templates.filter { t ->
+            t.name.contains(query, ignoreCase = true) ||
+                t.meals.any { m -> m.items.any { it.name.contains(query, ignoreCase = true) } }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -76,10 +88,25 @@ class FoodLibraryViewModel(
         }
     }
 
+    fun deleteDayTemplate(templateId: String) {
+        viewModelScope.launch {
+            foodRepo.deleteDayTemplate(templateId)
+            reload()
+        }
+    }
+
+    fun renameDayTemplate(template: DayTemplate, newName: String) {
+        viewModelScope.launch {
+            foodRepo.saveDayTemplate(template.copy(name = newName))
+            reload()
+        }
+    }
+
     private fun reload() {
         viewModelScope.launch {
             _allItems.value = foodRepo.loadLibrary()
             _allTemplates.value = foodRepo.loadTemplates()
+            _allDayTemplates.value = foodRepo.loadDayTemplates()
         }
     }
 
@@ -87,6 +114,7 @@ class FoodLibraryViewModel(
         viewModelScope.launch {
             _allItems.value = foodRepo.loadLibrary()
             _allTemplates.value = foodRepo.loadTemplates()
+            _allDayTemplates.value = foodRepo.loadDayTemplates()
             isLoading.value = false
         }
     }

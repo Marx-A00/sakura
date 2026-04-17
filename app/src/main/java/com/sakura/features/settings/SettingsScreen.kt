@@ -6,16 +6,25 @@ import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -51,11 +60,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.preferences.AppPreferencesRepository
 import com.sakura.preferences.MacroTargets
 import com.sakura.preferences.StorageMode
+import com.sakura.ui.theme.AllPalettes
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     prefsRepo: AppPreferencesRepository,
@@ -74,6 +85,9 @@ fun SettingsScreen(
 
     // Theme pref
     val themeMode by prefsRepo.themeMode.collectAsStateWithLifecycle(initialValue = "DARK")
+    val paletteId by prefsRepo.colorPalette.collectAsStateWithLifecycle(initialValue = "SAGE")
+    val customHex by prefsRepo.customAccentHex.collectAsStateWithLifecycle(initialValue = "#7A8B6F")
+    var customHexInput by remember(customHex) { mutableStateOf(customHex) }
 
     // Rest timer prefs
     val timerEnabled by prefsRepo.timerEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -166,6 +180,72 @@ fun SettingsScreen(
                             )
                         )
                     }
+            }
+
+            // ---------------------------------------------------------------
+            // Color Palette section
+            // ---------------------------------------------------------------
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Color Palette",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val isDark = themeMode == "DARK" || (themeMode == "SYSTEM" && androidx.compose.foundation.isSystemInDarkTheme())
+
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                AllPalettes.forEach { palette ->
+                    val accentColor = if (isDark) palette.dark.accent else palette.light.accent
+                    val isSelected = paletteId == palette.id
+                    PaletteChip(
+                        label = palette.displayName,
+                        color = accentColor,
+                        isSelected = isSelected,
+                        onClick = {
+                            scope.launch { prefsRepo.setColorPalette(palette.id) }
+                        }
+                    )
+                }
+                // Custom chip
+                val isCustomSelected = paletteId == "CUSTOM"
+                PaletteChip(
+                    label = "Custom",
+                    color = try {
+                        androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(customHex))
+                    } catch (_: Exception) {
+                        SakuraTheme.colors.accent
+                    },
+                    isSelected = isCustomSelected,
+                    onClick = {
+                        scope.launch { prefsRepo.setColorPalette("CUSTOM") }
+                    }
+                )
+            }
+
+            // Custom hex input (only when Custom is selected)
+            if (paletteId == "CUSTOM") {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = customHexInput,
+                    onValueChange = { newVal ->
+                        customHexInput = newVal
+                        if (newVal.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
+                            scope.launch { prefsRepo.setCustomAccentHex(newVal) }
+                        }
+                    },
+                    label = { Text("Accent hex (e.g. #7A8B6F)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -418,6 +498,46 @@ fun SettingsScreen(
                     Text("Continue")
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun PaletteChip(
+    label: String,
+    color: androidx.compose.ui.graphics.Color,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(color, CircleShape)
+                .then(
+                    if (isSelected) Modifier.border(
+                        3.dp,
+                        SakuraTheme.colors.brand,
+                        CircleShape
+                    )
+                    else Modifier.border(
+                        1.dp,
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                        CircleShape
+                    )
+                )
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) SakuraTheme.colors.brand
+            else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

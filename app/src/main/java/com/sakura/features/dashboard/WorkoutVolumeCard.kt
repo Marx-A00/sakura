@@ -21,7 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,8 +41,7 @@ import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.ForestGreen
+import com.sakura.ui.theme.SakuraTheme
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -89,7 +87,7 @@ fun WorkoutVolumeCard(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = CherryBlossomPink)
+                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
                 }
             }
 
@@ -137,7 +135,7 @@ private fun TimeRangeTabs(
                 onClick = { onSelected(weeks) },
                 label = { Text(text = label, fontSize = 12.sp) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = CherryBlossomPink,
+                    selectedContainerColor = SakuraTheme.colors.brand,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
@@ -158,7 +156,7 @@ private fun VolumeLegend() {
             Box(
                 modifier = Modifier
                     .size(width = 12.dp, height = 8.dp)
-                    .background(CherryBlossomPink, RoundedCornerShape(2.dp))
+                    .background(SakuraTheme.colors.brand, RoundedCornerShape(2.dp))
             )
             Text("Volume (kg)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -169,7 +167,7 @@ private fun VolumeLegend() {
             Box(
                 modifier = Modifier
                     .size(width = 16.dp, height = 2.dp)
-                    .background(ForestGreen)
+                    .background(SakuraTheme.colors.trendLine)
             )
             Text("Trend", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -197,14 +195,16 @@ private fun VolumeChart(
         }
     }
 
-    val volumeBar = rememberLineComponent(fill = Fill(SolidColor(CherryBlossomPink)))
+    val brandColor = SakuraTheme.colors.brand
+    val trendColor = SakuraTheme.colors.trendLine
+    val volumeBar = rememberLineComponent(fill = Fill(SolidColor(brandColor)))
 
     val columnLayer = rememberColumnCartesianLayer(
         columnProvider = ColumnCartesianLayer.ColumnProvider.series(volumeBar)
     )
 
     val trendLine = LineCartesianLayer.Line(
-        fill = LineCartesianLayer.LineFill.single(Fill(SolidColor(ForestGreen))),
+        fill = LineCartesianLayer.LineFill.single(Fill(SolidColor(trendColor))),
         stroke = LineCartesianLayer.LineStroke.Continuous()
     )
     val lineLayer = rememberLineCartesianLayer(

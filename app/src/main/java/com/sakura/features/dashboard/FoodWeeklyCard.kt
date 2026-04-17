@@ -40,9 +40,7 @@ import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.ForestGreen
-import com.sakura.ui.theme.WarmBrown
+import com.sakura.ui.theme.SakuraTheme
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -88,7 +86,7 @@ fun FoodWeeklyCard(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = CherryBlossomPink)
+                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
                 }
             }
 
@@ -143,7 +141,7 @@ private fun TimeRangeTabs(
                 onClick = { onSelected(weeks) },
                 label = { Text(text = label, fontSize = 12.sp) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = CherryBlossomPink,
+                    selectedContainerColor = SakuraTheme.colors.brand,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
@@ -157,9 +155,9 @@ private fun MacroLegend() {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        LegendDot(color = ForestGreen, label = "Protein")
-        LegendDot(color = androidx.compose.ui.graphics.Color(0xFFE8735A), label = "Carbs")
-        LegendDot(color = WarmBrown, label = "Fat")
+        LegendDot(color = SakuraTheme.colors.proteinBar, label = "Protein")
+        LegendDot(color = SakuraTheme.colors.carbsBar, label = "Carbs")
+        LegendDot(color = SakuraTheme.colors.fatBar, label = "Fat")
     }
 }
 
@@ -201,9 +199,12 @@ private fun MacroChart(
         }
     }
 
-    val proteinColumn = rememberLineComponent(fill = Fill(SolidColor(ForestGreen)))
-    val carbsColumn = rememberLineComponent(fill = Fill(SolidColor(androidx.compose.ui.graphics.Color(0xFFE8735A))))
-    val fatColumn = rememberLineComponent(fill = Fill(SolidColor(WarmBrown)))
+    val proteinColor = SakuraTheme.colors.proteinBar
+    val carbsColor = SakuraTheme.colors.carbsBar
+    val fatColor = SakuraTheme.colors.fatBar
+    val proteinColumn = rememberLineComponent(fill = Fill(SolidColor(proteinColor)))
+    val carbsColumn = rememberLineComponent(fill = Fill(SolidColor(carbsColor)))
+    val fatColumn = rememberLineComponent(fill = Fill(SolidColor(fatColor)))
 
     val columnLayer = rememberColumnCartesianLayer(
         columnProvider = ColumnCartesianLayer.ColumnProvider.series(
@@ -242,19 +243,19 @@ private fun AveragesRow(
         MacroAvgChip(
             label = "Protein",
             value = "${avgProtein}g",
-            color = ForestGreen,
+            color = SakuraTheme.colors.proteinBar,
             modifier = Modifier.weight(1f)
         )
         MacroAvgChip(
             label = "Carbs",
             value = "${avgCarbs}g",
-            color = androidx.compose.ui.graphics.Color(0xFFE8735A),
+            color = SakuraTheme.colors.carbsBar,
             modifier = Modifier.weight(1f)
         )
         MacroAvgChip(
             label = "Fat",
             value = "${avgFat}g",
-            color = WarmBrown,
+            color = SakuraTheme.colors.fatBar,
             modifier = Modifier.weight(1f)
         )
     }

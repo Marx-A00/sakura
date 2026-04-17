@@ -15,6 +15,8 @@ import com.sakura.di.AppContainer
 import com.sakura.navigation.AppNavHost
 import com.sakura.preferences.StorageMode
 import com.sakura.ui.theme.SakuraTheme
+import com.sakura.ui.theme.customPalette
+import com.sakura.ui.theme.paletteById
 
 class MainActivity : ComponentActivity() {
 
@@ -27,8 +29,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by prefsRepo.themeMode
                 .collectAsStateWithLifecycle(initialValue = "DARK")
+            val paletteId by prefsRepo.colorPalette
+                .collectAsStateWithLifecycle(initialValue = "SAGE")
+            val customHex by prefsRepo.customAccentHex
+                .collectAsStateWithLifecycle(initialValue = "#7A8B6F")
+            val palette = remember(paletteId, customHex) {
+                if (paletteId == "CUSTOM") customPalette(customHex)
+                else paletteById(paletteId)
+            }
 
-            SakuraTheme(themeMode = themeMode) {
+            SakuraTheme(themeMode = themeMode, palette = palette) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // Use initialValue = null to represent "still loading from DataStore".
                     // This prevents a flash where NavHost renders with the wrong start destination.

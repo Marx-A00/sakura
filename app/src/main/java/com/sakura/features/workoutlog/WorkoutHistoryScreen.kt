@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.WorkoutSession
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.SakuraTheme
 import java.time.format.DateTimeFormatter
 
 /**
@@ -187,7 +187,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                     Text(
                         "Complete",
                         fontSize = 12.sp,
-                        color = CherryBlossomPink,
+                        color = SakuraTheme.colors.brand,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -208,7 +208,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                             text = exerciseLog.name,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = CherryBlossomPink
+                            color = SakuraTheme.colors.brand
                         )
                         // Category badge in history (small, subtle)
                         Text(
@@ -233,7 +233,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                                     "PR",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = CherryBlossomPink
+                                    color = SakuraTheme.colors.brand
                                 )
                             }
                         }

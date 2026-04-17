@@ -36,7 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakura.preferences.AppPreferencesRepository
 import com.sakura.preferences.MacroTargets
 import com.sakura.preferences.StorageMode
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
@@ -137,7 +137,7 @@ fun MacroTargetsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CherryBlossomPink)
+                colors = ButtonDefaults.buttonColors(containerColor = SakuraTheme.colors.brand)
             ) {
                 Text("Save", color = Color.White)
             }

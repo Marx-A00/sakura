@@ -62,12 +62,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sakura.data.food.DayTemplate
 import com.sakura.data.food.FoodLibraryItem
 import com.sakura.data.food.MealTemplate
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 
-private val LIBRARY_TABS = listOf("Foods", "Meals")
+private val LIBRARY_TABS = listOf("Foods", "Meals", "Days")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +79,7 @@ fun FoodLibraryScreen(
     val items by viewModel.filteredItems.collectAsStateWithLifecycle()
     val allItems by viewModel.allItems.collectAsStateWithLifecycle()
     val templates by viewModel.filteredTemplates.collectAsStateWithLifecycle()
+    val dayTemplates by viewModel.filteredDayTemplates.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
@@ -90,6 +92,8 @@ fun FoodLibraryScreen(
     var deleteConfirmItem by remember { mutableStateOf<FoodLibraryItem?>(null) }
     var deleteConfirmTemplate by remember { mutableStateOf<MealTemplate?>(null) }
     var editingTemplate by remember { mutableStateOf<MealTemplate?>(null) }
+    var deleteConfirmDayTemplate by remember { mutableStateOf<DayTemplate?>(null) }
+    var editingDayTemplate by remember { mutableStateOf<DayTemplate?>(null) }
 
     Scaffold(
         topBar = {
@@ -101,14 +105,16 @@ fun FoodLibraryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        if (pagerState.currentPage == 0) showAddFoodDialog = true
-                        else showCreateMealDialog = true
-                    }) {
-                        Icon(
-                            Icons.Filled.Add,
-                            contentDescription = if (pagerState.currentPage == 0) "Add food" else "Create meal"
-                        )
+                    if (pagerState.currentPage < 2) {
+                        IconButton(onClick = {
+                            if (pagerState.currentPage == 0) showAddFoodDialog = true
+                            else showCreateMealDialog = true
+                        }) {
+                            Icon(
+                                Icons.Filled.Add,
+                                contentDescription = if (pagerState.currentPage == 0) "Add food" else "Create meal"
+                            )
+                        }
                     }
                 }
             )
@@ -125,8 +131,11 @@ fun FoodLibraryScreen(
                 onValueChange = { viewModel.updateSearch(it) },
                 placeholder = {
                     Text(
-                        if (pagerState.currentPage == 0) "Search foods..."
-                        else "Search meals..."
+                        when (pagerState.currentPage) {
+                            0 -> "Search foods..."
+                            1 -> "Search meals..."
+                            else -> "Search day templates..."
+                        }
                     )
                 },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
@@ -160,7 +169,7 @@ fun FoodLibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = CherryBlossomPink)
+                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
                 }
             } else {
                 HorizontalPager(
@@ -179,6 +188,12 @@ fun FoodLibraryScreen(
                             searchQuery = searchQuery,
                             onEdit = { editingTemplate = it },
                             onDelete = { deleteConfirmTemplate = it }
+                        )
+                        2 -> DaysTab(
+                            dayTemplates = dayTemplates,
+                            searchQuery = searchQuery,
+                            onRename = { editingDayTemplate = it },
+                            onDelete = { deleteConfirmDayTemplate = it }
                         )
                     }
                 }
@@ -255,7 +270,7 @@ fun FoodLibraryScreen(
         AlertDialog(
             onDismissRequest = { deleteConfirmTemplate = null },
             title = { Text("Delete ${template.name}?") },
-            text = { Text("This will remove the meal template. It won't affect any logged entries.") },
+            text = { Text("This will remove the saved meal. It won't affect any logged entries.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteTemplate(template.id)
@@ -266,6 +281,40 @@ fun FoodLibraryScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deleteConfirmTemplate = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Rename day template dialog
+    editingDayTemplate?.let { template ->
+        TemplateNameDialog(
+            currentName = template.name,
+            onSave = { newName ->
+                viewModel.renameDayTemplate(template, newName)
+                editingDayTemplate = null
+            },
+            onDismiss = { editingDayTemplate = null }
+        )
+    }
+
+    // Delete day template confirmation
+    deleteConfirmDayTemplate?.let { template ->
+        AlertDialog(
+            onDismissRequest = { deleteConfirmDayTemplate = null },
+            title = { Text("Delete ${template.name}?") },
+            text = { Text("This will remove the saved day template. It won't affect any logged entries.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteDayTemplate(template.id)
+                    deleteConfirmDayTemplate = null
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteConfirmDayTemplate = null }) {
                     Text("Cancel")
                 }
             }
@@ -359,6 +408,53 @@ private fun MealsTab(
                 MealTemplateRow(
                     template = template,
                     onEdit = { onEdit(template) },
+                    onDelete = { onDelete(template) }
+                )
+                HorizontalDivider()
+            }
+        }
+    }
+}
+
+// =============================================================================
+// Days tab
+// =============================================================================
+
+@Composable
+private fun DaysTab(
+    dayTemplates: List<DayTemplate>,
+    searchQuery: String,
+    onRename: (DayTemplate) -> Unit,
+    onDelete: (DayTemplate) -> Unit
+) {
+    if (dayTemplates.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (searchQuery.isNotEmpty()) "No matching day templates" else "No saved day templates",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = if (searchQuery.isNotEmpty()) "Try a different search"
+                    else "Use the radial menu's \"Save Day\" to save a day of eating",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(dayTemplates, key = { it.id }) { template ->
+                DayTemplateRow(
+                    template = template,
+                    onRename = { onRename(template) },
                     onDelete = { onDelete(template) }
                 )
                 HorizontalDivider()
@@ -531,6 +627,110 @@ private fun MealTemplateRow(
     }
 }
 
+@Composable
+private fun DayTemplateRow(
+    template: DayTemplate,
+    onRename: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = template.name.ifBlank { "Unnamed day" },
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "${template.itemCount} items  ·  ${template.totalCalories} kcal",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = template.meals.joinToString("  ·  ") { "${it.label}: ${it.items.size}" },
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = "Rename",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = "Delete",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
+                    else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+            ) {
+                template.meals.forEach { meal ->
+                    Text(
+                        text = meal.label,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                    )
+                    meal.items.forEach { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, top = 2.dp, bottom = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = item.name.ifBlank { "Unnamed" },
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "${item.calories} kcal",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // =============================================================================
 // Dialogs
 // =============================================================================
@@ -636,7 +836,7 @@ private fun FoodItemDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save", color = if (name.isNotBlank()) CherryBlossomPink else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {
@@ -785,7 +985,7 @@ private fun CreateMealDialog(
                 },
                 enabled = canSave
             ) {
-                Text("Save", color = if (canSave) CherryBlossomPink else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (canSave) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {
@@ -833,7 +1033,7 @@ private fun TemplateNameDialog(
                 onClick = { onSave(name.trim()) },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save", color = if (name.isNotBlank()) CherryBlossomPink else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {

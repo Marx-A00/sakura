@@ -49,8 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.sakura.data.workout.ExerciseCategory
 import com.sakura.data.workout.ExerciseLibrary
 import com.sakura.data.workout.LibraryExercise
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.ForestGreen
+import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 
 /**
@@ -142,7 +141,7 @@ fun ExercisePickerSheet(
                         onClick = { selectedCategory = null },
                         label = { Text("All") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CherryBlossomPink,
+                            selectedContainerColor = SakuraTheme.colors.brand,
                             selectedLabelColor = androidx.compose.ui.graphics.Color.White
                         )
                     )
@@ -155,7 +154,7 @@ fun ExercisePickerSheet(
                         },
                         label = { Text(category.displayName) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CherryBlossomPink,
+                            selectedContainerColor = SakuraTheme.colors.brand,
                             selectedLabelColor = androidx.compose.ui.graphics.Color.White
                         )
                     )
@@ -192,7 +191,7 @@ fun ExercisePickerSheet(
             ) {
                 Text(
                     "+ Create New Exercise",
-                    color = ForestGreen,
+                    color = SakuraTheme.colors.accent,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
@@ -251,7 +250,7 @@ private fun ExerciseListItem(
             Icon(
                 Icons.Filled.AddCircle,
                 contentDescription = "Add ${exercise.name}",
-                tint = ForestGreen,
+                tint = SakuraTheme.colors.accent,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -324,7 +323,7 @@ private fun CreateExerciseDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Create", color = CherryBlossomPink)
+                Text("Create", color = SakuraTheme.colors.brand)
             }
         },
         dismissButton = {

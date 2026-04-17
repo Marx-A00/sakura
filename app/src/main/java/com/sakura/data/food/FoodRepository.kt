@@ -74,6 +74,25 @@ interface FoodRepository {
     suspend fun deleteTemplate(templateId: String): Result<Unit>
 
     // -------------------------------------------------------------------------
+    // Day templates (full day of eating)
+    // -------------------------------------------------------------------------
+
+    /** Load all saved day templates. */
+    suspend fun loadDayTemplates(): List<DayTemplate>
+
+    /** Save a new day template (or replace if id matches). */
+    suspend fun saveDayTemplate(template: DayTemplate): Result<Unit>
+
+    /**
+     * Apply a day template — logs all foods from every meal in the template
+     * to the specified date. Each item gets a new unique id.
+     */
+    suspend fun applyDayTemplate(date: LocalDate, template: DayTemplate): Result<Unit>
+
+    /** Remove a day template by id. */
+    suspend fun deleteDayTemplate(templateId: String): Result<Unit>
+
+    // -------------------------------------------------------------------------
     // Calendar helpers
     // -------------------------------------------------------------------------
 

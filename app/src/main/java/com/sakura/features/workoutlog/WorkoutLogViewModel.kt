@@ -19,6 +19,7 @@ import com.sakura.data.workout.SetLog
 import com.sakura.data.workout.SplitDay
 import com.sakura.data.workout.UserWorkoutTemplate
 import com.sakura.data.workout.WorkoutRepository
+import com.sakura.data.workout.WorkoutSchedule
 import com.sakura.data.workout.WorkoutSession
 import com.sakura.data.workout.WorkoutTemplates
 import com.sakura.preferences.AppPreferencesRepository
@@ -50,16 +51,35 @@ class WorkoutLogViewModel(
 ) : ViewModel() {
 
     // -------------------------------------------------------------------------
-    // User templates — loaded once for the template picker
+    // User templates + schedule — loaded once for the template picker
     // -------------------------------------------------------------------------
 
     private val _userTemplates = MutableStateFlow<List<UserWorkoutTemplate>>(emptyList())
     val userTemplates: StateFlow<List<UserWorkoutTemplate>> = _userTemplates.asStateFlow()
 
+    private val _schedule = MutableStateFlow(WorkoutSchedule())
+    val schedule: StateFlow<WorkoutSchedule> = _schedule.asStateFlow()
+
+    /** The template scheduled for the currently selected date, or null (rest day). */
+    private val _scheduledWorkout = MutableStateFlow<UserWorkoutTemplate?>(null)
+    val scheduledWorkout: StateFlow<UserWorkoutTemplate?> = _scheduledWorkout.asStateFlow()
+
     init {
         viewModelScope.launch {
             _userTemplates.value = workoutRepo.loadWorkoutTemplates()
+            _schedule.value = WorkoutSchedule.fromJson(
+                try { prefsRepo.workoutScheduleJson.first() } catch (_: Exception) { "" }
+            )
+            updateScheduledWorkout()
         }
+    }
+
+    private fun updateScheduledWorkout() {
+        val dayOfWeek = _selectedDate.value.dayOfWeek
+        val templateId = _schedule.value.templateIdFor(dayOfWeek)
+        _scheduledWorkout.value = if (templateId != null) {
+            _userTemplates.value.find { it.id == templateId }
+        } else null
     }
 
     // -------------------------------------------------------------------------
@@ -176,14 +196,17 @@ class WorkoutLogViewModel(
 
     fun navigateDate(delta: Int) {
         _selectedDate.value = _selectedDate.value.plusDays(delta.toLong())
+        updateScheduledWorkout()
     }
 
     fun navigateToDate(date: LocalDate) {
         _selectedDate.value = date
+        updateScheduledWorkout()
     }
 
     fun goToToday() {
         _selectedDate.value = LocalDate.now()
+        updateScheduledWorkout()
     }
 
     // -------------------------------------------------------------------------

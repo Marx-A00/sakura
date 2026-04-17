@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,11 +54,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakura.R
-import com.sakura.ui.theme.CherryBlossomPink
+import com.sakura.ui.theme.SakuraTheme
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -69,7 +71,7 @@ enum class RadialAction {
     // Default navigation actions
     NAV_FOOD, NAV_EXERCISE, NAV_SETTINGS,
     // Food page actions
-    FOOD_ADD_ENTRY, FOOD_FROM_LIBRARY, FOOD_LIBRARY,
+    FOOD_ADD_ENTRY, FOOD_SAVE_DAY, FOOD_LIBRARY,
     // Workout page actions
     WORKOUT_ADD_EXERCISE, WORKOUT_FROM_TEMPLATE, WORKOUT_LIBRARY,
 }
@@ -92,14 +94,12 @@ private val DEFAULT_OPTIONS = listOf(
 
 private val FOOD_OPTIONS = listOf(
     RadialOption(RadialAction.FOOD_ADD_ENTRY, "Add Entry", Icons.Filled.Add, -40f),
-    RadialOption(RadialAction.FOOD_FROM_LIBRARY, "From Library", Icons.Filled.Restaurant, 0f),
+    RadialOption(RadialAction.FOOD_SAVE_DAY, "Save Day", Icons.Filled.SaveAlt, 0f),
     RadialOption(RadialAction.FOOD_LIBRARY, "Food Library", Icons.Filled.MenuBook, 40f),
 )
 
 private val WORKOUT_OPTIONS = listOf(
-    RadialOption(RadialAction.WORKOUT_ADD_EXERCISE, "Add Exercise", Icons.Filled.FitnessCenter, -40f),
-    RadialOption(RadialAction.WORKOUT_FROM_TEMPLATE, "Saved Workouts", Icons.Filled.DateRange, 0f),
-    RadialOption(RadialAction.WORKOUT_LIBRARY, "Exercise Library", Icons.Filled.MenuBook, 40f),
+    RadialOption(RadialAction.WORKOUT_LIBRARY, "Exercise Library", Icons.Filled.MenuBook, 0f),
 )
 
 private fun optionsForContext(context: RadialContext): List<RadialOption> = when (context) {
@@ -217,7 +217,7 @@ fun CenterHomeButton(
         Icon(
             painter = painterResource(R.drawable.ic_sakura_branch),
             contentDescription = "Home",
-            tint = CherryBlossomPink,
+            tint = SakuraTheme.colors.brand,
             modifier = Modifier
                 .offset(y = 20.dp)
                 .size(width = 48.dp, height = 150.dp)
@@ -323,15 +323,15 @@ private fun RadialMenuOverlay(
                         .shadow(
                             elevation = if (isHighlighted) 12.dp else 4.dp,
                             shape = CircleShape,
-                            ambientColor = CherryBlossomPink.copy(alpha = 0.3f),
-                            spotColor = CherryBlossomPink.copy(alpha = 0.3f)
+                            ambientColor = SakuraTheme.colors.brand.copy(alpha = 0.3f),
+                            spotColor = SakuraTheme.colors.brand.copy(alpha = 0.3f)
                         )
                         .background(OptionBg, CircleShape)
                         .background(
                             brush = Brush.radialGradient(
                                 colors = if (isHighlighted) {
                                     listOf(
-                                        CherryBlossomPink.copy(alpha = 0.2f),
+                                        SakuraTheme.colors.brand.copy(alpha = 0.2f),
                                         Color.Transparent
                                     )
                                 } else {
@@ -345,7 +345,7 @@ private fun RadialMenuOverlay(
                     Icon(
                         imageVector = option.icon,
                         contentDescription = option.label,
-                        tint = if (isHighlighted) CherryBlossomPink else CherryBlossomPink.copy(alpha = 0.8f),
+                        tint = if (isHighlighted) SakuraTheme.colors.brand else SakuraTheme.colors.brand.copy(alpha = 0.8f),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -354,6 +354,7 @@ private fun RadialMenuOverlay(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (isHighlighted) Color.White else Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.offset(y = 4.dp)
                 )
             }

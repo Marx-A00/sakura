@@ -37,8 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sakura.ui.theme.CherryBlossomPink
 import com.sakura.ui.theme.MediumGray
+import com.sakura.ui.theme.SakuraTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -203,7 +203,7 @@ private fun FoodCalendarCell(
                 modifier = Modifier
                     .size(5.dp)
                     .clip(CircleShape)
-                    .background(CherryBlossomPink)
+                    .background(SakuraTheme.colors.brand)
             )
         } else {
             Spacer(Modifier.height(5.dp))

@@ -23,8 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.ForestGreen
+import com.sakura.ui.theme.SakuraTheme
 import java.time.format.DateTimeFormatter
 
 /** Amber color reused for "In progress" badge. */
@@ -56,7 +55,7 @@ fun WorkoutSummaryCard(state: DashboardTodayState) {
                     imageVector = Icons.Filled.Star,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = CherryBlossomPink
+                    tint = SakuraTheme.colors.brand
                 )
                 Text(
                     text = "Workout",
@@ -138,7 +137,7 @@ fun WorkoutSummaryCard(state: DashboardTodayState) {
                                 Icons.Filled.Check,
                                 contentDescription = "Complete",
                                 modifier = Modifier.size(14.dp),
-                                tint = ForestGreen
+                                tint = SakuraTheme.colors.accent
                             )
                         } else {
                             Text(
@@ -157,7 +156,7 @@ fun WorkoutSummaryCard(state: DashboardTodayState) {
 @Composable
 private fun WorkoutStatusBadge(isComplete: Boolean) {
     val (color, label) = if (isComplete) {
-        ForestGreen to "Complete"
+        SakuraTheme.colors.accent to "Complete"
     } else {
         InProgressAmber to "In progress"
     }

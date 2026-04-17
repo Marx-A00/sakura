@@ -18,10 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sakura.ui.theme.CherryBlossomPink
-import com.sakura.ui.theme.DeepRose
-import com.sakura.ui.theme.ForestGreen
-import com.sakura.ui.theme.WarmBrown
+import com.sakura.ui.theme.SakuraTheme
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 
@@ -57,7 +54,7 @@ fun FoodProgressCard(state: DashboardTodayState) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val remaining = state.targetCalories - state.totalCalories
-                val remainingColor = if (remaining >= 0) ForestGreen else DeepRose
+                val remainingColor = if (remaining >= 0) SakuraTheme.colors.positive else SakuraTheme.colors.negative
                 Text(
                     text = if (remaining >= 0) "${fmt.format(remaining)} left"
                     else "${fmt.format(-remaining)} over",
@@ -77,8 +74,8 @@ fun FoodProgressCard(state: DashboardTodayState) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp),
-            color = CherryBlossomPink,
-            trackColor = CherryBlossomPink.copy(alpha = 0.2f)
+            color = SakuraTheme.colors.calorieBar,
+            trackColor = SakuraTheme.colors.calorieBar.copy(alpha = 0.2f)
         )
 
         // Three macro mini-cards
@@ -91,7 +88,7 @@ fun FoodProgressCard(state: DashboardTodayState) {
                 logged = state.totalProtein,
                 target = state.targetProtein,
                 unit = "g",
-                color = ForestGreen,
+                color = SakuraTheme.colors.proteinBar,
                 modifier = Modifier.weight(1f)
             )
             MacroMiniCard(
@@ -99,7 +96,7 @@ fun FoodProgressCard(state: DashboardTodayState) {
                 logged = state.totalCarbs,
                 target = state.targetCarbs,
                 unit = "g",
-                color = WarmBrown,
+                color = SakuraTheme.colors.carbsBar,
                 modifier = Modifier.weight(1f)
             )
             MacroMiniCard(
@@ -107,7 +104,7 @@ fun FoodProgressCard(state: DashboardTodayState) {
                 logged = state.totalFat,
                 target = state.targetFat,
                 unit = "g",
-                color = DeepRose,
+                color = SakuraTheme.colors.fatBar,
                 modifier = Modifier.weight(1f)
             )
         }

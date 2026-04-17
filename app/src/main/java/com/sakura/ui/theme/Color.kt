@@ -30,4 +30,6 @@ val WarmBrown = Color(0xFFB8A089)            // Secondary — carbs bar
 val ForestGreen = Color(0xFF3B5D44)          // Protein bar, positive indicators (sparingly)
 val WorkoutBlue = Color(0xFF5B8FA8)          // Workout ring on Progress screen
 val WarmCream = Color(0xFFF5F4F1)            // Base background
+val CreamVariant = Color(0xFFEDE9E5)         // Slightly darker cream for subtle contrast
+val MutedSage = Color(0xFF7A8B6F)            // Light theme secondary — earthy green
 val WhiteCard = Color(0xFFFFFFFF)            // Card surfaces
