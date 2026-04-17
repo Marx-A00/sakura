@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,57 +17,60 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.CaretDown
+import com.adamglin.phosphoricons.regular.CaretLeft
+import com.adamglin.phosphoricons.regular.CaretRight
+import com.adamglin.phosphoricons.regular.CaretUp
 import com.sakura.ui.theme.MediumGray
 import com.sakura.ui.theme.SakuraTheme
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/**
- * Collapsible food calendar that doubles as the primary date navigator.
- *
- * Header shows the currently selected date (tappable to open DatePicker)
- * plus an expand/collapse chevron.
- *
- * Collapsed (default): current week only.
- * Expanded: full 4-week rolling grid.
- *
- * Tapping a day cell navigates to that date. Days with food logged show a dot.
- */
 @Composable
 fun FoodCalendar(
     days: List<FoodCalendarDay>,
     selectedDate: LocalDate,
+    displayedMonth: YearMonth,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     onDateSelected: (LocalDate) -> Unit,
+    onMonthChanged: (YearMonth) -> Unit,
+    onTodayClick: () -> Unit,
     onDateLabelClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
     val weeks = days.chunked(7)
+    val isCurrentMonth = displayedMonth == YearMonth.now()
+    val isOnToday = selectedDate == LocalDate.now()
 
-    // Current week = the one containing today (last chunk in the 4-week window)
-    val currentWeekIndex = weeks.indexOfFirst { week -> week.any { it.isToday } }
-        .takeIf { it >= 0 } ?: (weeks.size - 1)
+    // Find week containing selected date for collapsed mode
+    val selectedWeekIndex = weeks.indexOfFirst { week -> week.any { it.date == selectedDate } }
+        .takeIf { it >= 0 } ?: 0
 
     ElevatedCard(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -79,30 +83,74 @@ fun FoodCalendar(
                     )
                 )
         ) {
-            // Header row: selected date label + expand/collapse chevron
+            // Header: month nav + today button + expand/collapse
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Selected date — tappable to open DatePickerDialog
-                Text(
-                    text = formatCalendarDate(selectedDate),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onDateLabelClick() }
-                )
+                // Month navigation
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    IconButton(
+                        onClick = { onMonthChanged(displayedMonth.minusMonths(1)) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            PhosphorIcons.Regular.CaretLeft,
+                            contentDescription = "Previous month",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Text(
+                        text = displayedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onDateLabelClick() }
+                    )
+
+                    IconButton(
+                        onClick = { onMonthChanged(displayedMonth.plusMonths(1)) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            PhosphorIcons.Regular.CaretRight,
+                            contentDescription = "Next month",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Today button — visible when not on today
+                if (!isOnToday || !isCurrentMonth) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        modifier = Modifier.clickable { onTodayClick() }
+                    ) {
+                        Text(
+                            "Today",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
 
                 // Expand/collapse toggle
                 IconButton(
-                    onClick = { expanded = !expanded },
+                    onClick = { onExpandedChange(!expanded) },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
-                                     else Icons.Filled.KeyboardArrowDown,
+                        imageVector = if (expanded) PhosphorIcons.Regular.CaretUp
+                                     else PhosphorIcons.Regular.CaretDown,
                         contentDescription = if (expanded) "Collapse" else "Expand",
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -112,10 +160,9 @@ fun FoodCalendar(
 
             Spacer(Modifier.height(8.dp))
 
-            // Day-of-week header row: M T W T F S S
+            // Day-of-week header row
             Row(modifier = Modifier.fillMaxWidth()) {
-                val dayHeaders = listOf("M", "T", "W", "T", "F", "S", "S")
-                dayHeaders.forEach { label ->
+                listOf("M", "T", "W", "T", "F", "S", "S").forEach { label ->
                     Text(
                         text = label,
                         modifier = Modifier.weight(1f),
@@ -128,24 +175,43 @@ fun FoodCalendar(
 
             Spacer(Modifier.height(4.dp))
 
-            // Week rows — show only current week when collapsed, all 4 when expanded
-            val visibleWeeks = if (expanded) weeks else listOf(weeks.getOrElse(currentWeekIndex) { weeks.last() })
+            // Week rows with swipe detection
+            val visibleWeeks = if (expanded) weeks else listOf(weeks.getOrElse(selectedWeekIndex) { weeks.firstOrNull() ?: emptyList() })
 
-            visibleWeeks.forEach { week ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    week.forEach { day ->
-                        FoodCalendarCell(
-                            day = day,
-                            isSelected = day.date == selectedDate,
-                            onClick = { onDateSelected(day.date) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+            var dragAccumulator by remember { mutableFloatStateOf(0f) }
+
+            Column(
+                modifier = Modifier.pointerInput(displayedMonth) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragAccumulator = 0f },
+                        onHorizontalDrag = { _, dragAmount -> dragAccumulator += dragAmount },
+                        onDragEnd = {
+                            if (dragAccumulator > 100f) {
+                                onMonthChanged(displayedMonth.minusMonths(1))
+                            } else if (dragAccumulator < -100f) {
+                                onMonthChanged(displayedMonth.plusMonths(1))
+                            }
+                        }
+                    )
                 }
-                Spacer(Modifier.height(2.dp))
+            ) {
+                visibleWeeks.forEach { week ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        week.forEach { day ->
+                            FoodCalendarCell(
+                                day = day,
+                                isSelected = day.date == selectedDate,
+                                isCurrentMonth = YearMonth.from(day.date) == displayedMonth,
+                                onClick = { onDateSelected(day.date) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                }
             }
         }
     }
@@ -155,10 +221,12 @@ fun FoodCalendar(
 private fun FoodCalendarCell(
     day: FoodCalendarDay,
     isSelected: Boolean,
+    isCurrentMonth: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val alpha = if (!day.isPast && !day.isToday) 0.4f else 1f
+    val dimmed = !isCurrentMonth || (!day.isPast && !day.isToday)
+    val alpha = if (dimmed) 0.3f else 1f
 
     Column(
         modifier = modifier
@@ -169,14 +237,13 @@ private fun FoodCalendarCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
-        // Date number — filled circle for today, outline ring for selected (non-today)
         Box(
             modifier = when {
                 day.isToday -> Modifier
                     .size(22.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary)
-                isSelected -> Modifier
+                isSelected && isCurrentMonth -> Modifier
                     .size(22.dp)
                     .clip(CircleShape)
                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
@@ -190,34 +257,22 @@ private fun FoodCalendarCell(
                 fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
                 color = when {
                     day.isToday -> MaterialTheme.colorScheme.onPrimary
-                    isSelected -> MaterialTheme.colorScheme.primary
+                    isSelected && isCurrentMonth -> MaterialTheme.colorScheme.primary
                     else -> MaterialTheme.colorScheme.onSurface
                 },
                 textAlign = TextAlign.Center
             )
         }
 
-        // Small dot if food was logged on this day
         if (day.hasEntries && (day.isPast || day.isToday)) {
             Box(
                 modifier = Modifier
                     .size(5.dp)
                     .clip(CircleShape)
-                    .background(SakuraTheme.colors.brand)
+                    .background(SakuraTheme.colors.accent)
             )
         } else {
             Spacer(Modifier.height(5.dp))
         }
-    }
-}
-
-/** Format the selected date for the calendar header. */
-private fun formatCalendarDate(date: LocalDate): String {
-    val today = LocalDate.now()
-    return when {
-        date == today -> "Today, ${date.format(DateTimeFormatter.ofPattern("MMM d"))}"
-        date == today.minusDays(1) -> "Yesterday, ${date.format(DateTimeFormatter.ofPattern("MMM d"))}"
-        date == today.plusDays(1) -> "Tomorrow, ${date.format(DateTimeFormatter.ofPattern("MMM d"))}"
-        else -> date.format(DateTimeFormatter.ofPattern("EEE, MMM d"))
     }
 }

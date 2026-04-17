@@ -54,12 +54,12 @@ data class SakuraPalette(
 )
 
 /** CompositionLocal backing [SakuraTheme.colors]. */
-val LocalSakuraColors = staticCompositionLocalOf { ClassicPalette.dark }
+val LocalSakuraColors = staticCompositionLocalOf { SakuraPinkPalette.dark }
 
 /**
  * Convenience accessor for semantic colors within @Composable scope.
  *
- * Usage: `SakuraTheme.colors.brand`, `SakuraTheme.colors.accent`, etc.
+ * Usage: `SakuraTheme.colors.accent`, `SakuraTheme.colors.accent`, etc.
  */
 object SakuraTheme {
     val colors: SakuraColors
@@ -101,6 +101,14 @@ fun sakuraColors(
 // ─────────────────────────────────────────────────────────────────────────────
 // Preset palettes
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Sakura: brand cherry-blossom pink as accent — the default. */
+val SakuraPinkPalette = SakuraPalette(
+    id = "SAKURA",
+    displayName = "Sakura",
+    dark = sakuraColors(isDark = true, accent = CherryBlossomPink),
+    light = sakuraColors(isDark = false, accent = CherryBlossomPink),
+)
 
 /** Classic: deep greens — the original Sakura look. */
 val ClassicPalette = SakuraPalette(
@@ -160,6 +168,7 @@ val PlumPalette = SakuraPalette(
 
 /** All available preset palettes, in display order. */
 val AllPalettes: List<SakuraPalette> = listOf(
+    SakuraPinkPalette,
     ClassicPalette,
     SagePalette,
     AmberPalette,
@@ -171,7 +180,7 @@ val AllPalettes: List<SakuraPalette> = listOf(
 
 /** Look up a palette by its [SakuraPalette.id], falling back to Classic. */
 fun paletteById(id: String): SakuraPalette =
-    AllPalettes.find { it.id == id } ?: ClassicPalette
+    AllPalettes.find { it.id == id } ?: SakuraPinkPalette
 
 /** Build a custom palette from a user-provided accent hex (e.g. "#7A8B6F"). */
 fun customPalette(accentHex: String): SakuraPalette {

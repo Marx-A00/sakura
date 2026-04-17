@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Fill
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.fill.Warning
+import com.adamglin.phosphoricons.regular.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Surface
@@ -51,9 +53,9 @@ fun SyncStatusBadge(
     onTap: (String) -> Unit = {}
 ) {
     val (pillColor, iconVector, labelText) = when {
-        !syncStatus.folderAccessible -> Triple(OfflineOrange, Icons.Filled.Warning, "Offline")
-        syncStatus.hasConflicts -> Triple(WarningAmber, Icons.Filled.Warning, "Conflict")
-        else -> Triple(SyncedGreen, Icons.Filled.Check, "Synced")
+        !syncStatus.folderAccessible -> Triple(OfflineOrange, PhosphorIcons.Fill.Warning, "Offline")
+        syncStatus.hasConflicts -> Triple(WarningAmber, PhosphorIcons.Fill.Warning, "Conflict")
+        else -> Triple(SyncedGreen, PhosphorIcons.Regular.Check, "Synced")
     }
 
     val tapMessage = when {

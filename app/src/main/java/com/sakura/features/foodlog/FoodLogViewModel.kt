@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.temporal.TemporalAdjusters
 
 class FoodLogViewModel(
@@ -46,31 +47,48 @@ class FoodLogViewModel(
     private val _reloadTrigger = MutableStateFlow(0)
 
     // -------------------------------------------------------------------------
-    // Calendar — 4-week rolling grid with food-logged indicators
+    // Calendar — month-based grid with food-logged indicators
     // -------------------------------------------------------------------------
+
+    private val _displayedMonth = MutableStateFlow(YearMonth.now())
+    val displayedMonth: StateFlow<YearMonth> = _displayedMonth.asStateFlow()
+
+    private val _calendarExpanded = MutableStateFlow(false)
+    val calendarExpanded: StateFlow<Boolean> = _calendarExpanded.asStateFlow()
+
+    fun setCalendarExpanded(expanded: Boolean) { _calendarExpanded.value = expanded }
 
     private val _calendarDays = MutableStateFlow<List<FoodCalendarDay>>(emptyList())
     val calendarDays: StateFlow<List<FoodCalendarDay>> = _calendarDays.asStateFlow()
 
-    private fun loadCalendar() {
+    fun setDisplayedMonth(yearMonth: YearMonth) {
+        _displayedMonth.value = yearMonth
+        loadCalendar(yearMonth)
+    }
+
+    private fun loadCalendar(yearMonth: YearMonth = _displayedMonth.value) {
         viewModelScope.launch {
             try {
                 val today = LocalDate.now()
-                // Start from Monday 3 weeks ago → 28 days total
-                val startDate = today.minusWeeks(3)
-                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val firstOfMonth = yearMonth.atDay(1)
+                val lastOfMonth = yearMonth.atEndOfMonth()
+                val gridStart = firstOfMonth.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val gridEnd = lastOfMonth.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
 
                 val loggedDates = foodRepo.loadLoggedDates()
 
-                _calendarDays.value = (0 until 28).map { offset ->
-                    val date = startDate.plusDays(offset.toLong())
-                    FoodCalendarDay(
-                        date = date,
-                        hasEntries = date in loggedDates,
-                        isPast = date.isBefore(today),
-                        isToday = date == today
-                    )
+                val days = mutableListOf<FoodCalendarDay>()
+                var current = gridStart
+                while (!current.isAfter(gridEnd)) {
+                    days.add(FoodCalendarDay(
+                        date = current,
+                        hasEntries = current in loggedDates,
+                        isPast = current.isBefore(today),
+                        isToday = current == today
+                    ))
+                    current = current.plusDays(1)
                 }
+                _calendarDays.value = days
             } catch (_: Exception) {
                 // Calendar is non-critical; leave empty on error
             }
@@ -246,10 +264,15 @@ class FoodLogViewModel(
     fun navigateToDate(date: LocalDate) {
         _selectedDate.value = date
         _isEditMode.value = false
+        val month = YearMonth.from(date)
+        if (month != _displayedMonth.value) {
+            setDisplayedMonth(month)
+        }
     }
 
     fun navigatePrevDay() = navigateToDate(_selectedDate.value.minusDays(1))
     fun navigateNextDay() = navigateToDate(_selectedDate.value.plusDays(1))
+    fun goToToday() = navigateToDate(LocalDate.now())
 
     // -------------------------------------------------------------------------
     // Reload helper

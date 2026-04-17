@@ -44,7 +44,7 @@ data class RecentDay(
 /** A single workout day summary for the recent history row. */
 data class RecentWorkoutDay(
     val date: LocalDate,
-    val splitName: String?,
+    val totalSets: Int,
     val isComplete: Boolean
 )
 

@@ -59,7 +59,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = SakuraTheme.colors.brand)
+            CircularProgressIndicator(color = SakuraTheme.colors.accent)
         }
         return
     }
@@ -182,7 +182,7 @@ private fun DashboardPagerCard(
                             .padding(horizontal = 3.dp)
                             .size(if (isSelected) 8.dp else 6.dp),
                         shape = CircleShape,
-                        color = if (isSelected) SakuraTheme.colors.brand
+                        color = if (isSelected) SakuraTheme.colors.accent
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                     ) {}
                 }

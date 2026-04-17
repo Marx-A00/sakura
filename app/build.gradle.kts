@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.reorderable)
+    implementation(libs.phosphor.icons)
     implementation(libs.vico.compose.m3) {
         exclude(group = "org.jetbrains.compose.material3", module = "material3")
     }

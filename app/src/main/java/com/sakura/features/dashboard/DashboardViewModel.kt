@@ -80,7 +80,7 @@ class DashboardViewModel(
             val recentWorkoutDays = history.take(3).map { session ->
                 RecentWorkoutDay(
                     date = session.date,
-                    splitName = session.templateName,
+                    totalSets = session.exercises.sumOf { it.sets.size },
                     isComplete = session.isComplete
                 )
             }

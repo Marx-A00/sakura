@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,6 +20,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.Barbell
+import com.adamglin.phosphoricons.regular.Dog
 import com.sakura.ui.theme.SakuraTheme
 import java.time.format.DateTimeFormatter
 
@@ -52,10 +53,10 @@ fun WorkoutSummaryCard(state: DashboardTodayState) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Star,
+                    imageVector = PhosphorIcons.Regular.Barbell,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = SakuraTheme.colors.brand
+                    tint = SakuraTheme.colors.accent
                 )
                 Text(
                     text = "Workout",
@@ -132,20 +133,11 @@ fun WorkoutSummaryCard(state: DashboardTodayState) {
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (day.isComplete) {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = "Complete",
-                                modifier = Modifier.size(14.dp),
-                                tint = SakuraTheme.colors.accent
-                            )
-                        } else {
-                            Text(
-                                text = day.splitName?.take(3) ?: "-",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = if (day.totalSets > 0) "${day.totalSets} sets" else "-",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
@@ -182,8 +174,8 @@ private fun RestDayContent() {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(
-            Icons.Filled.Star,
-            contentDescription = null,
+            PhosphorIcons.Regular.Dog,
+            contentDescription = "Rest day",
             modifier = Modifier.size(32.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
         )

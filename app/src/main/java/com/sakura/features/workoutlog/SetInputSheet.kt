@@ -14,11 +14,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Info
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.Barbell
+import com.adamglin.phosphoricons.regular.Check
+import com.adamglin.phosphoricons.regular.Info
+import com.adamglin.phosphoricons.regular.X
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -206,7 +207,7 @@ fun SetInputSheet(
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = { dismiss() }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close")
+                    Icon(PhosphorIcons.Regular.X, contentDescription = "Close")
                 }
             }
 
@@ -254,9 +255,9 @@ fun SetInputSheet(
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            Icons.Filled.FitnessCenter,
+                            PhosphorIcons.Regular.Barbell,
                             contentDescription = if (showPlateCalc) "Type weight" else "Plate calculator",
-                            tint = if (showPlateCalc) SakuraTheme.colors.brand
+                            tint = if (showPlateCalc) SakuraTheme.colors.accent
                                    else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
@@ -453,7 +454,7 @@ private fun PreFillInfoRow(prefillSet: SetLog, category: ExerciseCategory) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Icon(
-                Icons.Filled.Info,
+                PhosphorIcons.Regular.Info,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -495,7 +496,7 @@ private fun RpeSelector(
                     },
                     label = { Text(rpe.toString()) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = SakuraTheme.colors.brand,
+                        selectedContainerColor = SakuraTheme.colors.accent,
                         selectedLabelColor = androidx.compose.ui.graphics.Color.White
                     )
                 )
@@ -651,7 +652,7 @@ private fun PlateCalculator(
                     text = "Total: ${formatPrefillWeight(total())} $unit",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SakuraTheme.colors.brand
+                    color = SakuraTheme.colors.accent
                 )
                 Button(
                     onClick = onConfirm,
@@ -664,7 +665,7 @@ private fun PlateCalculator(
                     )
                 ) {
                     Icon(
-                        Icons.Filled.Check,
+                        PhosphorIcons.Regular.Check,
                         contentDescription = "Confirm weight",
                         modifier = Modifier.size(18.dp)
                     )

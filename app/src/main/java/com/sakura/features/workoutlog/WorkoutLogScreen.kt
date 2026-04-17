@@ -20,12 +20,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Star
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.Barbell
+import com.adamglin.phosphoricons.regular.Check
+import com.adamglin.phosphoricons.regular.Dog
+import com.adamglin.phosphoricons.regular.DotsThreeVertical
+import com.adamglin.phosphoricons.regular.X
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
@@ -76,6 +77,7 @@ import com.sakura.data.workout.UserWorkoutTemplate
 import com.sakura.ui.theme.SakuraTheme
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import com.sakura.features.workoutlog.RestTimerService
 import sh.calvin.reorderable.ReorderableItem
@@ -106,6 +108,8 @@ fun WorkoutLogScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val prDetected by viewModel.prDetected.collectAsStateWithLifecycle()
     val calendarDays by viewModel.calendarDays.collectAsStateWithLifecycle()
+    val displayedMonth by viewModel.displayedMonth.collectAsStateWithLifecycle()
+    val calendarExpanded by viewModel.calendarExpanded.collectAsStateWithLifecycle()
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val activeTimerExerciseId by viewModel.activeTimerExerciseId.collectAsStateWithLifecycle()
     val pendingTimer by viewModel.pendingTimerStart.collectAsStateWithLifecycle()
@@ -174,7 +178,7 @@ fun WorkoutLogScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                    CircularProgressIndicator(color = SakuraTheme.colors.accent)
                 }
             }
 
@@ -227,8 +231,13 @@ fun WorkoutLogScreen(
                     EmptyDayContent(
                         calendarDays = calendarDays,
                         selectedDate = selectedDate,
+                        displayedMonth = displayedMonth,
+                        calendarExpanded = calendarExpanded,
+                        onCalendarExpandedChange = { viewModel.setCalendarExpanded(it) },
                         scheduledWorkout = scheduledWorkout,
                         onDateSelected = { viewModel.navigateToDate(it) },
+                        onMonthChanged = { viewModel.setDisplayedMonth(it) },
+                        onTodayClick = { viewModel.goToToday() },
                         onDateLabelClick = { showDatePicker = true },
                         onNavigateToHistory = onNavigateToHistory,
                         onStartScheduled = {
@@ -241,7 +250,12 @@ fun WorkoutLogScreen(
                         state = state,
                         calendarDays = calendarDays,
                         selectedDate = selectedDate,
+                        displayedMonth = displayedMonth,
+                        calendarExpanded = calendarExpanded,
+                        onCalendarExpandedChange = { viewModel.setCalendarExpanded(it) },
                         onDateSelected = { viewModel.navigateToDate(it) },
+                        onMonthChanged = { viewModel.setDisplayedMonth(it) },
+                        onTodayClick = { viewModel.goToToday() },
                         onDateLabelClick = { showDatePicker = true },
                         onNavigateToHistory = onNavigateToHistory,
                         timerState = timerState,
@@ -365,7 +379,7 @@ fun WorkoutLogScreen(
             text = { Text("You just set a new ${pr.prType} PR on ${pr.exerciseName}!") },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissPrNotification() }) {
-                    Text("Awesome!", color = SakuraTheme.colors.brand)
+                    Text("Awesome!", color = SakuraTheme.colors.accent)
                 }
             }
         )
@@ -431,8 +445,13 @@ fun WorkoutLogScreen(
 private fun EmptyDayContent(
     calendarDays: List<CalendarDay>,
     selectedDate: LocalDate,
+    displayedMonth: YearMonth,
+    calendarExpanded: Boolean,
+    onCalendarExpandedChange: (Boolean) -> Unit,
     scheduledWorkout: UserWorkoutTemplate?,
     onDateSelected: (LocalDate) -> Unit,
+    onMonthChanged: (YearMonth) -> Unit,
+    onTodayClick: () -> Unit,
     onDateLabelClick: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onStartScheduled: () -> Unit,
@@ -452,7 +471,12 @@ private fun EmptyDayContent(
                 SplitCalendar(
                     days = calendarDays,
                     selectedDate = selectedDate,
+                    displayedMonth = displayedMonth,
+                    expanded = calendarExpanded,
+                    onExpandedChange = onCalendarExpandedChange,
                     onDateSelected = onDateSelected,
+                    onMonthChanged = onMonthChanged,
+                    onTodayClick = onTodayClick,
                     onDateLabelClick = onDateLabelClick,
                     onHistoryClick = onNavigateToHistory
                 )
@@ -470,7 +494,7 @@ private fun EmptyDayContent(
                 if (scheduledWorkout != null) {
                     // Scheduled workout day
                     Icon(
-                        imageVector = Icons.Filled.FitnessCenter,
+                        imageVector = PhosphorIcons.Regular.Barbell,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
                         tint = SakuraTheme.colors.accent.copy(alpha = 0.7f)
@@ -506,9 +530,11 @@ private fun EmptyDayContent(
                     }
                 } else {
                     // Rest day
-                    Text(
-                        "\uD83C\uDF38",
-                        fontSize = 48.sp
+                    Icon(
+                        imageVector = PhosphorIcons.Regular.Dog,
+                        contentDescription = "Rest day",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
@@ -546,7 +572,12 @@ private fun ActiveDayContent(
     state: WorkoutLogUiState.DayLoaded,
     calendarDays: List<CalendarDay>,
     selectedDate: LocalDate,
+    displayedMonth: YearMonth,
+    calendarExpanded: Boolean,
+    onCalendarExpandedChange: (Boolean) -> Unit,
     onDateSelected: (LocalDate) -> Unit,
+    onMonthChanged: (YearMonth) -> Unit,
+    onTodayClick: () -> Unit,
     onDateLabelClick: () -> Unit,
     onNavigateToHistory: () -> Unit,
     timerState: TimerState,
@@ -598,7 +629,12 @@ private fun ActiveDayContent(
                 SplitCalendar(
                     days = calendarDays,
                     selectedDate = selectedDate,
+                    displayedMonth = displayedMonth,
+                    expanded = calendarExpanded,
+                    onExpandedChange = onCalendarExpandedChange,
                     onDateSelected = onDateSelected,
+                    onMonthChanged = onMonthChanged,
+                    onTodayClick = onTodayClick,
                     onDateLabelClick = onDateLabelClick,
                     onHistoryClick = onNavigateToHistory
                 )
@@ -640,7 +676,7 @@ private fun ActiveDayContent(
                 ) {
                     if (state.isComplete) {
                         Icon(
-                            Icons.Filled.Check,
+                            PhosphorIcons.Regular.Check,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
@@ -789,7 +825,7 @@ private fun ExerciseCard(
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            Icons.Filled.MoreVert,
+                            PhosphorIcons.Regular.DotsThreeVertical,
                             contentDescription = "More options",
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -870,7 +906,7 @@ private fun ExerciseCard(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Icon(
-                        Icons.Filled.Check,
+                        PhosphorIcons.Regular.Check,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -942,7 +978,7 @@ private fun SetRow(
         // Delete icon in edit mode
         if (editing) {
             Icon(
-                imageVector = Icons.Filled.Close,
+                imageVector = PhosphorIcons.Regular.X,
                 contentDescription = "Delete set",
                 modifier = Modifier
                     .size(16.dp)

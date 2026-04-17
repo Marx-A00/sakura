@@ -20,10 +20,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DragHandle
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.ArrowLeft
+import com.adamglin.phosphoricons.regular.DotsSixVertical
+import com.adamglin.phosphoricons.regular.X
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -101,7 +102,7 @@ fun WorkoutTemplateCreatorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(PhosphorIcons.Regular.ArrowLeft, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -115,7 +116,7 @@ fun WorkoutTemplateCreatorScreen(
                     ) {
                         Text(
                             "Save",
-                            color = if (canSave) SakuraTheme.colors.brand
+                            color = if (canSave) SakuraTheme.colors.accent
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -131,7 +132,7 @@ fun WorkoutTemplateCreatorScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                CircularProgressIndicator(color = SakuraTheme.colors.accent)
             }
             return@Scaffold
         }
@@ -247,7 +248,7 @@ private fun TemplateExerciseCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    Icons.Filled.DragHandle,
+                    PhosphorIcons.Regular.DotsSixVertical,
                     contentDescription = "Drag to reorder",
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -290,7 +291,7 @@ private fun TemplateExerciseCard(
                 }
                 IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
                     Icon(
-                        Icons.Filled.Close,
+                        PhosphorIcons.Regular.X,
                         contentDescription = "Remove",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.error

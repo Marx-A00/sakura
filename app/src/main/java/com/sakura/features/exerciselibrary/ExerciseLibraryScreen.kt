@@ -22,16 +22,17 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Search
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.ArrowLeft
+import com.adamglin.phosphoricons.regular.CalendarBlank
+import com.adamglin.phosphoricons.regular.CaretDown
+import com.adamglin.phosphoricons.regular.CaretUp
+import com.adamglin.phosphoricons.regular.MagnifyingGlass
+import com.adamglin.phosphoricons.regular.PencilSimple
+import com.adamglin.phosphoricons.regular.Plus
+import com.adamglin.phosphoricons.regular.Trash
+import com.adamglin.phosphoricons.regular.X
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -106,13 +107,13 @@ fun ExerciseLibraryScreen(
                 title = { Text("Exercise Library") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(PhosphorIcons.Regular.ArrowLeft, contentDescription = "Back")
                     }
                 },
                 actions = {
                     IconButton(onClick = { showScheduleDialog = true }) {
                         Icon(
-                            Icons.Filled.CalendarMonth,
+                            PhosphorIcons.Regular.CalendarBlank,
                             contentDescription = "Weekly schedule"
                         )
                     }
@@ -121,7 +122,7 @@ fun ExerciseLibraryScreen(
                         else onNavigateToTemplateCreator(null)
                     }) {
                         Icon(
-                            Icons.Filled.Add,
+                            PhosphorIcons.Regular.Plus,
                             contentDescription = if (pagerState.currentPage == 0) "Add exercise" else "Create workout"
                         )
                     }
@@ -144,11 +145,11 @@ fun ExerciseLibraryScreen(
                         else "Search workouts..."
                     )
                 },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                leadingIcon = { Icon(PhosphorIcons.Regular.MagnifyingGlass, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.updateSearch("") }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Clear")
+                            Icon(PhosphorIcons.Regular.X, contentDescription = "Clear")
                         }
                     }
                 },
@@ -175,7 +176,7 @@ fun ExerciseLibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                    CircularProgressIndicator(color = SakuraTheme.colors.accent)
                 }
             } else {
                 HorizontalPager(
@@ -453,7 +454,7 @@ private fun ExerciseRow(
             Row {
                 IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Edit,
+                        PhosphorIcons.Regular.PencilSimple,
                         contentDescription = "Edit",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -461,7 +462,7 @@ private fun ExerciseRow(
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Delete,
+                        PhosphorIcons.Regular.Trash,
                         contentDescription = "Delete",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error
@@ -505,7 +506,7 @@ private fun WorkoutTemplateRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Edit,
+                        PhosphorIcons.Regular.PencilSimple,
                         contentDescription = "Edit name",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -513,15 +514,15 @@ private fun WorkoutTemplateRow(
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Delete,
+                        PhosphorIcons.Regular.Trash,
                         contentDescription = "Delete",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
-                    else Icons.Filled.KeyboardArrowDown,
+                    imageVector = if (expanded) PhosphorIcons.Regular.CaretUp
+                    else PhosphorIcons.Regular.CaretDown,
                     contentDescription = if (expanded) "Collapse" else "Expand",
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -648,7 +649,7 @@ private fun ExerciseDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.accent else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {

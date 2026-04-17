@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.ModalBottomSheet
@@ -190,7 +191,7 @@ fun FoodEntryBottomSheet(
                         },
                         label = { Text(label, fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SakuraTheme.colors.brand,
+                            selectedContainerColor = SakuraTheme.colors.accent,
                             selectedLabelColor = Color.White
                         )
                     )
@@ -204,7 +205,7 @@ fun FoodEntryBottomSheet(
                 onClick = onOpenLibrary,
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Text("From Library", color = SakuraTheme.colors.brand)
+                Text("From Library", color = SakuraTheme.colors.accent)
             }
 
             // Name field
@@ -285,7 +286,7 @@ fun FoodEntryBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = if (!caloriesOverridden) SakuraTheme.colors.brandLight else Color.Transparent,
+                        color = if (!caloriesOverridden) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
                     )
             ) {
@@ -297,7 +298,7 @@ fun FoodEntryBottomSheet(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = if (!caloriesOverridden) {
-                        { Text("Auto-calculated", color = SakuraTheme.colors.brandDark, fontSize = 11.sp) }
+                        { Text("Auto-calculated", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 11.sp) }
                     } else null
                 )
             }
@@ -326,7 +327,7 @@ fun FoodEntryBottomSheet(
                 Switch(
                     checked = saveToLibrary,
                     onCheckedChange = onSaveToLibraryChanged,
-                    colors = SwitchDefaults.colors(checkedThumbColor = SakuraTheme.colors.brand)
+                    colors = SwitchDefaults.colors(checkedThumbColor = SakuraTheme.colors.accent)
                 )
             }
 
@@ -354,7 +355,7 @@ fun FoodEntryBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SakuraTheme.colors.brand)
+                colors = ButtonDefaults.buttonColors(containerColor = SakuraTheme.colors.accent)
             ) {
                 Text(
                     text = if (isEditing) "Update" else "Save",

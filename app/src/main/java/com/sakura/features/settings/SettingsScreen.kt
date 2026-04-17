@@ -27,9 +27,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.ArrowLeft
+import com.adamglin.phosphoricons.regular.CaretRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -103,7 +104,7 @@ fun SettingsScreen(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(PhosphorIcons.Regular.ArrowLeft, contentDescription = "Back")
                     }
                 }
             )
@@ -140,7 +141,7 @@ fun SettingsScreen(
                     )
                 }
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    imageVector = PhosphorIcons.Regular.CaretRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -522,7 +523,7 @@ private fun PaletteChip(
                 .then(
                     if (isSelected) Modifier.border(
                         3.dp,
-                        SakuraTheme.colors.brand,
+                        SakuraTheme.colors.accent,
                         CircleShape
                     )
                     else Modifier.border(
@@ -536,7 +537,7 @@ private fun PaletteChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (isSelected) SakuraTheme.colors.brand
+            color = if (isSelected) SakuraTheme.colors.accent
             else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

@@ -14,13 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.MoreVert
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.CaretDown
+import com.adamglin.phosphoricons.regular.CaretUp
+import com.adamglin.phosphoricons.regular.Check
+import com.adamglin.phosphoricons.regular.DotsThreeVertical
+import com.adamglin.phosphoricons.regular.PencilSimple
+import com.adamglin.phosphoricons.regular.Trash
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -65,6 +66,7 @@ import com.sakura.ui.theme.SakuraTheme
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,6 +79,8 @@ fun FoodLogScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val calendarDays by viewModel.calendarDays.collectAsStateWithLifecycle()
+    val displayedMonth by viewModel.displayedMonth.collectAsStateWithLifecycle()
+    val calendarExpanded by viewModel.calendarExpanded.collectAsStateWithLifecycle()
     val expandedMeals by viewModel.expandedMeals.collectAsStateWithLifecycle()
     val isEditMode by viewModel.isEditMode.collectAsStateWithLifecycle()
     val lastAddedEntry by viewModel.lastAddedEntry.collectAsStateWithLifecycle()
@@ -166,7 +170,12 @@ fun FoodLogScreen(
                             FoodCalendar(
                                 days = calendarDays,
                                 selectedDate = selectedDate,
+                                displayedMonth = displayedMonth,
+                                expanded = calendarExpanded,
+                                onExpandedChange = { viewModel.setCalendarExpanded(it) },
                                 onDateSelected = { viewModel.navigateToDate(it) },
+                                onMonthChanged = { viewModel.setDisplayedMonth(it) },
+                                onTodayClick = { viewModel.navigateToDate(LocalDate.now()) },
                                 onDateLabelClick = { showDatePicker = true },
                                 modifier = Modifier.padding(16.dp)
                             )
@@ -175,7 +184,7 @@ fun FoodLogScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                            CircularProgressIndicator(color = SakuraTheme.colors.accent)
                         }
                     }
                 }
@@ -186,7 +195,12 @@ fun FoodLogScreen(
                             FoodCalendar(
                                 days = calendarDays,
                                 selectedDate = selectedDate,
+                                displayedMonth = displayedMonth,
+                                expanded = calendarExpanded,
+                                onExpandedChange = { viewModel.setCalendarExpanded(it) },
                                 onDateSelected = { viewModel.navigateToDate(it) },
+                                onMonthChanged = { viewModel.setDisplayedMonth(it) },
+                                onTodayClick = { viewModel.navigateToDate(LocalDate.now()) },
                                 onDateLabelClick = { showDatePicker = true },
                                 modifier = Modifier.padding(16.dp)
                             )
@@ -219,7 +233,12 @@ fun FoodLogScreen(
                             FoodCalendar(
                                 days = calendarDays,
                                 selectedDate = selectedDate,
+                                displayedMonth = displayedMonth,
+                                expanded = calendarExpanded,
+                                onExpandedChange = { viewModel.setCalendarExpanded(it) },
                                 onDateSelected = { viewModel.navigateToDate(it) },
+                                onMonthChanged = { viewModel.setDisplayedMonth(it) },
+                                onTodayClick = { viewModel.navigateToDate(LocalDate.now()) },
                                 onDateLabelClick = { showDatePicker = true },
                                 modifier = Modifier.padding(16.dp)
                             )
@@ -259,7 +278,12 @@ fun FoodLogScreen(
                                 FoodCalendar(
                                     days = calendarDays,
                                     selectedDate = selectedDate,
+                                    displayedMonth = displayedMonth,
+                                    expanded = calendarExpanded,
+                                    onExpandedChange = { viewModel.setCalendarExpanded(it) },
                                     onDateSelected = { viewModel.navigateToDate(it) },
+                                    onMonthChanged = { viewModel.setDisplayedMonth(it) },
+                                    onTodayClick = { viewModel.goToToday() },
                                     onDateLabelClick = { showDatePicker = true },
                                     modifier = Modifier.padding(16.dp)
                                 )
@@ -283,7 +307,7 @@ fun FoodLogScreen(
                                     TextButton(onClick = { viewModel.toggleEditMode() }) {
                                         Text(
                                             text = if (isEditMode) "Done Editing" else "Edit Day",
-                                            color = SakuraTheme.colors.brand
+                                            color = SakuraTheme.colors.accent
                                         )
                                     }
                                 }
@@ -355,7 +379,7 @@ fun FoodLogScreen(
                                                 .fillMaxWidth()
                                                 .padding(horizontal = 16.dp)
                                         ) {
-                                            Text("+ Add Food", color = SakuraTheme.colors.brand)
+                                            Text("+ Add Food", color = SakuraTheme.colors.accent)
                                         }
                                     }
                                 }
@@ -682,7 +706,7 @@ private fun MealSectionHeader(
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                Icons.Filled.MoreVert,
+                                PhosphorIcons.Regular.DotsThreeVertical,
                                 contentDescription = "More options",
                                 modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -705,7 +729,7 @@ private fun MealSectionHeader(
                 }
                 Spacer(Modifier.width(4.dp))
                 Icon(
-                    imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    imageVector = if (isExpanded) PhosphorIcons.Regular.CaretUp else PhosphorIcons.Regular.CaretDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     modifier = Modifier.size(20.dp)
                 )
@@ -753,7 +777,7 @@ private fun FoodEntryRow(
             Box {
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
-                        imageVector = Icons.Filled.MoreVert,
+                        imageVector = PhosphorIcons.Regular.DotsThreeVertical,
                         contentDescription = "Entry options",
                         modifier = Modifier.size(18.dp)
                     )
@@ -764,12 +788,12 @@ private fun FoodEntryRow(
                 ) {
                     DropdownMenuItem(
                         text = { Text("Edit") },
-                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        leadingIcon = { Icon(PhosphorIcons.Regular.PencilSimple, contentDescription = null) },
                         onClick = { showMenu = false; onEdit() }
                     )
                     DropdownMenuItem(
                         text = { Text("Delete") },
-                        leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                        leadingIcon = { Icon(PhosphorIcons.Regular.Trash, contentDescription = null) },
                         onClick = { showMenu = false; onDelete() }
                     )
                     if (isInLibrary) {
@@ -782,7 +806,7 @@ private fun FoodEntryRow(
                             },
                             leadingIcon = {
                                 Icon(
-                                    Icons.Filled.Check,
+                                    PhosphorIcons.Regular.Check,
                                     contentDescription = null,
                                     tint = SakuraTheme.colors.accent
                                 )

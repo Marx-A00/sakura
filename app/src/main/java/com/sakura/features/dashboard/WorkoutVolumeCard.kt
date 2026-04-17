@@ -87,7 +87,7 @@ fun WorkoutVolumeCard(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                    CircularProgressIndicator(color = SakuraTheme.colors.accent)
                 }
             }
 
@@ -135,7 +135,7 @@ private fun TimeRangeTabs(
                 onClick = { onSelected(weeks) },
                 label = { Text(text = label, fontSize = 12.sp) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = SakuraTheme.colors.brand,
+                    selectedContainerColor = SakuraTheme.colors.accent,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
@@ -156,7 +156,7 @@ private fun VolumeLegend() {
             Box(
                 modifier = Modifier
                     .size(width = 12.dp, height = 8.dp)
-                    .background(SakuraTheme.colors.brand, RoundedCornerShape(2.dp))
+                    .background(SakuraTheme.colors.accent, RoundedCornerShape(2.dp))
             )
             Text("Volume (kg)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -195,7 +195,7 @@ private fun VolumeChart(
         }
     }
 
-    val brandColor = SakuraTheme.colors.brand
+    val brandColor = SakuraTheme.colors.accent
     val trendColor = SakuraTheme.colors.trendLine
     val volumeBar = rememberLineComponent(fill = Fill(SolidColor(brandColor)))
 

@@ -346,10 +346,10 @@ class AppPreferencesRepository(private val context: Context) {
     // Color palette
     // -------------------------------------------------------------------------
 
-    /** Active palette ID. Defaults to "SAGE". */
+    /** Active palette ID. Defaults to "SAKURA". */
     val colorPalette: Flow<String> = context.appDataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-        .map { it[COLOR_PALETTE] ?: "SAGE" }
+        .map { it[COLOR_PALETTE] ?: "SAKURA" }
 
     /** Custom accent hex (e.g. "#7A8B6F"). Only used when palette == "CUSTOM". */
     val customAccentHex: Flow<String> = context.appDataStore.data

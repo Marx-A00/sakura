@@ -11,10 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.ArrowLeft
+import com.adamglin.phosphoricons.regular.CaretDown
+import com.adamglin.phosphoricons.regular.CaretUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,7 +70,7 @@ fun WorkoutHistoryScreen(
                 title = { Text("Workout History") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(PhosphorIcons.Regular.ArrowLeft, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -152,7 +153,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                     }
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    imageVector = if (expanded) PhosphorIcons.Regular.CaretUp else PhosphorIcons.Regular.CaretDown,
                     contentDescription = if (expanded) "Collapse" else "Expand",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -187,7 +188,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                     Text(
                         "Complete",
                         fontSize = 12.sp,
-                        color = SakuraTheme.colors.brand,
+                        color = SakuraTheme.colors.accent,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -208,7 +209,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                             text = exerciseLog.name,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = SakuraTheme.colors.brand
+                            color = SakuraTheme.colors.accent
                         )
                         // Category badge in history (small, subtle)
                         Text(
@@ -233,7 +234,7 @@ private fun SessionHistoryCard(session: WorkoutSession) {
                                     "PR",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = SakuraTheme.colors.brand
+                                    color = SakuraTheme.colors.accent
                                 )
                             }
                         }

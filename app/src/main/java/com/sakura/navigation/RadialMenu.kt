@@ -16,14 +16,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.MonitorWeight
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.SaveAlt
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.Barbell
+import com.adamglin.phosphoricons.regular.Books
+import com.adamglin.phosphoricons.regular.BowlFood
+import com.adamglin.phosphoricons.regular.FloppyDisk
+import com.adamglin.phosphoricons.regular.Plus
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,7 +68,7 @@ import kotlin.math.sqrt
 
 enum class RadialAction {
     // Default navigation actions
-    NAV_FOOD, NAV_EXERCISE, NAV_SETTINGS,
+    NAV_FOOD, NAV_EXERCISE,
     // Food page actions
     FOOD_ADD_ENTRY, FOOD_SAVE_DAY, FOOD_LIBRARY,
     // Workout page actions
@@ -87,19 +86,18 @@ private data class RadialOption(
 )
 
 private val DEFAULT_OPTIONS = listOf(
-    RadialOption(RadialAction.NAV_FOOD, "Add Food", Icons.Filled.Restaurant, -40f),
-    RadialOption(RadialAction.NAV_EXERCISE, "Add Exercise", Icons.Filled.FitnessCenter, 0f),
-    RadialOption(RadialAction.NAV_SETTINGS, "Log Weight", Icons.Filled.MonitorWeight, 40f),
+    RadialOption(RadialAction.NAV_FOOD, "Add Food", PhosphorIcons.Regular.BowlFood, -20f),
+    RadialOption(RadialAction.NAV_EXERCISE, "Add Exercise", PhosphorIcons.Regular.Barbell, 20f),
 )
 
 private val FOOD_OPTIONS = listOf(
-    RadialOption(RadialAction.FOOD_ADD_ENTRY, "Add Entry", Icons.Filled.Add, -40f),
-    RadialOption(RadialAction.FOOD_SAVE_DAY, "Save Day", Icons.Filled.SaveAlt, 0f),
-    RadialOption(RadialAction.FOOD_LIBRARY, "Food Library", Icons.Filled.MenuBook, 40f),
+    RadialOption(RadialAction.FOOD_ADD_ENTRY, "Add Entry", PhosphorIcons.Regular.Plus, -40f),
+    RadialOption(RadialAction.FOOD_SAVE_DAY, "Save Day", PhosphorIcons.Regular.FloppyDisk, 0f),
+    RadialOption(RadialAction.FOOD_LIBRARY, "Food Library", PhosphorIcons.Regular.Books, 40f),
 )
 
 private val WORKOUT_OPTIONS = listOf(
-    RadialOption(RadialAction.WORKOUT_LIBRARY, "Exercise Library", Icons.Filled.MenuBook, 0f),
+    RadialOption(RadialAction.WORKOUT_LIBRARY, "Exercise Library", PhosphorIcons.Regular.Books, 0f),
 )
 
 private fun optionsForContext(context: RadialContext): List<RadialOption> = when (context) {

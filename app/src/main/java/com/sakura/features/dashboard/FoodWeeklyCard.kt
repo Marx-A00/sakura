@@ -86,7 +86,7 @@ fun FoodWeeklyCard(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                    CircularProgressIndicator(color = SakuraTheme.colors.accent)
                 }
             }
 
@@ -141,7 +141,7 @@ private fun TimeRangeTabs(
                 onClick = { onSelected(weeks) },
                 label = { Text(text = label, fontSize = 12.sp) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = SakuraTheme.colors.brand,
+                    selectedContainerColor = SakuraTheme.colors.accent,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                 )
             )

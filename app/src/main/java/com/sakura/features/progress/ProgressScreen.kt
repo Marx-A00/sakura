@@ -48,7 +48,7 @@ fun ProgressScreen(viewModel: ProgressViewModel) {
 
     if (state.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = SakuraTheme.colors.brand)
+            CircularProgressIndicator(color = SakuraTheme.colors.accent)
         }
         return
     }
@@ -75,7 +75,7 @@ private fun StreakHeroSection(state: ProgressUiState) {
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        SakuraTheme.colors.brandDark.copy(alpha = 0.3f),
+                        SakuraTheme.colors.accent.copy(alpha = 0.15f),
                         Color.Transparent
                     ),
                     radius = 400f
@@ -117,13 +117,13 @@ private fun StreakHeroSection(state: ProgressUiState) {
                         modifier = Modifier
                             .size(10.dp)
                             .background(
-                                color = if (logged) SakuraTheme.colors.brand
+                                color = if (logged) SakuraTheme.colors.accent
                                 else Color.Transparent,
                                 shape = CircleShape
                             )
                             .border(
                                 width = 1.5.dp,
-                                color = if (logged) SakuraTheme.colors.brand
+                                color = if (logged) SakuraTheme.colors.accent
                                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                 shape = CircleShape
                             )
@@ -158,7 +158,7 @@ private fun WeeklyConsistencySection(state: ProgressUiState) {
                 value = state.foodDaysCount,
                 total = 7,
                 label = "Food\nLogged",
-                color = SakuraTheme.colors.brand,
+                color = SakuraTheme.colors.accent,
                 modifier = Modifier.weight(1f)
             )
             ConsistencyCard(

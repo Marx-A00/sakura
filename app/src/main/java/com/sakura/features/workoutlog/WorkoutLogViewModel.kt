@@ -42,6 +42,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.temporal.TemporalAdjusters
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutLogViewModel(
@@ -132,12 +134,17 @@ class WorkoutLogViewModel(
     // Main UI state — derived from selectedDate + reloadTrigger
     // -------------------------------------------------------------------------
 
+    private var _lastLoadedDate: LocalDate? = null
+
     val uiState: StateFlow<WorkoutLogUiState> = combine(
         _selectedDate, _reloadTrigger
     ) { date, _ -> date }
         .flatMapLatest { date ->
             flow {
-                emit(WorkoutLogUiState.Loading)
+                // Only show loading spinner on date change, not on same-day reloads
+                if (date != _lastLoadedDate) {
+                    emit(WorkoutLogUiState.Loading)
+                }
                 try {
                     val session = workoutRepo.loadSession(date)
                     val exercises = session?.exercises ?: emptyList()
@@ -154,6 +161,7 @@ class WorkoutLogViewModel(
                         WorkoutTemplates.forDay(day).exercises.associateBy { it.name }
                     } ?: emptyMap()
 
+                    _lastLoadedDate = date
                     emit(
                         WorkoutLogUiState.DayLoaded(
                             date = date,
@@ -202,11 +210,20 @@ class WorkoutLogViewModel(
     fun navigateToDate(date: LocalDate) {
         _selectedDate.value = date
         updateScheduledWorkout()
+        val month = YearMonth.from(date)
+        if (month != _displayedMonth.value) {
+            setDisplayedMonth(month)
+        }
     }
 
     fun goToToday() {
-        _selectedDate.value = LocalDate.now()
+        val today = LocalDate.now()
+        _selectedDate.value = today
         updateScheduledWorkout()
+        val month = YearMonth.from(today)
+        if (month != _displayedMonth.value) {
+            setDisplayedMonth(month)
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -271,6 +288,7 @@ class WorkoutLogViewModel(
             )
             workoutRepo.addExercise(date, exerciseLog)
             _reloadTrigger.value++
+            loadCalendar()
         }
     }
 
@@ -399,6 +417,7 @@ class WorkoutLogViewModel(
             val current = (uiState.value as? WorkoutLogUiState.DayLoaded)?.isComplete ?: false
             workoutRepo.markComplete(_selectedDate.value, !current)
             _reloadTrigger.value++
+            loadCalendar()
         }
     }
 
@@ -537,43 +556,42 @@ class WorkoutLogViewModel(
     }
 
     // -------------------------------------------------------------------------
-    // Calendar — 4-week rolling grid
+    // Calendar — month-based grid
     // -------------------------------------------------------------------------
+
+    private val _displayedMonth = MutableStateFlow(YearMonth.now())
+    val displayedMonth: StateFlow<YearMonth> = _displayedMonth.asStateFlow()
+
+    private val _calendarExpanded = MutableStateFlow(false)
+    val calendarExpanded: StateFlow<Boolean> = _calendarExpanded.asStateFlow()
+
+    fun setCalendarExpanded(expanded: Boolean) { _calendarExpanded.value = expanded }
 
     private val _calendarDays = MutableStateFlow<List<CalendarDay>>(emptyList())
     val calendarDays: StateFlow<List<CalendarDay>> = _calendarDays.asStateFlow()
 
-    /**
-     * Loads 28 days ending today, aligned to Monday week boundaries.
-     *
-     * Grid starts on the Monday 3+ weeks before today so we always show
-     * exactly 4 full ISO weeks. Past days show workout data from history;
-     * future days are left empty.
-     */
-    fun loadCalendar() {
+    fun setDisplayedMonth(yearMonth: YearMonth) {
+        _displayedMonth.value = yearMonth
+        loadCalendar(yearMonth)
+    }
+
+    fun loadCalendar(yearMonth: YearMonth = _displayedMonth.value) {
         viewModelScope.launch(Dispatchers.IO) {
             val today = LocalDate.now()
-
-            // Find the Monday that starts 4 complete weeks ending this week.
-            // "This week's Monday" minus 3 weeks = start of a 4-week window.
-            val thisMonday = today.with(DayOfWeek.MONDAY).let {
-                // If today IS Monday, we still want it to be the current week's Monday
-                if (it.isAfter(today)) it.minusWeeks(1) else it
-            }
-            val startMonday = thisMonday.minusWeeks(3)
+            val firstOfMonth = yearMonth.atDay(1)
+            val lastOfMonth = yearMonth.atEndOfMonth()
+            val gridStart = firstOfMonth.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val gridEnd = lastOfMonth.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
 
             // Load all history and build a date -> session map
             val allSessions = try { workoutRepo.loadHistory() } catch (e: Exception) { emptyList() }
             val sessionByDate = allSessions.associateBy { it.date }
 
-            // Build 28 CalendarDay entries
             val days = buildList {
-                var current = startMonday
-                repeat(28) {
+                var current = gridStart
+                while (!current.isAfter(gridEnd)) {
                     val session = sessionByDate[current]
-                    val isPast = current.isBefore(today)
                     val isToday = current == today
-                    val isFuture = current.isAfter(today)
 
                     add(
                         CalendarDay(
@@ -581,8 +599,9 @@ class WorkoutLogViewModel(
                             splitDay = session?.splitDay,
                             splitLabel = session?.templateName
                                 ?: session?.splitDay?.displayName?.substringAfterLast("— ")?.trim(),
+                            hasWorkout = session != null,
                             isComplete = session?.isComplete ?: false,
-                            isPast = isPast || isToday,
+                            isPast = !current.isAfter(today),
                             isToday = isToday
                         )
                     )

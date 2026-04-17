@@ -23,15 +23,16 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Search
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.ArrowLeft
+import com.adamglin.phosphoricons.regular.CaretDown
+import com.adamglin.phosphoricons.regular.CaretUp
+import com.adamglin.phosphoricons.regular.MagnifyingGlass
+import com.adamglin.phosphoricons.regular.PencilSimple
+import com.adamglin.phosphoricons.regular.Plus
+import com.adamglin.phosphoricons.regular.Trash
+import com.adamglin.phosphoricons.regular.X
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -101,7 +102,7 @@ fun FoodLibraryScreen(
                 title = { Text("Food Library") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(PhosphorIcons.Regular.ArrowLeft, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -111,7 +112,7 @@ fun FoodLibraryScreen(
                             else showCreateMealDialog = true
                         }) {
                             Icon(
-                                Icons.Filled.Add,
+                                PhosphorIcons.Regular.Plus,
                                 contentDescription = if (pagerState.currentPage == 0) "Add food" else "Create meal"
                             )
                         }
@@ -138,11 +139,11 @@ fun FoodLibraryScreen(
                         }
                     )
                 },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                leadingIcon = { Icon(PhosphorIcons.Regular.MagnifyingGlass, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.updateSearch("") }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Clear")
+                            Icon(PhosphorIcons.Regular.X, contentDescription = "Clear")
                         }
                     }
                 },
@@ -169,7 +170,7 @@ fun FoodLibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SakuraTheme.colors.brand)
+                    CircularProgressIndicator(color = SakuraTheme.colors.accent)
                 }
             } else {
                 HorizontalPager(
@@ -509,7 +510,7 @@ private fun FoodLibraryRow(
         Row {
             IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                 Icon(
-                    Icons.Filled.Edit,
+                    PhosphorIcons.Regular.PencilSimple,
                     contentDescription = "Edit",
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -517,7 +518,7 @@ private fun FoodLibraryRow(
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                 Icon(
-                    Icons.Filled.Delete,
+                    PhosphorIcons.Regular.Trash,
                     contentDescription = "Delete",
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.error
@@ -569,7 +570,7 @@ private fun MealTemplateRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Edit,
+                        PhosphorIcons.Regular.PencilSimple,
                         contentDescription = "Edit name",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -577,15 +578,15 @@ private fun MealTemplateRow(
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Delete,
+                        PhosphorIcons.Regular.Trash,
                         contentDescription = "Delete",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
-                    else Icons.Filled.KeyboardArrowDown,
+                    imageVector = if (expanded) PhosphorIcons.Regular.CaretUp
+                    else PhosphorIcons.Regular.CaretDown,
                     contentDescription = if (expanded) "Collapse" else "Expand",
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -665,7 +666,7 @@ private fun DayTemplateRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Edit,
+                        PhosphorIcons.Regular.PencilSimple,
                         contentDescription = "Rename",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -673,15 +674,15 @@ private fun DayTemplateRow(
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        Icons.Filled.Delete,
+                        PhosphorIcons.Regular.Trash,
                         contentDescription = "Delete",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
-                    else Icons.Filled.KeyboardArrowDown,
+                    imageVector = if (expanded) PhosphorIcons.Regular.CaretUp
+                    else PhosphorIcons.Regular.CaretDown,
                     contentDescription = if (expanded) "Collapse" else "Expand",
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -836,7 +837,7 @@ private fun FoodItemDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.accent else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {
@@ -896,7 +897,7 @@ private fun CreateMealDialog(
                     )
                     TextButton(onClick = { showInlineAddFood = true }) {
                         Icon(
-                            Icons.Filled.Add,
+                            PhosphorIcons.Regular.Plus,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
@@ -910,11 +911,11 @@ private fun CreateMealDialog(
                         value = foodSearch,
                         onValueChange = { foodSearch = it },
                         placeholder = { Text("Search foods...", fontSize = 13.sp) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        leadingIcon = { Icon(PhosphorIcons.Regular.MagnifyingGlass, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         trailingIcon = {
                             if (foodSearch.isNotEmpty()) {
                                 IconButton(onClick = { foodSearch = "" }) {
-                                    Icon(Icons.Filled.Close, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                                    Icon(PhosphorIcons.Regular.X, contentDescription = "Clear", modifier = Modifier.size(18.dp))
                                 }
                             }
                         },
@@ -985,7 +986,7 @@ private fun CreateMealDialog(
                 },
                 enabled = canSave
             ) {
-                Text("Save", color = if (canSave) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (canSave) SakuraTheme.colors.accent else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {
@@ -1033,7 +1034,7 @@ private fun TemplateNameDialog(
                 onClick = { onSave(name.trim()) },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Save", color = if (name.isNotBlank()) SakuraTheme.colors.accent else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         dismissButton = {

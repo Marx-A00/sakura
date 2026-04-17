@@ -9,6 +9,7 @@ activityCompose = "1.10.1"
 kotlinxSerialization = "1.8.1"
 vico = "3.1.0"
 reorderable = "2.4.3"
+phosphorIcons = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -28,6 +29,7 @@ androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "l
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
+phosphor-icons = { group = "com.adamglin", name = "phosphor-icon", version.ref = "phosphorIcons" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

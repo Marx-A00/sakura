@@ -16,11 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.automirrored.filled.ShowChart
-import androidx.compose.material.icons.filled.Star
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.Barbell
+import com.adamglin.phosphoricons.regular.BowlFood
+import com.adamglin.phosphoricons.regular.ChartLineUp
+import com.adamglin.phosphoricons.regular.GearSix
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -115,7 +116,6 @@ fun AppNavHost(
                             // Default navigation
                             RadialAction.NAV_FOOD -> navigateToTab(FoodLog)
                             RadialAction.NAV_EXERCISE -> navigateToTab(WorkoutLog)
-                            RadialAction.NAV_SETTINGS -> navigateToTab(Settings)
                             // Food page actions
                             RadialAction.FOOD_ADD_ENTRY -> addFoodEntryTrigger++
                             RadialAction.FOOD_SAVE_DAY -> saveDayTemplateTrigger++
@@ -342,14 +342,14 @@ private fun SakuraBottomBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             NavTab(
-                icon = Icons.Filled.DateRange,
+                icon = PhosphorIcons.Regular.BowlFood,
                 label = "FOOD",
                 selected = currentDestination?.hasRoute<FoodLog>() == true,
                 onClick = { onNavigateTo(FoodLog) },
                 modifier = Modifier.weight(1f)
             )
             NavTab(
-                icon = Icons.Filled.Star,
+                icon = PhosphorIcons.Regular.Barbell,
                 label = "WORKOUT",
                 selected = currentDestination?.hasRoute<WorkoutLog>() == true,
                 onClick = { onNavigateTo(WorkoutLog) },
@@ -360,14 +360,14 @@ private fun SakuraBottomBar(
             Spacer(Modifier.weight(1f))
 
             NavTab(
-                icon = Icons.AutoMirrored.Filled.ShowChart,
+                icon = PhosphorIcons.Regular.ChartLineUp,
                 label = "PROGRESS",
                 selected = currentDestination?.hasRoute<Progress>() == true,
                 onClick = { onNavigateTo(Progress) },
                 modifier = Modifier.weight(1f)
             )
             NavTab(
-                icon = Icons.Filled.Settings,
+                icon = PhosphorIcons.Regular.GearSix,
                 label = "SETTINGS",
                 selected = currentDestination?.hasRoute<Settings>() == true,
                 onClick = { onNavigateTo(Settings) },
@@ -393,7 +393,7 @@ private fun NavTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val contentColor = if (selected) SakuraTheme.colors.brand else MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = if (selected) SakuraTheme.colors.accent else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier

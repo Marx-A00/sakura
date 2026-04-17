@@ -13,10 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.MagnifyingGlass
+import com.adamglin.phosphoricons.regular.PlusCircle
+import com.adamglin.phosphoricons.regular.X
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -110,7 +111,7 @@ fun ExercisePickerSheet(
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = { dismiss() }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close")
+                    Icon(PhosphorIcons.Regular.X, contentDescription = "Close")
                 }
             }
 
@@ -122,7 +123,7 @@ fun ExercisePickerSheet(
                 onValueChange = { searchQuery = it },
                 placeholder = { Text("Search exercises...") },
                 leadingIcon = {
-                    Icon(Icons.Filled.Search, contentDescription = null)
+                    Icon(PhosphorIcons.Regular.MagnifyingGlass, contentDescription = null)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -141,7 +142,7 @@ fun ExercisePickerSheet(
                         onClick = { selectedCategory = null },
                         label = { Text("All") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SakuraTheme.colors.brand,
+                            selectedContainerColor = SakuraTheme.colors.accent,
                             selectedLabelColor = androidx.compose.ui.graphics.Color.White
                         )
                     )
@@ -154,7 +155,7 @@ fun ExercisePickerSheet(
                         },
                         label = { Text(category.displayName) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SakuraTheme.colors.brand,
+                            selectedContainerColor = SakuraTheme.colors.accent,
                             selectedLabelColor = androidx.compose.ui.graphics.Color.White
                         )
                     )
@@ -248,7 +249,7 @@ private fun ExerciseListItem(
         }
         IconButton(onClick = onAdd) {
             Icon(
-                Icons.Filled.AddCircle,
+                PhosphorIcons.Regular.PlusCircle,
                 contentDescription = "Add ${exercise.name}",
                 tint = SakuraTheme.colors.accent,
                 modifier = Modifier.size(28.dp)
@@ -323,7 +324,7 @@ private fun CreateExerciseDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Create", color = SakuraTheme.colors.brand)
+                Text("Create", color = SakuraTheme.colors.accent)
             }
         },
         dismissButton = {
