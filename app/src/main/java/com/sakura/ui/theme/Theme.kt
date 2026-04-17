@@ -9,7 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 
 
 private val SakuraDarkColorScheme = darkColorScheme(
-    primary = Rose400,
+    primary = CherryBlossomPink,
     onPrimary = RoseOnPrimary,
     primaryContainer = Rose900,
     onPrimaryContainer = Rose200,
@@ -19,14 +19,18 @@ private val SakuraDarkColorScheme = darkColorScheme(
     onSecondaryContainer = Rose200,
     background = DarkBackground,
     onBackground = NearWhite,
-    surface = DarkSurface,
+    surface = DarkBackground,
     onSurface = NearWhite,
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = MediumGray,
+    surfaceContainer = DarkBackground,
+    surfaceContainerLow = DarkBackground,
+    surfaceContainerHigh = DarkSurfaceVariant,
+    surfaceContainerHighest = DarkSurfaceVariant,
 )
 
 private val SakuraLightColorScheme = lightColorScheme(
-    primary = Rose400,
+    primary = CherryBlossomPink,
     onPrimary = WhiteCard,
     primaryContainer = PaleSakura,
     onPrimaryContainer = DeepRose,
