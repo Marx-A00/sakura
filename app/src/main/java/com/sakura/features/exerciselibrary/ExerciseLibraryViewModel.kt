@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -72,7 +73,6 @@ class ExerciseLibraryViewModel(
         viewModelScope.launch {
             ExerciseLibrary.addUserExercise(exercise)
             workoutRepo.saveUserExercises(ExerciseLibrary.userExercises())
-            reload()
         }
     }
 
@@ -80,7 +80,6 @@ class ExerciseLibraryViewModel(
         viewModelScope.launch {
             ExerciseLibrary.updateUserExercise(oldName, updated)
             workoutRepo.saveUserExercises(ExerciseLibrary.userExercises())
-            reload()
         }
     }
 
@@ -88,15 +87,11 @@ class ExerciseLibraryViewModel(
         viewModelScope.launch {
             ExerciseLibrary.deleteUserExercise(name)
             workoutRepo.saveUserExercises(ExerciseLibrary.userExercises())
-            reload()
         }
     }
 
     fun saveTemplate(template: UserWorkoutTemplate) {
-        viewModelScope.launch {
-            workoutRepo.saveWorkoutTemplate(template)
-            reload()
-        }
+        viewModelScope.launch { workoutRepo.saveWorkoutTemplate(template) }
     }
 
     fun deleteTemplate(templateId: String) {
@@ -110,7 +105,6 @@ class ExerciseLibraryViewModel(
                 prefsRepo.saveWorkoutScheduleJson(newSchedule.toJson())
             }
             workoutRepo.deleteWorkoutTemplate(templateId)
-            reload()
         }
     }
 
@@ -126,31 +120,26 @@ class ExerciseLibraryViewModel(
         }
     }
 
-    private fun reload() {
-        viewModelScope.launch {
-            _allExercises.value = ExerciseLibrary.allExercises()
-            _allTemplates.value = workoutRepo.loadWorkoutTemplates()
-            _schedule.value = WorkoutSchedule.fromJson(
-                try { prefsRepo.workoutScheduleJson.first() } catch (_: Exception) { "" }
-            )
-        }
-    }
-
     init {
+        // Seed built-in templates if version is behind (runs once on first load)
         viewModelScope.launch {
-            // Seed built-in templates if version is behind
             val currentVersion = try { prefsRepo.seedTemplatesVersion.first() } catch (_: Exception) { 0 }
             if (currentVersion < com.sakura.data.workout.OrgWorkoutRepository.SEED_VERSION) {
                 workoutRepo.seedBuiltinTemplates()
                 prefsRepo.setSeedTemplatesVersion(com.sakura.data.workout.OrgWorkoutRepository.SEED_VERSION)
             }
-
-            _allExercises.value = ExerciseLibrary.allExercises()
-            _allTemplates.value = workoutRepo.loadWorkoutTemplates()
-            _schedule.value = WorkoutSchedule.fromJson(
-                try { prefsRepo.workoutScheduleJson.first() } catch (_: Exception) { "" }
-            )
-            isLoading.value = false
+        }
+        viewModelScope.launch {
+            workoutRepo.templateVersion.collectLatest {
+                _allExercises.value = ExerciseLibrary.allExercises()
+                _allTemplates.value = workoutRepo.loadWorkoutTemplates()
+                isLoading.value = false
+            }
+        }
+        viewModelScope.launch {
+            prefsRepo.workoutScheduleJson.collectLatest { json ->
+                _schedule.value = WorkoutSchedule.fromJson(json)
+            }
         }
     }
 

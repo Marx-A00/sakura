@@ -10,7 +10,11 @@ import com.sakura.preferences.AppPreferencesRepository
 import com.sakura.sync.SyncBackend
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -63,6 +67,12 @@ class OrgWorkoutRepository(
 
     private val fileMutex = Mutex()
 
+    private val _logVersion = MutableStateFlow(0)
+    override val logVersion: StateFlow<Int> = _logVersion.asStateFlow()
+
+    private val _templateVersion = MutableStateFlow(0)
+    override val templateVersion: StateFlow<Int> = _templateVersion.asStateFlow()
+
     // =========================================================================
     // Atomic session operations (legacy / batch)
     // =========================================================================
@@ -77,6 +87,7 @@ class OrgWorkoutRepository(
                     val updatedSections = upsertSection(orgFile.sections, newSection)
                     val updatedFile = orgFile.copy(sections = updatedSections)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(updatedFile))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -168,6 +179,7 @@ class OrgWorkoutRepository(
                     val orgExercise = exercise.toOrgExerciseLog()
                     val updatedSections = upsertExercise(orgFile.sections, date, orgExercise, splitDay)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -185,6 +197,7 @@ class OrgWorkoutRepository(
                     val orgFile = parseFile(content)
                     val updatedSections = deleteExercise(orgFile.sections, date, exerciseId)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -202,6 +215,7 @@ class OrgWorkoutRepository(
                     val orgSet = set.toOrgSetEntry()
                     val updatedSections = appendSet(orgFile.sections, date, exerciseId, orgSet)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -219,6 +233,7 @@ class OrgWorkoutRepository(
                     val orgFile = parseFile(content)
                     val updatedSections = deleteSet(orgFile.sections, date, exerciseId, setNumber)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -237,6 +252,7 @@ class OrgWorkoutRepository(
                     val orgExercise = newExercise.toOrgExerciseLog()
                     val updatedSections = replaceExerciseInSection(orgFile.sections, date, oldExerciseId, orgExercise)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -257,6 +273,7 @@ class OrgWorkoutRepository(
                         WORKOUT_LOG_FILE,
                         OrgWriter.write(orgFile.copy(sections = updatedSections))
                     )
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -273,6 +290,7 @@ class OrgWorkoutRepository(
                     val orgFile = parseFile(content)
                     val updatedSections = setComplete(orgFile.sections, date, complete)
                     syncBackend.writeFile(WORKOUT_LOG_FILE, OrgWriter.write(orgFile.copy(sections = updatedSections)))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -307,6 +325,7 @@ class OrgWorkoutRepository(
             val serializable = exercises.map { it.toSerializable() }
             val json = Json.encodeToString(serializable)
             prefsRepo.saveUserExercisesJson(json)
+            _templateVersion.update { it + 1 }
         } catch (_: Exception) {
             // Best effort — if serialization fails, don't crash
         }
@@ -357,6 +376,7 @@ class OrgWorkoutRepository(
                     }
                     val updatedFile = com.sakura.orgengine.OrgWorkoutTemplateFile(updatedTemplates)
                     syncBackend.writeFile(WORKOUT_TEMPLATES_FILE, OrgWriter.writeWorkoutTemplates(updatedFile))
+                    _templateVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -375,6 +395,7 @@ class OrgWorkoutRepository(
                     val updatedTemplates = templateFile.templates.filter { it.id != templateId }
                     val updatedFile = com.sakura.orgengine.OrgWorkoutTemplateFile(updatedTemplates)
                     syncBackend.writeFile(WORKOUT_TEMPLATES_FILE, OrgWriter.writeWorkoutTemplates(updatedFile))
+                    _templateVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)

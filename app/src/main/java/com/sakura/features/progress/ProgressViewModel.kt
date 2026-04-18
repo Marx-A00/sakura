@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -26,7 +28,9 @@ class ProgressViewModel(
     val state: StateFlow<ProgressUiState> = _state.asStateFlow()
 
     init {
-        refresh()
+        viewModelScope.launch {
+            combine(foodRepo.logVersion, workoutRepo.logVersion) { _, _ -> }.collectLatest { refresh() }
+        }
     }
 
     fun refresh() {

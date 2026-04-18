@@ -13,6 +13,10 @@ import com.sakura.orgengine.OrgWriter
 import com.sakura.sync.SyncBackend
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -36,6 +40,12 @@ class OrgFoodRepository(
 ) : FoodRepository {
 
     private val fileMutex = Mutex()
+
+    private val _logVersion = MutableStateFlow(0)
+    override val logVersion: StateFlow<Int> = _logVersion.asStateFlow()
+
+    private val _libraryVersion = MutableStateFlow(0)
+    override val libraryVersion: StateFlow<Int> = _libraryVersion.asStateFlow()
 
     companion object {
         const val FOOD_LOG_FILE = "food-log.org"
@@ -74,6 +84,7 @@ class OrgFoodRepository(
             withContext(ioDispatcher) {
                 try {
                     addEntryInternal(date, mealLabel, entry)
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -114,6 +125,7 @@ class OrgFoodRepository(
                     val updatedSections = replaceEntry(orgFile.sections, date, mealLabel, entryId, updated.toOrgFoodEntry())
                     val updatedFile = orgFile.copy(sections = updatedSections)
                     syncBackend.writeFile(FOOD_LOG_FILE, OrgWriter.write(updatedFile))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -134,6 +146,7 @@ class OrgFoodRepository(
                     val updatedSections = removeEntry(orgFile.sections, date, mealLabel, entryId)
                     val updatedFile = orgFile.copy(sections = updatedSections)
                     syncBackend.writeFile(FOOD_LOG_FILE, OrgWriter.write(updatedFile))
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -174,6 +187,7 @@ class OrgFoodRepository(
                     }
                     val updatedLibrary = libraryFile.copy(items = updatedItems)
                     syncBackend.writeFile(LIBRARY_FILE, OrgWriter.writeLibrary(updatedLibrary))
+                    _libraryVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -192,6 +206,7 @@ class OrgFoodRepository(
                     val updatedItems = libraryFile.items.filter { it.id != itemId }
                     val updatedLibrary = libraryFile.copy(items = updatedItems)
                     syncBackend.writeFile(LIBRARY_FILE, OrgWriter.writeLibrary(updatedLibrary))
+                    _libraryVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -231,6 +246,7 @@ class OrgFoodRepository(
                     }
                     val updatedFile = templateFile.copy(templates = updatedTemplates)
                     syncBackend.writeFile(TEMPLATES_FILE, OrgWriter.writeTemplates(updatedFile))
+                    _libraryVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -264,6 +280,7 @@ class OrgFoodRepository(
                         // Call internal add (mutex already held)
                         addEntryInternal(date, mealLabel, entry)
                     }
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -282,6 +299,7 @@ class OrgFoodRepository(
                     val updatedTemplates = templateFile.templates.filter { it.id != templateId }
                     val updatedFile = templateFile.copy(templates = updatedTemplates)
                     syncBackend.writeFile(TEMPLATES_FILE, OrgWriter.writeTemplates(updatedFile))
+                    _libraryVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -312,6 +330,7 @@ class OrgFoodRepository(
                     val idx = existing.indexOfFirst { it.id == template.id }
                     if (idx >= 0) existing[idx] = template else existing.add(template)
                     syncBackend.writeFile(DAY_TEMPLATES_FILE, DayTemplate.listToJson(existing))
+                    _libraryVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -342,6 +361,7 @@ class OrgFoodRepository(
                             addEntryInternal(date, meal.label, entry)
                         }
                     }
+                    _logVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)
@@ -357,6 +377,7 @@ class OrgFoodRepository(
                     val content = try { syncBackend.readFile(DAY_TEMPLATES_FILE) } catch (_: Exception) { "" }
                     val existing = DayTemplate.listFromJson(content).filter { it.id != templateId }
                     syncBackend.writeFile(DAY_TEMPLATES_FILE, DayTemplate.listToJson(existing))
+                    _libraryVersion.update { it + 1 }
                     Result.success(Unit)
                 } catch (e: Exception) {
                     Result.failure(e)

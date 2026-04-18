@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -68,11 +69,16 @@ class WorkoutLogViewModel(
 
     init {
         viewModelScope.launch {
-            _userTemplates.value = workoutRepo.loadWorkoutTemplates()
-            _schedule.value = WorkoutSchedule.fromJson(
-                try { prefsRepo.workoutScheduleJson.first() } catch (_: Exception) { "" }
-            )
-            updateScheduledWorkout()
+            workoutRepo.templateVersion.collectLatest {
+                _userTemplates.value = workoutRepo.loadWorkoutTemplates()
+                updateScheduledWorkout()
+            }
+        }
+        viewModelScope.launch {
+            prefsRepo.workoutScheduleJson.collectLatest { json ->
+                _schedule.value = WorkoutSchedule.fromJson(json)
+                updateScheduledWorkout()
+            }
         }
     }
 
@@ -90,13 +96,6 @@ class WorkoutLogViewModel(
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
-
-    // -------------------------------------------------------------------------
-    // Reload trigger — increment after any mutation to force state refresh
-    // combine() pattern from 02-02 decision: avoids StateFlow.equals() short-circuit
-    // -------------------------------------------------------------------------
-
-    private val _reloadTrigger = MutableStateFlow(0)
 
     // -------------------------------------------------------------------------
     // PR notification — emitted after addSet detects a personal record
@@ -137,7 +136,7 @@ class WorkoutLogViewModel(
     private var _lastLoadedDate: LocalDate? = null
 
     val uiState: StateFlow<WorkoutLogUiState> = combine(
-        _selectedDate, _reloadTrigger
+        _selectedDate, workoutRepo.logVersion
     ) { date, _ -> date }
         .flatMapLatest { date ->
             flow {
@@ -246,7 +245,7 @@ class WorkoutLogViewModel(
                 // Small delay to ensure unique IDs when iterating rapidly
                 kotlinx.coroutines.delay(2)
             }
-            _reloadTrigger.value++
+
         }
     }
 
@@ -265,7 +264,7 @@ class WorkoutLogViewModel(
                 workoutRepo.addExercise(date, exerciseLog)
                 delay(2)
             }
-            _reloadTrigger.value++
+
         }
     }
 
@@ -287,8 +286,6 @@ class WorkoutLogViewModel(
                 sets = emptyList()
             )
             workoutRepo.addExercise(date, exerciseLog)
-            _reloadTrigger.value++
-            loadCalendar()
         }
     }
 
@@ -322,7 +319,7 @@ class WorkoutLogViewModel(
             }
 
             workoutRepo.addSet(date, exerciseId, setToWrite)
-            _reloadTrigger.value++
+
 
             // Auto-start rest timer after logging a set (Phase 7)
             val timerEnabled = try { prefsRepo.timerEnabled.first() } catch (_: Exception) { true }
@@ -352,7 +349,7 @@ class WorkoutLogViewModel(
     fun removeExercise(exerciseId: Long) {
         viewModelScope.launch {
             workoutRepo.removeExercise(_selectedDate.value, exerciseId)
-            _reloadTrigger.value++
+
         }
     }
 
@@ -372,7 +369,7 @@ class WorkoutLogViewModel(
                 sets = emptyList()
             )
             workoutRepo.replaceExercise(date, oldExerciseId, newExerciseLog)
-            _reloadTrigger.value++
+
         }
     }
 
@@ -383,7 +380,7 @@ class WorkoutLogViewModel(
     fun reorderExercises(orderedIds: List<Long>) {
         viewModelScope.launch {
             workoutRepo.reorderExercises(_selectedDate.value, orderedIds)
-            _reloadTrigger.value++
+
         }
     }
 
@@ -394,7 +391,7 @@ class WorkoutLogViewModel(
     fun removeSet(exerciseId: Long, setNumber: Int) {
         viewModelScope.launch {
             workoutRepo.removeSet(_selectedDate.value, exerciseId, setNumber)
-            _reloadTrigger.value++
+
         }
     }
 
@@ -404,7 +401,7 @@ class WorkoutLogViewModel(
             val date = _selectedDate.value
             workoutRepo.removeSet(date, exerciseId, oldSetNumber)
             workoutRepo.addSet(date, exerciseId, newSet)
-            _reloadTrigger.value++
+
         }
     }
 
@@ -416,8 +413,6 @@ class WorkoutLogViewModel(
         viewModelScope.launch {
             val current = (uiState.value as? WorkoutLogUiState.DayLoaded)?.isComplete ?: false
             workoutRepo.markComplete(_selectedDate.value, !current)
-            _reloadTrigger.value++
-            loadCalendar()
         }
     }
 
@@ -622,7 +617,7 @@ class WorkoutLogViewModel(
             val exercises = workoutRepo.loadUserExercises()
             ExerciseLibrary.loadUserExercises(exercises)
         }
-        loadCalendar()
+        viewModelScope.launch { workoutRepo.logVersion.collectLatest { loadCalendar() } }
     }
 
     // -------------------------------------------------------------------------

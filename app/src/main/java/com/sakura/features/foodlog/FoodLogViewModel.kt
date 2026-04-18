@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -43,8 +44,6 @@ class FoodLogViewModel(
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
-
-    private val _reloadTrigger = MutableStateFlow(0)
 
     // -------------------------------------------------------------------------
     // Calendar — month-based grid with food-logged indicators
@@ -102,7 +101,7 @@ class FoodLogViewModel(
     private val _meals = MutableStateFlow<com.sakura.features.foodlog.FoodLogUiState>(FoodLogUiState.Loading)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<FoodLogUiState> = combine(_selectedDate, _reloadTrigger) { date, _ -> date }
+    val uiState: StateFlow<FoodLogUiState> = combine(_selectedDate, foodRepo.logVersion) { date, _ -> date }
         .flatMapLatest { date ->
             flow {
                 emit(FoodLogUiState.Loading)
@@ -275,15 +274,6 @@ class FoodLogViewModel(
     fun goToToday() = navigateToDate(LocalDate.now())
 
     // -------------------------------------------------------------------------
-    // Reload helper
-    // -------------------------------------------------------------------------
-
-    private fun reloadDay() {
-        _reloadTrigger.value++
-        loadCalendar()
-    }
-
-    // -------------------------------------------------------------------------
     // CRUD operations
     // -------------------------------------------------------------------------
 
@@ -291,21 +281,18 @@ class FoodLogViewModel(
         viewModelScope.launch {
             foodRepo.addEntry(_selectedDate.value, mealLabel, entry)
             _lastAddedEntry.value = Pair(entry.id, mealLabel)
-            reloadDay()
         }
     }
 
     fun updateEntry(mealLabel: String, entryId: Long, updated: FoodEntry) {
         viewModelScope.launch {
             foodRepo.updateEntry(_selectedDate.value, mealLabel, entryId, updated)
-            reloadDay()
         }
     }
 
     fun deleteEntry(mealLabel: String, entryId: Long) {
         viewModelScope.launch {
             foodRepo.deleteEntry(_selectedDate.value, mealLabel, entryId)
-            reloadDay()
         }
     }
 
@@ -332,17 +319,14 @@ class FoodLogViewModel(
                 servingUnit = entry.servingUnit
             )
             foodRepo.saveToLibrary(item)
-            loadLibraryData()
         }
     }
 
-    fun loadLibraryData() {
-        viewModelScope.launch {
-            _recentItems.value = foodRepo.loadRecentItems()
-            _libraryItems.value = foodRepo.loadLibrary()
-            _templates.value = foodRepo.loadTemplates()
-            _dayTemplates.value = foodRepo.loadDayTemplates()
-        }
+    private suspend fun loadLibraryData() {
+        _recentItems.value = foodRepo.loadRecentItems()
+        _libraryItems.value = foodRepo.loadLibrary()
+        _templates.value = foodRepo.loadTemplates()
+        _dayTemplates.value = foodRepo.loadDayTemplates()
     }
 
     // -------------------------------------------------------------------------
@@ -372,14 +356,12 @@ class FoodLogViewModel(
                 entries = items
             )
             foodRepo.saveTemplate(template)
-            loadLibraryData()
         }
     }
 
     fun applyTemplate(mealLabel: String, template: MealTemplate) {
         viewModelScope.launch {
             foodRepo.applyTemplate(_selectedDate.value, mealLabel, template)
-            reloadDay()
         }
     }
 
@@ -415,21 +397,18 @@ class FoodLogViewModel(
                 }
             )
             foodRepo.saveDayTemplate(template)
-            loadLibraryData()
         }
     }
 
     fun applyDayTemplate(template: DayTemplate) {
         viewModelScope.launch {
             foodRepo.applyDayTemplate(_selectedDate.value, template)
-            reloadDay()
         }
     }
 
     fun deleteDayTemplate(templateId: String) {
         viewModelScope.launch {
             foodRepo.deleteDayTemplate(templateId)
-            loadLibraryData()
         }
     }
 
@@ -438,8 +417,8 @@ class FoodLogViewModel(
     // -------------------------------------------------------------------------
 
     init {
-        loadLibraryData()
-        loadCalendar()
+        viewModelScope.launch { foodRepo.logVersion.collectLatest { loadCalendar() } }
+        viewModelScope.launch { foodRepo.libraryVersion.collectLatest { loadLibraryData() } }
     }
 
     // -------------------------------------------------------------------------

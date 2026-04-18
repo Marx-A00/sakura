@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -61,61 +62,37 @@ class FoodLibraryViewModel(
     }
 
     fun deleteItem(itemId: String) {
-        viewModelScope.launch {
-            foodRepo.deleteFromLibrary(itemId)
-            reload()
-        }
+        viewModelScope.launch { foodRepo.deleteFromLibrary(itemId) }
     }
 
     fun saveItem(item: FoodLibraryItem) {
-        viewModelScope.launch {
-            foodRepo.saveToLibrary(item)
-            reload()
-        }
+        viewModelScope.launch { foodRepo.saveToLibrary(item) }
     }
 
     fun deleteTemplate(templateId: String) {
-        viewModelScope.launch {
-            foodRepo.deleteTemplate(templateId)
-            reload()
-        }
+        viewModelScope.launch { foodRepo.deleteTemplate(templateId) }
     }
 
     fun saveTemplate(template: MealTemplate) {
-        viewModelScope.launch {
-            foodRepo.saveTemplate(template)
-            reload()
-        }
+        viewModelScope.launch { foodRepo.saveTemplate(template) }
     }
 
     fun deleteDayTemplate(templateId: String) {
-        viewModelScope.launch {
-            foodRepo.deleteDayTemplate(templateId)
-            reload()
-        }
+        viewModelScope.launch { foodRepo.deleteDayTemplate(templateId) }
     }
 
     fun renameDayTemplate(template: DayTemplate, newName: String) {
-        viewModelScope.launch {
-            foodRepo.saveDayTemplate(template.copy(name = newName))
-            reload()
-        }
-    }
-
-    private fun reload() {
-        viewModelScope.launch {
-            _allItems.value = foodRepo.loadLibrary()
-            _allTemplates.value = foodRepo.loadTemplates()
-            _allDayTemplates.value = foodRepo.loadDayTemplates()
-        }
+        viewModelScope.launch { foodRepo.saveDayTemplate(template.copy(name = newName)) }
     }
 
     init {
         viewModelScope.launch {
-            _allItems.value = foodRepo.loadLibrary()
-            _allTemplates.value = foodRepo.loadTemplates()
-            _allDayTemplates.value = foodRepo.loadDayTemplates()
-            isLoading.value = false
+            foodRepo.libraryVersion.collectLatest {
+                _allItems.value = foodRepo.loadLibrary()
+                _allTemplates.value = foodRepo.loadTemplates()
+                _allDayTemplates.value = foodRepo.loadDayTemplates()
+                isLoading.value = false
+            }
         }
     }
 

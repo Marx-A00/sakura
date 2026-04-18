@@ -1,5 +1,6 @@
 package com.sakura.data.workout
 
+import kotlinx.coroutines.flow.StateFlow
 import java.time.LocalDate
 
 /**
@@ -12,6 +13,16 @@ import java.time.LocalDate
  * backward compat and batch operations.
  */
 interface WorkoutRepository {
+
+    // -------------------------------------------------------------------------
+    // Version counters (reactive reload triggers)
+    // -------------------------------------------------------------------------
+
+    /** Bumped after every workout-log mutation (save session, add/remove exercise/set, mark complete, replace, reorder). */
+    val logVersion: StateFlow<Int>
+
+    /** Bumped after every template/library mutation (save/delete user exercises, save/delete workout template). */
+    val templateVersion: StateFlow<Int>
 
     // -------------------------------------------------------------------------
     // Atomic session operations (legacy / batch)

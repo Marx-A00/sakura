@@ -1,5 +1,6 @@
 package com.sakura.data.food
 
+import kotlinx.coroutines.flow.StateFlow
 import java.time.LocalDate
 
 /**
@@ -11,6 +12,16 @@ import java.time.LocalDate
  * so callers can handle I/O errors gracefully.
  */
 interface FoodRepository {
+
+    // -------------------------------------------------------------------------
+    // Version counters (reactive reload triggers)
+    // -------------------------------------------------------------------------
+
+    /** Bumped after every daily-log mutation (add/update/delete entry, apply template). */
+    val logVersion: StateFlow<Int>
+
+    /** Bumped after every library/template mutation (save/delete library item, meal template, day template). */
+    val libraryVersion: StateFlow<Int>
 
     // -------------------------------------------------------------------------
     // Daily log
