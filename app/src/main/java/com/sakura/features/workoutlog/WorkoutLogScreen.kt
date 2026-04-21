@@ -597,10 +597,8 @@ private fun ActiveDayContent(
     // Local mutable exercise list for drag reorder — synced from state
     val exercises = remember { mutableStateListOf<DayExercise>() }
     LaunchedEffect(state.exercises) {
-        if (exercises.map { it.exerciseLog.id } != state.exercises.map { it.exerciseLog.id }) {
-            exercises.clear()
-            exercises.addAll(state.exercises)
-        }
+        exercises.clear()
+        exercises.addAll(state.exercises)
     }
 
     val lazyListState = rememberLazyListState()

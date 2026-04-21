@@ -281,7 +281,7 @@ private fun CalendarCell(
             )
         }
 
-        if (day.hasWorkout || day.splitDay != null) {
+        if (day.hasWorkout || day.isScheduled) {
             Icon(
                 imageVector = if (day.isComplete) PhosphorIcons.Fill.Barbell
                               else PhosphorIcons.Regular.Barbell,

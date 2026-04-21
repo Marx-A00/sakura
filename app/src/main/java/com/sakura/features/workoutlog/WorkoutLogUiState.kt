@@ -61,6 +61,7 @@ data class CalendarDay(
     val splitDay: SplitDay? = null,
     val splitLabel: String? = null,
     val hasWorkout: Boolean = false,
+    val isScheduled: Boolean = false,
     val isComplete: Boolean = false,
     val isPast: Boolean = true,
     val isToday: Boolean = false

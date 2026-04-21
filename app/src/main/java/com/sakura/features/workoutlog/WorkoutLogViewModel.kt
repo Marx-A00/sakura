@@ -78,6 +78,7 @@ class WorkoutLogViewModel(
             prefsRepo.workoutScheduleJson.collectLatest { json ->
                 _schedule.value = WorkoutSchedule.fromJson(json)
                 updateScheduledWorkout()
+                loadCalendar()
             }
         }
     }
@@ -581,12 +582,14 @@ class WorkoutLogViewModel(
             // Load all history and build a date -> session map
             val allSessions = try { workoutRepo.loadHistory() } catch (e: Exception) { emptyList() }
             val sessionByDate = allSessions.associateBy { it.date }
+            val schedule = _schedule.value
 
             val days = buildList {
                 var current = gridStart
                 while (!current.isAfter(gridEnd)) {
                     val session = sessionByDate[current]
                     val isToday = current == today
+                    val scheduled = schedule.templateIdFor(current.dayOfWeek) != null
 
                     add(
                         CalendarDay(
@@ -595,6 +598,7 @@ class WorkoutLogViewModel(
                             splitLabel = session?.templateName
                                 ?: session?.splitDay?.displayName?.substringAfterLast("— ")?.trim(),
                             hasWorkout = session != null,
+                            isScheduled = scheduled,
                             isComplete = session?.isComplete ?: false,
                             isPast = !current.isAfter(today),
                             isToday = isToday
