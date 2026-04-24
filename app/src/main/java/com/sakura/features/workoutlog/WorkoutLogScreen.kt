@@ -511,7 +511,36 @@ private fun EmptyDayContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        scheduledWorkout.exercises.forEach { ex ->
+                            val targetText = buildTemplateTargetText(ex)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    ex.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (targetText != null) {
+                                    Text(
+                                        targetText,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(24.dp))
 
                     Button(
                         onClick = onStartScheduled,
@@ -1110,6 +1139,19 @@ private fun formatVolume(volume: Double): String {
         "%,d".format(rounded)
     } else {
         rounded.toString()
+    }
+}
+
+private fun buildTemplateTargetText(ex: com.sakura.data.workout.TemplateExercise): String? {
+    val sets = ex.targetSets
+    if (sets <= 0) return null
+    val reps = ex.targetReps
+    val holdSecs = ex.targetHoldSecs
+    return when {
+        holdSecs > 0 -> "$sets × ${holdSecs}s"
+        reps == -1 -> "$sets × max"
+        reps > 0 -> "$sets × $reps"
+        else -> "$sets sets"
     }
 }
 

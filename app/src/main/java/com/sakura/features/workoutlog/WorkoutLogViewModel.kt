@@ -156,24 +156,29 @@ class WorkoutLogViewModel(
                         if (prev.isNotEmpty()) previousSetsMap[ex.name] = prev
                     }
 
-                    // Look up template definitions for target sets/reps
+                    // Look up template definitions for target sets/reps.
+                    // Prefer hardcoded split-day templates; fall back to user template targets.
                     val templateDefs = session?.splitDay?.let { day ->
                         WorkoutTemplates.forDay(day).exercises.associateBy { it.name }
                     } ?: emptyMap()
+                    val userTemplateDefs = if (templateDefs.isEmpty()) {
+                        _scheduledWorkout.value?.exercises?.associateBy { it.name } ?: emptyMap()
+                    } else emptyMap()
 
                     _lastLoadedDate = date
                     emit(
                         WorkoutLogUiState.DayLoaded(
                             date = date,
                             isToday = date == LocalDate.now(),
-                            templateName = session?.templateName,
+                            templateName = session?.templateName ?: _scheduledWorkout.value?.name,
                             exercises = exercises.map { ex ->
                                 val def = templateDefs[ex.name]
+                                val userDef = userTemplateDefs[ex.name]
                                 DayExercise(
                                     exerciseLog = ex,
-                                    targetSets = def?.targetSets,
-                                    targetReps = def?.targetReps,
-                                    targetHoldSecs = def?.targetHoldSecs,
+                                    targetSets = def?.targetSets ?: userDef?.targetSets?.takeIf { it > 0 },
+                                    targetReps = def?.targetReps ?: userDef?.targetReps?.takeIf { it != 0 },
+                                    targetHoldSecs = def?.targetHoldSecs ?: userDef?.targetHoldSecs?.takeIf { it > 0 },
                                     previousSets = previousSetsMap[ex.name] ?: emptyList(),
                                     category = ex.category
                                 )
